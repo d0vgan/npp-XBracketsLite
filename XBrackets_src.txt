@@ -1,0 +1,13 @@
+XBrackets_latest.bat
+XBrackets_src.txt
+XBrackets\XBrackets*.vcproj
+XBrackets\XBrackets*.vcxproj
+XBrackets\XBrackets*.vcxproj.filters
+XBrackets\XBrackets*.sln
+XBrackets\XBrackets.txt
+XBrackets\src\*.cpp
+XBrackets\src\*.h
+XBrackets\src\*.rc
+XBrackets\src\core\*.cpp
+XBrackets\src\core\*.h
+XBrackets\src\core\npp_stuff\*.h

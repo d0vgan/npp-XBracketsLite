@@ -1,0 +1,58 @@
+#include "resource.h"
+#include <winresrc.h>
+
+
+//
+// Dialog resources
+//
+IDD_SETTINGS DIALOGEX 0, 0, 182, 156
+STYLE DS_MODALFRAME | DS_SHELLFONT | WS_BORDER | WS_CAPTION | WS_DLGFRAME | WS_POPUP | WS_SYSMENU
+CAPTION "XBrackets Settings"
+FONT 8, "MS Shell Dlg", 0, 0, 1
+BEGIN
+    DEFPUSHBUTTON   "OK", IDC_BT_OK, 38, 137, 50, 13
+    PUSHBUTTON      "Cancel", IDC_BT_CANCEL, 94, 137, 50, 13
+    CONTROL         "", IDC_ST_PLUGINSTATE, "Static", SS_CENTER | SS_CENTERIMAGE | SS_NOTIFY, 7, 7, 168, 13, WS_EX_STATICEDGE
+    AUTOCHECKBOX    "Treat ' ' as brackets", IDC_CH_BRACKETS_DOSINGLEQUOTE, 7, 26, 141, 9
+    AUTOCHECKBOX    "Treat < > as brackets", IDC_CH_BRACKETS_DOTAG, 7, 38, 91, 9
+    AUTOCHECKBOX    "< />", IDC_CH_BRACKETS_DOTAG2, 101, 38, 41, 9
+    AUTOCHECKBOX    "Only if file extension contains:", IDC_CH_BRACKETS_DOTAGIF, 19, 50, 141, 9
+    EDITTEXT        IDC_ED_BRACKETS_DOTAGIF, 19, 62, 141, 13, ES_AUTOHSCROLL, WS_EX_CLIENTEDGE
+    AUTOCHECKBOX    "Skip escaped bracket characters: \\[, \\} etc.", IDC_CH_BRACKETS_SKIPESCAPED, 7, 80, 174, 9
+    CONTROL         "", IDC_STATIC, "Static", SS_ETCHEDFRAME, 4, 95, 174, 1
+    AUTOCHECKBOX    "Autocomplete brackets ([{""""}])", IDC_CH_BRACKETS_AUTOCOMPLETE, 7, 102, 140, 9
+    AUTOCHECKBOX    "Even if corresponding right bracket exists", IDC_CH_BRACKETS_RIGHTEXISTS_OK, 19, 114, 158, 9
+    CONTROL         "", IDC_STATIC, "Static", SS_ETCHEDFRAME, 4, 129, 174, 1
+END
+
+
+
+//
+// Version Information resources
+//
+VS_VERSION_INFO VERSIONINFO
+    FILEVERSION     1, 3, 0, 0
+    PRODUCTVERSION  1, 3, 0, 0
+    FILEOS          VOS__WINDOWS32
+    FILETYPE        VFT_DLL
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "042204b0"
+        BEGIN
+            VALUE "Comments", "The wall is thin - and our foreheads are hard :-)\0"
+            VALUE "CompanyName", "Full of Madness Co.\0"
+            VALUE "FileDescription", "XBrackets plugin for Notepad++\0"
+            VALUE "FileVersion", "1, 3, 0, 0\0"
+            VALUE "InternalName", "XBrackets\0"
+            VALUE "LegalCopyright", "(C) Jan 2009 - Feb 2018, Vitaliy Dovgan aka DV\0"
+            VALUE "OriginalFilename", "XBrackets.dll\0"
+            VALUE "ProductName", " XBrackets plugin for Notepad++\0"
+            VALUE "ProductVersion", "1, 3, 0, 0\0"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 1058, 1200
+    END
+END
