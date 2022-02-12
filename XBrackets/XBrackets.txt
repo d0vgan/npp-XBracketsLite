@@ -1,6 +1,6 @@
 ***********************************************
-* XBrackets Lite for Notepad++ 7.5.x (and above)
-* by DV, Jan 2009 - Feb 2018
+* XBrackets Lite for Notepad++ 8.x.x (and above)
+* by DV, Jan 2009 - Feb 2022
 ***********************************************
 
 XBrackets Lite allows to autocomplete brackets ([{""}]) i.e. it inserts
@@ -33,6 +33,11 @@ Examples:
 *************
 *  History  *
 *************
+
+v1.3.1 - Feb 2022
+-----------------
+* updated to Notepad++ 8.2.2
+
 
 v1.3.0 - Feb 2018
 -----------------

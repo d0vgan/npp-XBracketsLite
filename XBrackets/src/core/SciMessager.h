@@ -2,7 +2,7 @@
 #define _sci_messager_h_
 //---------------------------------------------------------------------------
 #include "base.h"
-#include "npp_stuff/Scintilla.h"
+#include "npp_files/Scintilla.h"
 
 class CSciMessager
 {
@@ -18,27 +18,27 @@ class CSciMessager
         
         void          beginUndoAction();
         void          endUndoAction();
-        unsigned char getCharAt(INT_PTR pos) const;
+        unsigned char getCharAt(Sci_Position pos) const;
         unsigned int  getCodePage() const; // 0 (non-Unicode), SC_CP_UTF8, DBCS etc.
-        INT_PTR       getCurrentPos() const;
+        Sci_Position  getCurrentPos() const;
         LRESULT       getDocPointer() const; // identifies the document
         HWND          getSciWnd() const  { return m_hSciWnd; }
         int           getSelectionMode() const; // SC_SEL_STREAM, SC_SEL_RECTANGLE, SC_SEL_LINES
-        INT_PTR       getSelectionEnd() const;
-        INT_PTR       getSelectionStart() const;
-        INT_PTR       getSelText(char* pText) const;
-        INT_PTR       getText(INT_PTR len, char* pText) const;
-        INT_PTR       getTextLength() const;
-        INT_PTR       getTextRange(INT_PTR pos1, INT_PTR pos2, char* pText) const;
-        void          goToPos(INT_PTR pos);
+        Sci_Position  getSelectionEnd() const;
+        Sci_Position  getSelectionStart() const;
+        Sci_Position  getSelText(char* pText) const;
+        Sci_Position  getText(Sci_Position len, char* pText) const;
+        Sci_Position  getTextLength() const;
+        Sci_Position  getTextRange(Sci_Position pos1, Sci_Position pos2, char* pText) const;
+        void          goToPos(Sci_Position pos);
         bool          isModified() const;
         bool          isSelectionRectangle() const;
         void          setCodePage(unsigned int codePage);
         void          setSciWnd(HWND hSciWnd)  { m_hSciWnd = hSciWnd; }
-        void          setSel(INT_PTR anchorPos, INT_PTR currentPos);
+        void          setSel(Sci_Position anchorPos, Sci_Position currentPos);
         void          setSelectionMode(int mode); // SC_SEL_STREAM, SC_SEL_RECTANGLE, SC_SEL_LINES
-        void          setSelectionEnd(INT_PTR pos);
-        void          setSelectionStart(INT_PTR pos);
+        void          setSelectionEnd(Sci_Position pos);
+        void          setSelectionStart(Sci_Position pos);
         void          setSelText(const char* pText);
         void          setText(const char* pText);
 };

@@ -1,6 +1,6 @@
 #include "XBrackets.h"
 #include "XBracketsOptions.h"
-#include "core/npp_stuff/resource.h"
+#include "core/npp_files/resource.h"
 
 
 // can be _T(x), but _T(x) may be incompatible with ANSI mode
@@ -309,7 +309,7 @@ void CXBrackets::OnSciCharAdded(const int ch)
     
         if ( nRightBracketType != tbtNone )
         {
-            INT_PTR pos = sciMsgr.getCurrentPos() - 1;
+            Sci_Position pos = sciMsgr.getCurrentPos() - 1;
         
             if ( pos == m_nAutoRightBracketPos )
             {
@@ -407,7 +407,7 @@ void CXBrackets::UpdateFileType() // <-- call it when the plugin becomes active!
     m_nFileType = getFileType(m_bSupportedFileType);
 }
 
-static void getEscapedPrefixPos(const INT_PTR nOffset, INT_PTR* pnPos, int* pnLen)
+static void getEscapedPrefixPos(const Sci_Position nOffset, Sci_Position* pnPos, int* pnLen)
 {
     if ( nOffset > CXBrackets::MAX_ESCAPED_PREFIX )
     {
@@ -440,8 +440,8 @@ void CXBrackets::AutoBracketsFunc(int nBracketType)
     }
     
     CSciMessager sciMsgr(m_nppMsgr.getCurrentScintillaWnd());
-    INT_PTR nEditPos = sciMsgr.getSelectionStart();
-    INT_PTR nEditEndPos = sciMsgr.getSelectionEnd();
+    Sci_Position nEditPos = sciMsgr.getSelectionStart();
+    Sci_Position nEditEndPos = sciMsgr.getSelectionEnd();
 
     // is something selected?
     if ( nEditEndPos != nEditPos )
@@ -527,7 +527,7 @@ void CXBrackets::AutoBracketsFunc(int nBracketType)
     if ( bPrevCharOK && bNextCharOK && g_opt.m_bBracketsSkipEscaped )
     {
         char szPrefix[MAX_ESCAPED_PREFIX + 2];
-        INT_PTR pos;
+        Sci_Position pos;
         int len; // len <= MAX_ESCAPED_PREFIX, so 'int' is always enough
 
         getEscapedPrefixPos(nEditPos - 1, &pos, &len);

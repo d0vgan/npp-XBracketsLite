@@ -35,8 +35,8 @@ void CXBracketsMenu::funcAbout()
 {
     ::MessageBox( 
         m_nppMsgr.getNppWnd(),
-        _T("XBrackets Lite ver. 1.3.0\r\n") \
-        _T("(C) Vitaliy Dovgan aka DV, Jan 2009 - Feb 2018\r\n") \
+        _T("XBrackets Lite ver. 1.3.1\r\n") \
+        _T("(C) Vitaliy Dovgan aka DV, Jan 2009 - Feb 2022\r\n") \
         _T("(C) Vitaliy Dovgan aka DV, Oct 2006 (original idea)"),
         _T("XBrackets plugin for Notepad++"),
         MB_OK

@@ -10,4 +10,4 @@ XBrackets\src\*.h
 XBrackets\src\*.rc
 XBrackets\src\core\*.cpp
 XBrackets\src\core\*.h
-XBrackets\src\core\npp_stuff\*.h
+XBrackets\src\core\npp_files\*.h

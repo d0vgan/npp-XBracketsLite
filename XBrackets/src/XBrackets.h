@@ -41,9 +41,9 @@ class CXBrackets : public CNppPlugin
         CXBracketsMenu m_PluginMenu;
         
         // internal vars
-        INT_PTR m_nAutoRightBracketPos;
-        int     m_nFileType;
-        bool    m_bSupportedFileType;
+        Sci_Position m_nAutoRightBracketPos;
+        int          m_nFileType;
+        bool         m_bSupportedFileType;
 
     public:
         CXBrackets();

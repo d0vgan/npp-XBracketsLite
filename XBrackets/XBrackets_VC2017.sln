@@ -1,0 +1,28 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.28307.1321
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "XBrackets", "XBrackets_VC2017.vcxproj", "{A74E350F-747A-471F-8B36-C8F97FA2A1AF}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Debug|x64 = Debug|x64
+		Release|Win32 = Release|Win32
+		Release|x64 = Release|x64
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{A74E350F-747A-471F-8B36-C8F97FA2A1AF}.Debug|Win32.ActiveCfg = Debug|Win32
+		{A74E350F-747A-471F-8B36-C8F97FA2A1AF}.Debug|Win32.Build.0 = Debug|Win32
+		{A74E350F-747A-471F-8B36-C8F97FA2A1AF}.Debug|x64.ActiveCfg = Debug|x64
+		{A74E350F-747A-471F-8B36-C8F97FA2A1AF}.Debug|x64.Build.0 = Debug|x64
+		{A74E350F-747A-471F-8B36-C8F97FA2A1AF}.Release|Win32.ActiveCfg = Release|Win32
+		{A74E350F-747A-471F-8B36-C8F97FA2A1AF}.Release|Win32.Build.0 = Release|Win32
+		{A74E350F-747A-471F-8B36-C8F97FA2A1AF}.Release|x64.ActiveCfg = Release|x64
+		{A74E350F-747A-471F-8B36-C8F97FA2A1AF}.Release|x64.Build.0 = Release|x64
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
