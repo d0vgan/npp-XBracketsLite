@@ -23,14 +23,14 @@ void SettingsDlg_OnInitDialog(HWND hDlg);
 
 
 INT_PTR CALLBACK SettingsDlgProc(
-  HWND   hDlg, 
-  UINT   uMessage, 
-  WPARAM wParam, 
+  HWND   hDlg,
+  UINT   uMessage,
+  WPARAM wParam,
   LPARAM lParam)
 {
     if ( uMessage == WM_COMMAND )
     {
-        switch ( LOWORD(wParam) ) 
+        switch ( LOWORD(wParam) )
         {
             case IDC_CH_BRACKETS_AUTOCOMPLETE:
                 if ( HIWORD(wParam) == BN_CLICKED )
@@ -80,7 +80,7 @@ INT_PTR CALLBACK SettingsDlgProc(
 
     else if ( uMessage == WM_NOTIFY )
     {
-    
+
     }
 
     else if ( uMessage == WM_INITDIALOG )
@@ -94,33 +94,30 @@ INT_PTR CALLBACK SettingsDlgProc(
 bool SettingsDlg_OnOK(HWND hDlg)
 {
     HWND hEd = GetDlgItem(hDlg, IDC_ED_BRACKETS_DOTAGIF);
+    TCHAR szFileExts[CXBracketsOptions::STR_FILEEXTS_SIZE];
+
     if ( hEd )
     {
-        GetWindowText(hEd, g_opt.m_szHtmlFileExts, CXBracketsOptions::STR_FILEEXTS_SIZE - 1);
+        szFileExts[0] = 0;
+        GetWindowText(hEd, szFileExts, CXBracketsOptions::STR_FILEEXTS_SIZE - 1);
+        g_opt.setHtmlFileExts(szFileExts);
     }
-  
-    g_opt.m_bBracketsAutoComplete = 
-        CheckBox_IsChecked(hDlg, IDC_CH_BRACKETS_AUTOCOMPLETE);
-    g_opt.m_bBracketsRightExistsOK = 
-        CheckBox_IsChecked(hDlg, IDC_CH_BRACKETS_RIGHTEXISTS_OK);
-    g_opt.m_bBracketsDoSingleQuote = 
-        CheckBox_IsChecked(hDlg, IDC_CH_BRACKETS_DOSINGLEQUOTE);
-    g_opt.m_bBracketsDoTag = 
-        CheckBox_IsChecked(hDlg, IDC_CH_BRACKETS_DOTAG);
-    g_opt.m_bBracketsDoTag2 = 
-        CheckBox_IsChecked(hDlg, IDC_CH_BRACKETS_DOTAG2);
-    g_opt.m_bBracketsDoTagIf = 
-        CheckBox_IsChecked(hDlg, IDC_CH_BRACKETS_DOTAGIF);
-    g_opt.m_bBracketsSkipEscaped =
-        CheckBox_IsChecked(hDlg, IDC_CH_BRACKETS_SKIPESCAPED);
-  
+
+    g_opt.setBracketsAutoComplete( CheckBox_IsChecked(hDlg, IDC_CH_BRACKETS_AUTOCOMPLETE) );
+    g_opt.setBracketsRightExistsOK( CheckBox_IsChecked(hDlg, IDC_CH_BRACKETS_RIGHTEXISTS_OK) );
+    g_opt.setBracketsDoSingleQuote( CheckBox_IsChecked(hDlg, IDC_CH_BRACKETS_DOSINGLEQUOTE) );
+    g_opt.setBracketsDoTag( CheckBox_IsChecked(hDlg, IDC_CH_BRACKETS_DOTAG) );
+    g_opt.setBracketsDoTag2( CheckBox_IsChecked(hDlg, IDC_CH_BRACKETS_DOTAG2) );
+    g_opt.setBracketsDoTagIf( CheckBox_IsChecked(hDlg, IDC_CH_BRACKETS_DOTAGIF) );
+    g_opt.setBracketsSkipEscaped( CheckBox_IsChecked(hDlg, IDC_CH_BRACKETS_SKIPESCAPED) );
+
     return TRUE;
 }
 
 void showPluginStatus(HWND hDlg, bool bActive)
 {
     DlgItem_SetText( hDlg, IDC_ST_PLUGINSTATE,
-      bActive ? _T("Status: the plugin is active") : 
+      bActive ? _T("Status: the plugin is active") :
         _T("Status: the plugin is NOT active") );
 }
 
@@ -162,34 +159,34 @@ void SettingsDlg_OnInitDialog(HWND hDlg)
 
     AnyWindow_CenterWindow(hDlg, thePlugin.getNppWnd(), FALSE);
 
-    CheckBox_SetCheck(hDlg, 
-      IDC_CH_BRACKETS_AUTOCOMPLETE, g_opt.m_bBracketsAutoComplete);
-    CheckBox_SetCheck(hDlg, 
-      IDC_CH_BRACKETS_RIGHTEXISTS_OK, g_opt.m_bBracketsRightExistsOK);
-    CheckBox_SetCheck(hDlg, 
-      IDC_CH_BRACKETS_DOSINGLEQUOTE, g_opt.m_bBracketsDoSingleQuote);
-    CheckBox_SetCheck(hDlg, 
-      IDC_CH_BRACKETS_DOTAG, g_opt.m_bBracketsDoTag);
-    CheckBox_SetCheck(hDlg, 
-      IDC_CH_BRACKETS_DOTAG2, g_opt.m_bBracketsDoTag2);
-    CheckBox_SetCheck(hDlg, 
-      IDC_CH_BRACKETS_DOTAGIF, g_opt.m_bBracketsDoTagIf);
     CheckBox_SetCheck(hDlg,
-      IDC_CH_BRACKETS_SKIPESCAPED, g_opt.m_bBracketsSkipEscaped);
-    DlgItem_EnableWindow(hDlg, 
-      IDC_CH_BRACKETS_RIGHTEXISTS_OK, g_opt.m_bBracketsAutoComplete);
+      IDC_CH_BRACKETS_AUTOCOMPLETE, g_opt.getBracketsAutoComplete());
+    CheckBox_SetCheck(hDlg,
+      IDC_CH_BRACKETS_RIGHTEXISTS_OK, g_opt.getBracketsRightExistsOK());
+    CheckBox_SetCheck(hDlg,
+      IDC_CH_BRACKETS_DOSINGLEQUOTE, g_opt.getBracketsDoSingleQuote());
+    CheckBox_SetCheck(hDlg,
+      IDC_CH_BRACKETS_DOTAG, g_opt.getBracketsDoTag());
+    CheckBox_SetCheck(hDlg,
+      IDC_CH_BRACKETS_DOTAG2, g_opt.getBracketsDoTag2());
+    CheckBox_SetCheck(hDlg,
+      IDC_CH_BRACKETS_DOTAGIF, g_opt.getBracketsDoTagIf());
+    CheckBox_SetCheck(hDlg,
+      IDC_CH_BRACKETS_SKIPESCAPED, g_opt.getBracketsSkipEscaped());
+    DlgItem_EnableWindow(hDlg,
+      IDC_CH_BRACKETS_RIGHTEXISTS_OK, g_opt.getBracketsAutoComplete());
 
-    DlgItem_EnableWindow(hDlg, IDC_CH_BRACKETS_DOTAG2, g_opt.m_bBracketsDoTag);
-    DlgItem_EnableWindow(hDlg, IDC_CH_BRACKETS_DOTAGIF, g_opt.m_bBracketsDoTag);
-    DlgItem_EnableWindow(hDlg, IDC_ED_BRACKETS_DOTAGIF, 
-      g_opt.m_bBracketsDoTag ? g_opt.m_bBracketsDoTagIf : FALSE);
+    DlgItem_EnableWindow(hDlg, IDC_CH_BRACKETS_DOTAG2, g_opt.getBracketsDoTag());
+    DlgItem_EnableWindow(hDlg, IDC_CH_BRACKETS_DOTAGIF, g_opt.getBracketsDoTag());
+    DlgItem_EnableWindow(hDlg, IDC_ED_BRACKETS_DOTAGIF,
+      g_opt.getBracketsDoTag() ? g_opt.getBracketsDoTagIf() : false);
 
-    showPluginStatus(hDlg, g_opt.m_bBracketsAutoComplete);
-  
+    showPluginStatus(hDlg, g_opt.getBracketsAutoComplete());
+
     hEd = GetDlgItem(hDlg, IDC_ED_BRACKETS_DOTAGIF);
     if ( hEd )
     {
-        SetWindowText(hEd, g_opt.m_szHtmlFileExts);
+        SetWindowText(hEd, g_opt.getHtmlFileExts().c_str());
     }
 
 }

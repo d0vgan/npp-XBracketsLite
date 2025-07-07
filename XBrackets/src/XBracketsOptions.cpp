@@ -1,104 +1,80 @@
 #include "XBracketsOptions.h"
 
+namespace
+{
+    inline bool isTabSpace(const TCHAR ch)
+    {
+        return ( ch == _T(' ') || ch == _T('\t') );
+    }
+
+    bool isExtBoundary(const tstr& exts, size_t pos)
+    {
+        if ( pos == 0 || pos == exts.length() )
+            return true; // very beginning or end of the string
+
+        switch ( exts[pos] )
+        {
+        case _T(';'):
+        case _T(','):
+        case _T(' '):
+            return true; // separator character
+        }
+
+        return false;
+    }
+
+    bool isExtInExts(const TCHAR* szExt, const tstr& exts)
+    {
+        bool result = false;
+
+        if ( szExt )
+        {
+            size_t ext_len = static_cast<size_t>(lstrlen(szExt));
+            size_t pos = 0;
+            size_t next_pos = 0;
+
+            for ( ; ; )
+            {
+                pos = exts.find(szExt, pos, ext_len);
+                if ( pos == tstr::npos )
+                    break; // not found
+
+                next_pos = pos + ext_len;
+                result = isExtBoundary(exts, pos) && isExtBoundary(exts, next_pos);
+                if ( result )
+                    break; // found
+
+                pos = next_pos + 1;
+            }
+        }
+
+        return result;
+    }
+}
 
 CXBracketsOptions::CXBracketsOptions()
 {
     // initial values
-    m_bBracketsAutoComplete = false;
-    m_bBracketsRightExistsOK = false;
-    m_bBracketsDoSingleQuote = false;
-    m_bBracketsDoTag = false;
-    m_bBracketsDoTag2 = false;
-    m_bBracketsDoTagIf = false;
-    m_bBracketsSkipEscaped = false;
-    lstrcpy( m_szHtmlFileExts, _T("htm; xml; php") );
-    m_sFileExtsRule.clear();
+    m_uFlags = 0;
+    m_uFlags0 = 0;
     m_bSaveFileExtsRule = false;
+    m_sHtmlFileExts = _T("htm; xml; php");
 }
 
 CXBracketsOptions::~CXBracketsOptions()
 {
 }
 
-UINT CXBracketsOptions::getOptFlags() const
-{
-    UINT uFlags = 0;
-
-    if ( m_bBracketsAutoComplete )
-        uFlags |= OPTF_AUTOCOMPLETE;
-    if ( m_bBracketsRightExistsOK )
-        uFlags |= OPTF_RIGHTBRACKETOK;
-    if ( m_bBracketsDoSingleQuote )
-        uFlags |= OPTF_DOSINGLEQUOTE;
-    if ( m_bBracketsDoTag )
-        uFlags |= OPTF_DOTAG;
-    if ( m_bBracketsDoTag2 )
-        uFlags |= OPTF_DOTAG2;
-    if ( m_bBracketsDoTagIf )
-        uFlags |= OPTF_DOTAGIF;
-    if ( m_bBracketsSkipEscaped )
-        uFlags |= OPTF_SKIPESCAPED;
-
-    return uFlags;
-}
-
 bool CXBracketsOptions::MustBeSaved() const
 {
     return ( m_bSaveFileExtsRule ||
-             (getOptFlags() != m_uFlags0) ||
-             (lstrcmpi(m_szHtmlFileExts, m_szHtmlFileExts0) != 0) );
-}
-
-static int str_unsafe_subcmp(const TCHAR* str, const TCHAR* substr)
-{
-    while ( (*str) && (*str == *substr) )
-    {
-        ++str;
-        ++substr;
-    }
-    return (*substr) ? (*str - *substr) : 0;
+             m_uFlags != m_uFlags0 ||
+             lstrcmpi(m_sHtmlFileExts.c_str(), m_sHtmlFileExts0.c_str()) != 0 );
 }
 
 bool CXBracketsOptions::IsHtmlCompatible(const TCHAR* szExt) const
 {
-    TCHAR szHtmlExt[MAX_EXT];
-    int   n = 0;
-    int   i = 0;
-    int   len = lstrlen(m_szHtmlFileExts);
-
-    while ( i <= len )
-    {
-        if ( (m_szHtmlFileExts[i]) &&
-             (m_szHtmlFileExts[i] != _T(';')) &&
-             (m_szHtmlFileExts[i] != _T(',')) &&
-             (m_szHtmlFileExts[i] != _T(' ')) )
-        {
-            szHtmlExt[n++] = m_szHtmlFileExts[i];
-        }
-        else
-        {
-            if ( n > 0 )
-            {
-                szHtmlExt[n] = 0;
-                n = 0;
-                while ( szExt[n] )
-                {
-                    if ( str_unsafe_subcmp(szExt + n, szHtmlExt) == 0 )
-                        return true;
-                    else
-                        ++n;
-                }
-            }
-            n = 0;
-        }
-        ++i;
-    }
-    return false;
-}
-
-static inline bool isTabSpace(const TCHAR ch)
-{
-    return ( ch == _T(' ') || ch == _T('\t') );
+    return isExtInExts(szExt, m_sHtmlFileExts);
 }
 
 bool CXBracketsOptions::IsSupportedFile(const TCHAR* szExt) const
@@ -143,32 +119,28 @@ void CXBracketsOptions::ReadOptions(const TCHAR* szIniFilePath)
 {
     const TCHAR* NOKEYSTR = _T("%*@$^!~#");
     TCHAR szTempExts[STR_FILEEXTS_SIZE];
-    
+
     m_uFlags0 = ::GetPrivateProfileInt( _T("Options"), _T("Flags"), -1, szIniFilePath );
     if ( m_uFlags0 != (UINT) -1 )
     {
-        m_bBracketsAutoComplete = (m_uFlags0 & OPTF_AUTOCOMPLETE) ? true : false;
-        m_bBracketsRightExistsOK = (m_uFlags0 & OPTF_RIGHTBRACKETOK) ? true : false;
-        m_bBracketsDoSingleQuote = (m_uFlags0 & OPTF_DOSINGLEQUOTE) ? true : false;
-        m_bBracketsDoTag = (m_uFlags0 & OPTF_DOTAG) ? true : false;
-        m_bBracketsDoTag2 = (m_uFlags0 & OPTF_DOTAG2) ? true : false;
-        m_bBracketsDoTagIf = (m_uFlags0 & OPTF_DOTAGIF) ? true : false;
-        m_bBracketsSkipEscaped = (m_uFlags0 & OPTF_SKIPESCAPED) ? true : false;
+        m_uFlags = m_uFlags0;
     }
 
-    ::GetPrivateProfileString( _T("Options"), _T("HtmlFileExts"), 
-        m_szHtmlFileExts, m_szHtmlFileExts0, STR_FILEEXTS_SIZE - 1, szIniFilePath );
-    lstrcpy( m_szHtmlFileExts, m_szHtmlFileExts0 );
+    szTempExts[0] = 0;
+    ::GetPrivateProfileString( _T("Options"), _T("HtmlFileExts"),
+        m_sHtmlFileExts.c_str(), szTempExts, STR_FILEEXTS_SIZE - 1, szIniFilePath );
+    m_sHtmlFileExts = szTempExts;
+    m_sHtmlFileExts0 = m_sHtmlFileExts;
 
     szTempExts[0] = 0;
-    ::GetPrivateProfileString( _T("Options"), _T("FileExtsRule"), 
+    ::GetPrivateProfileString( _T("Options"), _T("FileExtsRule"),
         NOKEYSTR, szTempExts, STR_FILEEXTS_SIZE - 1, szIniFilePath );
     if ( lstrcmp(szTempExts, NOKEYSTR) == 0 )
     {
         szTempExts[0] = 0;
         m_bSaveFileExtsRule = true;
     }
-    
+
     int i = 0;
     while ( isTabSpace(szTempExts[i]) )  ++i;
     if ( szTempExts[i] )
@@ -181,14 +153,13 @@ void CXBracketsOptions::ReadOptions(const TCHAR* szIniFilePath)
 void CXBracketsOptions::SaveOptions(const TCHAR* szIniFilePath)
 {
     TCHAR szNum[10];
-    UINT  uFlags = getOptFlags();
-    
-    ::wsprintf(szNum, _T("%u"), uFlags);
-    if ( ::WritePrivateProfileString(_T("Options"), _T("Flags"), szNum, szIniFilePath) )
-        m_uFlags0 = uFlags;
 
-    if ( ::WritePrivateProfileString(_T("Options"), _T("HtmlFileExts"), m_szHtmlFileExts, szIniFilePath) )
-        lstrcpy(m_szHtmlFileExts0, m_szHtmlFileExts);
+    ::wsprintf(szNum, _T("%u"), m_uFlags);
+    if ( ::WritePrivateProfileString(_T("Options"), _T("Flags"), szNum, szIniFilePath) )
+        m_uFlags0 = m_uFlags;
+
+    if ( ::WritePrivateProfileString(_T("Options"), _T("HtmlFileExts"), m_sHtmlFileExts.c_str(), szIniFilePath) )
+        m_sHtmlFileExts0 = m_sHtmlFileExts;
 
     if ( m_bSaveFileExtsRule )
     {

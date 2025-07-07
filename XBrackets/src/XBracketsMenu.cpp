@@ -18,7 +18,7 @@ FuncItem CXBracketsMenu::arrFuncItems[N_NBFUNCITEMS] = {
 
 void CXBracketsMenu::funcAutocomplete()
 {
-    g_opt.m_bBracketsAutoComplete = !g_opt.m_bBracketsAutoComplete;
+    g_opt.setBracketsAutoComplete( !g_opt.getBracketsAutoComplete() );
     UpdateMenuState();
 }
 
@@ -33,7 +33,7 @@ void CXBracketsMenu::funcSettings()
 
 void CXBracketsMenu::funcAbout()
 {
-    ::MessageBox( 
+    ::MessageBox(
         m_nppMsgr.getNppWnd(),
         _T("XBrackets Lite ver. 1.3.1\r\n") \
         _T("(C) Vitaliy Dovgan aka DV, Jan 2009 - Feb 2022\r\n") \
@@ -54,9 +54,9 @@ void CXBracketsMenu::UpdateMenuState()
 {
     HMENU hMenu = ::GetMenu( m_nppMsgr.getNppWnd() );
     ::CheckMenuItem(hMenu, arrFuncItems[N_AUTOCOMPLETE]._cmdID,
-        MF_BYCOMMAND | (g_opt.m_bBracketsAutoComplete ? MF_CHECKED : MF_UNCHECKED));
+        MF_BYCOMMAND | (g_opt.getBracketsAutoComplete() ? MF_CHECKED : MF_UNCHECKED));
 
-    if ( g_opt.m_bBracketsAutoComplete )
+    if ( g_opt.getBracketsAutoComplete() )
     {
         thePlugin.OnNppBufferActivated();
     }
