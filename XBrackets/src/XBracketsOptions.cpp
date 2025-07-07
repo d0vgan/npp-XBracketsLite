@@ -107,6 +107,16 @@ bool CXBracketsOptions::IsHtmlCompatible(const TCHAR* szExt) const
     return isExtPartiallyInExts(szExt, m_sHtmlFileExts);
 }
 
+bool CXBracketsOptions::IsEscapedFileExt(const TCHAR* szExt) const
+{
+    return true; // isExtInExts(szExt, m_sEscapedFileExts);
+}
+
+bool CXBracketsOptions::IsSingleQuoteFileExt(const TCHAR* szExt) const
+{
+    return true; // isExtInExts(szExt, m_sSingleQuoteFileExts);
+}
+
 bool CXBracketsOptions::IsSupportedFile(const TCHAR* szExt) const
 {
     if ( m_sFileExtsRule.empty() || !szExt )

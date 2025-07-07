@@ -3,6 +3,7 @@
 //---------------------------------------------------------------------------
 #include "core/NppPlugin.h"
 #include "XBracketsMenu.h"
+#include <utility>
 
 class CXBrackets : public CNppPlugin
 {
@@ -12,10 +13,18 @@ class CXBrackets : public CNppPlugin
             tftText,
             tftC_Cpp,
             tftH_Hpp,
-            tftPas,
-            tftHtmlCompatible
+            tftPas
         };
-        
+
+        enum TFileType2 {
+            tfmNone           = 0x0000,
+            tfmComment1       = 0x0001,
+            tfmHtmlCompatible = 0x0002,
+            tfmEscaped1       = 0x0004,
+            tfmSingleQuote    = 0x0008,
+            tfmIsSupported    = 0x1000
+        };
+
         enum TBracketType {
             tbtNone = 0,
             tbtBracket,  //  (
@@ -42,8 +51,7 @@ class CXBrackets : public CNppPlugin
         
         // internal vars
         Sci_Position m_nAutoRightBracketPos;
-        int          m_nFileType;
-        bool         m_bSupportedFileType;
+        std::pair<TFileType, unsigned short> m_nnFileType;
 
     public:
         CXBrackets();
@@ -76,7 +84,7 @@ class CXBrackets : public CNppPlugin
         // custom functions
         void AutoBracketsFunc(int nBracketType);
         void UpdateFileType();
-        int  getFileType(bool& isSupported);
+        std::pair<TFileType, unsigned short> getFileType();
 
     protected:
         enum eMacroState {

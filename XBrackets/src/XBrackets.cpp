@@ -95,8 +95,7 @@ LRESULT CALLBACK CXBrackets::nppNewWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, 
 CXBrackets::CXBrackets()
 {
     m_nAutoRightBracketPos = -1;
-    m_nFileType = tftNone;
-    m_bSupportedFileType = true;
+    m_nnFileType = std::make_pair(tftNone, tfmNone);
 }
 
 CXBrackets::~CXBrackets()
@@ -261,7 +260,7 @@ void CXBrackets::OnSciCharAdded(const int ch)
     if ( !g_opt.getBracketsAutoComplete() )
         return;
 
-    if ( !m_bSupportedFileType )
+    if ( (m_nnFileType.second & tfmIsSupported) == 0 )
         return;
 
     CSciMessager sciMsgr(m_nppMsgr.getCurrentScintillaWnd());
@@ -404,7 +403,7 @@ void CXBrackets::UpdateFileType() // <-- call it when the plugin becomes active!
         return;
 
     m_nAutoRightBracketPos = -1;
-    m_nFileType = getFileType(m_bSupportedFileType);
+    m_nnFileType = getFileType();
 }
 
 static void getEscapedPrefixPos(const Sci_Position nOffset, Sci_Position* pnPos, int* pnLen)
@@ -435,7 +434,7 @@ void CXBrackets::AutoBracketsFunc(int nBracketType)
 {
     if ( nBracketType == tbtTag )
     {
-        if ( g_opt.getBracketsDoTagIf() && (m_nFileType != tftHtmlCompatible) )
+        if ( g_opt.getBracketsDoTagIf() && (m_nnFileType.second & tfmHtmlCompatible) == 0 )
             return;
     }
 
@@ -558,12 +557,11 @@ void CXBrackets::AutoBracketsFunc(int nBracketType)
 
 }
 
-int CXBrackets::getFileType(bool& isSupported)
+std::pair<CXBrackets::TFileType, unsigned short> CXBrackets::getFileType()
 {
     TCHAR szExt[CXBracketsOptions::MAX_EXT];
-    int   nType = tftNone;
+    std::pair<TFileType, unsigned short> nnType = std::make_pair(tftNone, tfmNone);
 
-    isSupported = true;
     szExt[0] = 0;
     m_nppMsgr.getCurrentFileExtPart(CXBracketsOptions::MAX_EXT - 1, szExt);
 
@@ -575,7 +573,7 @@ int CXBrackets::getFileType(bool& isSupported)
         {
             ++pszExt;
             if ( !(*pszExt) )
-                return nType;
+                return nnType;
         }
 
         ::CharLower(pszExt);
@@ -585,30 +583,39 @@ int CXBrackets::getFileType(bool& isSupported)
              lstrcmp(pszExt, _T("cpp")) == 0 ||
              lstrcmp(pszExt, _T("cxx")) == 0 )
         {
-            nType = tftC_Cpp;
+            nnType.first = tftC_Cpp;
+            nnType.second = tfmComment1 | tfmEscaped1;
         }
         else if ( lstrcmp(pszExt, _T("h")) == 0 ||
                   lstrcmp(pszExt, _T("hh")) == 0 ||
                   lstrcmp(pszExt, _T("hpp")) == 0 ||
                   lstrcmp(pszExt, _T("hxx")) == 0 )
         {
-            nType = tftH_Hpp;
+            nnType.first = tftH_Hpp;
+            nnType.second = tfmComment1 | tfmEscaped1;
         }
         else if ( lstrcmp(pszExt, _T("pas")) == 0 )
         {
-            nType = tftPas;
-        }
-        else if ( g_opt.IsHtmlCompatible(pszExt) )
-        {
-            nType = tftHtmlCompatible;
+            nnType.first = tftPas;
+            nnType.second = tfmComment1;
         }
         else
         {
-            nType = tftText;
+            nnType.first = tftText;
+
+            if ( g_opt.IsHtmlCompatible(pszExt) )
+                nnType.second |= tfmHtmlCompatible;
+
+            if ( g_opt.IsEscapedFileExt(pszExt) )
+                nnType.second |= tfmEscaped1;
         }
 
-        isSupported = g_opt.IsSupportedFile(pszExt);
+        if ( g_opt.IsSingleQuoteFileExt(pszExt) )
+            nnType.second |= tfmSingleQuote;
+
+        if ( g_opt.IsSupportedFile(pszExt) )
+            nnType.second |= tfmIsSupported;
     }
 
-    return nType;
+    return nnType;
 }

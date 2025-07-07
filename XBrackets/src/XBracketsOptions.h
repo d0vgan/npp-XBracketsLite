@@ -14,6 +14,8 @@ class CXBracketsOptions
 
         bool MustBeSaved() const;
         bool IsHtmlCompatible(const TCHAR* szExt) const;
+        bool IsEscapedFileExt(const TCHAR* szExt) const;
+        bool IsSingleQuoteFileExt(const TCHAR* szExt) const;
         bool IsSupportedFile(const TCHAR* szExt) const;
         void ReadOptions(const TCHAR* szIniFilePath);
         void SaveOptions(const TCHAR* szIniFilePath);
