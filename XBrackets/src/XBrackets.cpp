@@ -95,7 +95,7 @@ LRESULT CALLBACK CXBrackets::nppNewWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, 
 CXBrackets::CXBrackets()
 {
     m_nAutoRightBracketPos = -1;
-    m_nnFileType = std::make_pair(tftNone, tfmNone);
+    m_nnFileType = std::make_pair(tftNone, tfmIsSupported);
 }
 
 CXBrackets::~CXBrackets()
@@ -560,7 +560,7 @@ void CXBrackets::AutoBracketsFunc(int nBracketType)
 std::pair<CXBrackets::TFileType, unsigned short> CXBrackets::getFileType()
 {
     TCHAR szExt[CXBracketsOptions::MAX_EXT];
-    std::pair<TFileType, unsigned short> nnType = std::make_pair(tftNone, tfmNone);
+    std::pair<TFileType, unsigned short> nnType = std::make_pair(tftNone, tfmIsSupported);
 
     szExt[0] = 0;
     m_nppMsgr.getCurrentFileExtPart(CXBracketsOptions::MAX_EXT - 1, szExt);
@@ -615,6 +615,8 @@ std::pair<CXBrackets::TFileType, unsigned short> CXBrackets::getFileType()
 
         if ( g_opt.IsSupportedFile(pszExt) )
             nnType.second |= tfmIsSupported;
+        else if ( (nnType.second & tfmIsSupported) != 0 )
+            nnType.second ^= tfmIsSupported;
     }
 
     return nnType;
