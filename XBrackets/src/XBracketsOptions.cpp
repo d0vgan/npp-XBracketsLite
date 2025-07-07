@@ -23,7 +23,7 @@ namespace
         return false;
     }
 
-    bool isExtInExts(const TCHAR* szExt, const tstr& exts)
+    bool isExtInExts(const TCHAR* szExt, const tstr& exts, bool isExactExtension = true)
     {
         bool result = false;
 
@@ -40,7 +40,7 @@ namespace
                     break; // not found
 
                 next_pos = pos + ext_len;
-                result = isExtBoundary(exts, pos) && isExtBoundary(exts, next_pos);
+                result = isExactExtension ? (isExtBoundary(exts, pos) && isExtBoundary(exts, next_pos)) : true;
                 if ( result )
                     break; // found
 
@@ -74,7 +74,7 @@ bool CXBracketsOptions::MustBeSaved() const
 
 bool CXBracketsOptions::IsHtmlCompatible(const TCHAR* szExt) const
 {
-    return isExtInExts(szExt, m_sHtmlFileExts);
+    return isExtInExts(szExt, m_sHtmlFileExts, false);
 }
 
 bool CXBracketsOptions::IsSupportedFile(const TCHAR* szExt) const
