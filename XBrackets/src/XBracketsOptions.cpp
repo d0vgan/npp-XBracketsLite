@@ -23,7 +23,7 @@ namespace
         return false;
     }
 
-    bool isExtInExts(const TCHAR* szExt, const tstr& exts, bool isExactExtension = true)
+    bool isExtInExts(const TCHAR* szExt, const tstr& exts)
     {
         bool result = false;
 
@@ -31,7 +31,6 @@ namespace
         {
             size_t ext_len = static_cast<size_t>(lstrlen(szExt));
             size_t pos = 0;
-            size_t next_pos = 0;
 
             for ( ; ; )
             {
@@ -39,12 +38,43 @@ namespace
                 if ( pos == tstr::npos )
                     break; // not found
 
-                next_pos = pos + ext_len;
-                result = isExactExtension ? (isExtBoundary(exts, pos) && isExtBoundary(exts, next_pos)) : true;
+                size_t next_pos = pos + ext_len;
+                result = isExtBoundary(exts, pos) && isExtBoundary(exts, next_pos);
                 if ( result )
                     break; // found
 
                 pos = next_pos + 1;
+            }
+        }
+
+        return result;
+    }
+
+    bool isExtPartiallyInExts(const TCHAR* szExt, const tstr& exts)
+    {
+        bool result = false;
+
+        if ( szExt )
+        {
+            size_t pos = 0;
+            tstr ext;
+            tstr search_ext(szExt);
+
+            for ( ; ; )
+            {
+                size_t next_pos = exts.find_first_of(_T(";, "), pos);
+                size_t ext_len = (next_pos != tstr::npos) ? (next_pos - pos) : (exts.length() - pos);
+                ext.assign(exts, pos, ext_len);
+                result = (search_ext.find(ext) != tstr::npos);
+                if ( result )
+                    break; // found
+
+                if ( next_pos == tstr::npos )
+                    break; // not found
+
+                pos = next_pos + 1;
+                while ( pos < exts.length() && exts[pos] == _T(' ') )
+                    ++pos; // skip spaces
             }
         }
 
@@ -74,7 +104,7 @@ bool CXBracketsOptions::MustBeSaved() const
 
 bool CXBracketsOptions::IsHtmlCompatible(const TCHAR* szExt) const
 {
-    return isExtInExts(szExt, m_sHtmlFileExts, false);
+    return isExtPartiallyInExts(szExt, m_sHtmlFileExts);
 }
 
 bool CXBracketsOptions::IsSupportedFile(const TCHAR* szExt) const
