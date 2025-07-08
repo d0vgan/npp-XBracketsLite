@@ -1,3 +1,4 @@
+.gitignore
 XBrackets_latest.bat
 XBrackets_src.txt
 XBrackets\XBrackets*.vcproj
