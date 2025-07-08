@@ -181,18 +181,21 @@ void CXBracketsOptions::ReadOptions(const TCHAR* szIniFilePath)
     szTempExts[0] = 0;
     ::GetPrivateProfileString( INI_SECTION_OPTIONS, INI_OPTION_HTMLFILEEXTS,
         m_sHtmlFileExts.c_str(), szTempExts, STR_FILEEXTS_SIZE - 1, szIniFilePath );
+    ::CharLower(szTempExts);
     m_sHtmlFileExts = szTempExts;
     m_sHtmlFileExts0 = m_sHtmlFileExts;
 
     szTempExts[0] = 0;
     ::GetPrivateProfileString( INI_SECTION_OPTIONS, INI_OPTION_ESCAPEDFILEEXTS,
         m_sEscapedFileExts.c_str(), szTempExts, STR_FILEEXTS_SIZE - 1, szIniFilePath );
+    ::CharLower(szTempExts);
     m_sEscapedFileExts = szTempExts;
     m_sEscapedFileExts0 = m_sEscapedFileExts;
 
     szTempExts[0] = 0;
     ::GetPrivateProfileString( INI_SECTION_OPTIONS, INI_OPTION_SGLQUOTEFILEEXTS,
         m_sSglQuoteFileExts.c_str(), szTempExts, STR_FILEEXTS_SIZE - 1, szIniFilePath );
+    ::CharLower(szTempExts);
     m_sSglQuoteFileExts = szTempExts;
     m_sSglQuoteFileExts0 = m_sSglQuoteFileExts;
 
