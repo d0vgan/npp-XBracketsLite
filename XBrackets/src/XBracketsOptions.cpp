@@ -39,7 +39,7 @@ namespace
                     break; // not found
 
                 size_t next_pos = pos + ext_len;
-                result = isExtBoundary(exts, pos) && isExtBoundary(exts, next_pos);
+                result = isExtBoundary(exts, pos != 0 ? pos - 1 : 0) && isExtBoundary(exts, next_pos);
                 if ( result )
                     break; // found
 
@@ -82,6 +82,13 @@ namespace
     }
 }
 
+static const TCHAR INI_SECTION_OPTIONS[] = _T("Options");
+static const TCHAR INI_OPTION_FLAGS[] = _T("Flags");
+static const TCHAR INI_OPTION_HTMLFILEEXTS[] = _T("HtmlFileExts");
+static const TCHAR INI_OPTION_ESCAPEDFILEEXTS[] = _T("EscapedFileExts");
+static const TCHAR INI_OPTION_SGLQUOTEFILEEXTS[] = _T("SingleQuoteFileExts");
+static const TCHAR INI_OPTION_FILEEXTSRULE[] = _T("FileExtsRule");
+
 CXBracketsOptions::CXBracketsOptions()
 {
     // initial values
@@ -89,6 +96,8 @@ CXBracketsOptions::CXBracketsOptions()
     m_uFlags0 = 0;
     m_bSaveFileExtsRule = false;
     m_sHtmlFileExts = _T("htm; xml; php");
+    m_sEscapedFileExts = _T("cs; java; js; php; rc");
+    m_sSglQuoteFileExts = _T("js; pas; py; ps1; sh; htm; html; xml");
 }
 
 CXBracketsOptions::~CXBracketsOptions()
@@ -99,7 +108,10 @@ bool CXBracketsOptions::MustBeSaved() const
 {
     return ( m_bSaveFileExtsRule ||
              m_uFlags != m_uFlags0 ||
-             lstrcmpi(m_sHtmlFileExts.c_str(), m_sHtmlFileExts0.c_str()) != 0 );
+             lstrcmpi(m_sHtmlFileExts.c_str(), m_sHtmlFileExts0.c_str()) != 0 ||
+             lstrcmpi(m_sEscapedFileExts.c_str(), m_sEscapedFileExts0.c_str()) != 0 ||
+             lstrcmpi(m_sSglQuoteFileExts.c_str(), m_sSglQuoteFileExts0.c_str()) != 0
+        );
 }
 
 bool CXBracketsOptions::IsHtmlCompatible(const TCHAR* szExt) const
@@ -109,12 +121,12 @@ bool CXBracketsOptions::IsHtmlCompatible(const TCHAR* szExt) const
 
 bool CXBracketsOptions::IsEscapedFileExt(const TCHAR* szExt) const
 {
-    return true; // isExtInExts(szExt, m_sEscapedFileExts);
+    return isExtInExts(szExt, m_sEscapedFileExts);
 }
 
 bool CXBracketsOptions::IsSingleQuoteFileExt(const TCHAR* szExt) const
 {
-    return true; // isExtInExts(szExt, m_sSingleQuoteFileExts);
+    return isExtInExts(szExt, m_sSglQuoteFileExts);
 }
 
 bool CXBracketsOptions::IsSupportedFile(const TCHAR* szExt) const
@@ -160,20 +172,32 @@ void CXBracketsOptions::ReadOptions(const TCHAR* szIniFilePath)
     const TCHAR* NOKEYSTR = _T("%*@$^!~#");
     TCHAR szTempExts[STR_FILEEXTS_SIZE];
 
-    m_uFlags0 = ::GetPrivateProfileInt( _T("Options"), _T("Flags"), -1, szIniFilePath );
+    m_uFlags0 = ::GetPrivateProfileInt( INI_SECTION_OPTIONS, INI_OPTION_FLAGS, -1, szIniFilePath );
     if ( m_uFlags0 != (UINT) -1 )
     {
         m_uFlags = m_uFlags0;
     }
 
     szTempExts[0] = 0;
-    ::GetPrivateProfileString( _T("Options"), _T("HtmlFileExts"),
+    ::GetPrivateProfileString( INI_SECTION_OPTIONS, INI_OPTION_HTMLFILEEXTS,
         m_sHtmlFileExts.c_str(), szTempExts, STR_FILEEXTS_SIZE - 1, szIniFilePath );
     m_sHtmlFileExts = szTempExts;
     m_sHtmlFileExts0 = m_sHtmlFileExts;
 
     szTempExts[0] = 0;
-    ::GetPrivateProfileString( _T("Options"), _T("FileExtsRule"),
+    ::GetPrivateProfileString( INI_SECTION_OPTIONS, INI_OPTION_ESCAPEDFILEEXTS,
+        m_sEscapedFileExts.c_str(), szTempExts, STR_FILEEXTS_SIZE - 1, szIniFilePath );
+    m_sEscapedFileExts = szTempExts;
+    m_sEscapedFileExts0 = m_sEscapedFileExts;
+
+    szTempExts[0] = 0;
+    ::GetPrivateProfileString( INI_SECTION_OPTIONS, INI_OPTION_SGLQUOTEFILEEXTS,
+        m_sSglQuoteFileExts.c_str(), szTempExts, STR_FILEEXTS_SIZE - 1, szIniFilePath );
+    m_sSglQuoteFileExts = szTempExts;
+    m_sSglQuoteFileExts0 = m_sSglQuoteFileExts;
+
+    szTempExts[0] = 0;
+    ::GetPrivateProfileString( INI_SECTION_OPTIONS, INI_OPTION_FILEEXTSRULE,
         NOKEYSTR, szTempExts, STR_FILEEXTS_SIZE - 1, szIniFilePath );
     if ( lstrcmp(szTempExts, NOKEYSTR) == 0 )
     {
@@ -195,15 +219,21 @@ void CXBracketsOptions::SaveOptions(const TCHAR* szIniFilePath)
     TCHAR szNum[10];
 
     ::wsprintf(szNum, _T("%u"), m_uFlags);
-    if ( ::WritePrivateProfileString(_T("Options"), _T("Flags"), szNum, szIniFilePath) )
+    if ( ::WritePrivateProfileString(INI_SECTION_OPTIONS, INI_OPTION_FLAGS, szNum, szIniFilePath) )
         m_uFlags0 = m_uFlags;
 
-    if ( ::WritePrivateProfileString(_T("Options"), _T("HtmlFileExts"), m_sHtmlFileExts.c_str(), szIniFilePath) )
+    if ( ::WritePrivateProfileString(INI_SECTION_OPTIONS, INI_OPTION_HTMLFILEEXTS, m_sHtmlFileExts.c_str(), szIniFilePath) )
         m_sHtmlFileExts0 = m_sHtmlFileExts;
+
+    if ( ::WritePrivateProfileString(INI_SECTION_OPTIONS, INI_OPTION_ESCAPEDFILEEXTS, m_sEscapedFileExts.c_str(), szIniFilePath) )
+        m_sEscapedFileExts0 = m_sEscapedFileExts;
+
+    if ( ::WritePrivateProfileString(INI_SECTION_OPTIONS, INI_OPTION_SGLQUOTEFILEEXTS, m_sSglQuoteFileExts.c_str(), szIniFilePath) )
+        m_sSglQuoteFileExts0 = m_sSglQuoteFileExts;
 
     if ( m_bSaveFileExtsRule )
     {
-        if ( ::WritePrivateProfileString(_T("Options"), _T("FileExtsRule"), m_sFileExtsRule.c_str(), szIniFilePath) )
+        if ( ::WritePrivateProfileString(INI_SECTION_OPTIONS, INI_OPTION_FILEEXTSRULE, m_sFileExtsRule.c_str(), szIniFilePath) )
             m_bSaveFileExtsRule = false;
     }
 }

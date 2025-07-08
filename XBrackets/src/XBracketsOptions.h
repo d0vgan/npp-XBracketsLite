@@ -23,13 +23,15 @@ class CXBracketsOptions
     protected:
         enum eOptConsts {
             // flags
-            OPTF_AUTOCOMPLETE   = 0x0001,
-            OPTF_RIGHTBRACKETOK = 0x0008,
-            OPTF_DOSINGLEQUOTE  = 0x0100,
-            OPTF_DOTAG          = 0x0200,
-            OPTF_DOTAGIF        = 0x0400,
-            OPTF_DOTAG2         = 0x0800,
-            OPTF_SKIPESCAPED    = 0x1000,
+            OPTF_AUTOCOMPLETE     = 0x000001,
+            OPTF_RIGHTBRACKETOK   = 0x000008,
+            OPTF_DOSINGLEQUOTE    = 0x000100,
+            OPTF_DOTAG            = 0x000200,
+            OPTF_DOTAGIF          = 0x000400,
+            OPTF_DOTAG2           = 0x000800,
+            OPTF_SKIPESCAPED      = 0x001000,
+            OPTF_DOSINGLEQUOTEIF  = 0x002000,
+            OPTF_DONOTDOUBLEQUOTE = 0x004000
         };
 
         inline bool getBoolFlag(UINT uWhich) const
@@ -71,6 +73,16 @@ class CXBracketsOptions
             setBoolFlag(OPTF_RIGHTBRACKETOK, bBracketsRightExistsOK);
         }
 
+        bool getBracketsDoDoubleQuote() const
+        {
+            return !getBoolFlag(OPTF_DONOTDOUBLEQUOTE);
+        }
+
+        void setBracketsDoDoubleQuote(bool bBracketsDoDoubleQuote)
+        {
+            setBoolFlag(OPTF_DONOTDOUBLEQUOTE, !bBracketsDoDoubleQuote);
+        }
+
         bool getBracketsDoSingleQuote() const
         {
             return getBoolFlag(OPTF_DOSINGLEQUOTE);
@@ -79,6 +91,16 @@ class CXBracketsOptions
         void setBracketsDoSingleQuote(bool bBracketsDoSingleQuote)
         {
             setBoolFlag(OPTF_DOSINGLEQUOTE, bBracketsDoSingleQuote);
+        }
+
+        bool getBracketsDoSingleQuoteIf() const
+        {
+            return getBoolFlag(OPTF_DOSINGLEQUOTEIF);
+        }
+
+        void setBracketsDoSingleQuoteIf(bool bBracketsDoSingleQuoteIf)
+        {
+            setBoolFlag(OPTF_DOSINGLEQUOTEIF, bBracketsDoSingleQuoteIf);
         }
 
         bool getBracketsDoTag() const
@@ -131,12 +153,36 @@ class CXBracketsOptions
             m_sHtmlFileExts = cszHtmlFileExts;
         }
 
+        const tstr& getEscapedFileExts() const
+        {
+            return m_sEscapedFileExts;
+        }
+
+        void setEscapedFileExts(const TCHAR* cszEscapedFileExts)
+        {
+            m_sEscapedFileExts = cszEscapedFileExts;
+        }
+
+        const tstr& getSglQuoteFileExts() const
+        {
+            return m_sSglQuoteFileExts;
+        }
+
+        void setSglQuoteFileExts(const TCHAR* cszSglQuoteFileExts)
+        {
+            m_sSglQuoteFileExts = cszSglQuoteFileExts;
+        }
+
     protected:
         UINT  m_uFlags;
         UINT  m_uFlags0;
         bool  m_bSaveFileExtsRule;
         tstr  m_sHtmlFileExts;
         tstr  m_sHtmlFileExts0;
+        tstr  m_sEscapedFileExts;
+        tstr  m_sEscapedFileExts0;
+        tstr  m_sSglQuoteFileExts;
+        tstr  m_sSglQuoteFileExts0;
         tstr  m_sFileExtsRule;
 };
 

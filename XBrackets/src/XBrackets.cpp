@@ -255,6 +255,102 @@ void CXBrackets::OnNppMacro(int nMacroState)
     CXBracketsMenu::AllowAutocomplete(!isNppMacroStarted);
 }
 
+CXBrackets::TBracketType CXBrackets::getLeftBracketType(const int ch, unsigned int uOptions) const
+{
+    TBracketType nLeftBracketType = tbtNone;
+
+    // OK for both ANSI and Unicode (ch can be wide character)
+    switch ( ch )
+    {
+    case _TCH('(') :
+        nLeftBracketType = tbtBracket;
+        break;
+    case _TCH('[') :
+        nLeftBracketType = tbtSquare;
+        break;
+    case _TCH('{') :
+        nLeftBracketType = tbtBrace;
+        break;
+    case _TCH('\"') :
+        if ( (uOptions & bofIgnoreMode) != 0 ||
+             g_opt.getBracketsDoDoubleQuote() )
+        {
+            nLeftBracketType = tbtDblQuote;
+        }
+        break;
+    case _TCH('\'') :
+        if ( (uOptions & bofIgnoreMode) != 0 ||
+             (g_opt.getBracketsDoSingleQuote() &&
+              ((m_nnFileType.second & tfmSingleQuote) != 0 || !g_opt.getBracketsDoSingleQuoteIf())) )
+        {
+            nLeftBracketType = tbtSglQuote;
+        }
+        break;
+    case _TCH('<') :
+        if ( (uOptions & bofIgnoreMode) != 0 ||
+             (g_opt.getBracketsDoTag() &&
+              ((m_nnFileType.second & tfmHtmlCompatible) != 0 || !g_opt.getBracketsDoTagIf())) )
+        {
+            nLeftBracketType = tbtTag;
+        }
+        break;
+    }
+
+    return nLeftBracketType;
+}
+
+CXBrackets::TBracketType CXBrackets::getRightBracketType(const int ch, unsigned int uOptions) const
+{
+    TBracketType nRightBracketType = tbtNone;
+
+    // OK for both ANSI and Unicode (ch can be wide character)
+    switch ( ch )
+    {
+    case _TCH(')') :
+        nRightBracketType = tbtBracket;
+        break;
+    case _TCH(']') :
+        nRightBracketType = tbtSquare;
+        break;
+    case _TCH('}') :
+        nRightBracketType = tbtBrace;
+        break;
+    case _TCH('\"') :
+        if ( (uOptions & bofIgnoreMode) != 0 ||
+             g_opt.getBracketsDoDoubleQuote() )
+        {
+            nRightBracketType = tbtDblQuote;
+        }
+        break;
+    case _TCH('\'') :
+        if ( (uOptions & bofIgnoreMode) != 0 ||
+             (g_opt.getBracketsDoSingleQuote() &&
+              ((m_nnFileType.second & tfmSingleQuote) != 0 || !g_opt.getBracketsDoSingleQuoteIf())) )
+        {
+            nRightBracketType = tbtSglQuote;
+        }
+        break;
+    case _TCH('>') :
+        if ( (uOptions & bofIgnoreMode) != 0 || 
+             (g_opt.getBracketsDoTag() &&
+              ((m_nnFileType.second & tfmHtmlCompatible) != 0 || !g_opt.getBracketsDoTagIf())) )
+        {
+            nRightBracketType = tbtTag;
+        }
+        // no break here
+    case _TCH('/') :
+        if ( (uOptions & bofIgnoreMode) != 0 ||
+             (g_opt.getBracketsDoTag2() &&
+              ((m_nnFileType.second & tfmHtmlCompatible) != 0 || !g_opt.getBracketsDoTagIf())) )
+        {
+            nRightBracketType = tbtTag2;
+        }
+        break;
+    }
+
+    return nRightBracketType;
+}
+
 void CXBrackets::OnSciCharAdded(const int ch)
 {
     if ( !g_opt.getBracketsAutoComplete() )
@@ -269,42 +365,11 @@ void CXBrackets::OnSciCharAdded(const int ch)
     if ( nSelections > 1 )
         return; // nothing to do with multiple selections
 
-    int nBracketType = tbtNone;
-
     if ( m_nAutoRightBracketPos >= 0 )
     {
         // the right bracket has been just added (automatically)
         // but you may duplicate it manually
-        int nRightBracketType = tbtNone;
-
-        // OK for both ANSI and Unicode (ch can be wide character)
-        switch ( ch )
-        {
-            case _TCH(')') :
-                nRightBracketType = tbtBracket;
-                break;
-            case _TCH(']') :
-                nRightBracketType = tbtSquare;
-                break;
-            case _TCH('}') :
-                nRightBracketType = tbtBrace;
-                break;
-            case _TCH('\"') :
-                nRightBracketType = tbtDblQuote;
-                break;
-            case _TCH('\'') :
-                if ( g_opt.getBracketsDoSingleQuote() )
-                    nRightBracketType = tbtSglQuote;
-                break;
-            case _TCH('>') :
-                if ( g_opt.getBracketsDoTag() )
-                    nRightBracketType = tbtTag;
-                // no break here
-            case _TCH('/') :
-                if ( g_opt.getBracketsDoTag2() )
-                    nRightBracketType = tbtTag2;
-                break;
-        }
+        int nRightBracketType = getRightBracketType(ch);
 
         if ( nRightBracketType != tbtNone )
         {
@@ -340,35 +405,12 @@ void CXBrackets::OnSciCharAdded(const int ch)
 
     m_nAutoRightBracketPos = -1;
 
-    // OK for both ANSI and Unicode (ch can be wide character)
-    switch ( ch )
-    {
-        case _TCH('(') :
-            nBracketType = tbtBracket;
-            break;
-        case _TCH('[') :
-            nBracketType = tbtSquare;
-            break;
-        case _TCH('{') :
-            nBracketType = tbtBrace;
-            break;
-        case _TCH('\"') :
-            nBracketType = tbtDblQuote;
-            break;
-        case _TCH('\'') :
-            if ( g_opt.getBracketsDoSingleQuote() )
-                nBracketType = tbtSglQuote;
-            break;
-        case _TCH('<') :
-            if ( g_opt.getBracketsDoTag() )
-                nBracketType = tbtTag;
-            break;
-    }
+    int nLeftBracketType = getLeftBracketType(ch);
 
-    if ( nBracketType != tbtNone )
+    if ( nLeftBracketType != tbtNone )
     {
         // a typed character is a bracket
-        AutoBracketsFunc(nBracketType);
+        AutoBracketsFunc(nLeftBracketType);
     }
 }
 
@@ -432,12 +474,6 @@ static bool isEscapedPrefix(const char* str, int len)
 
 void CXBrackets::AutoBracketsFunc(int nBracketType)
 {
-    if ( nBracketType == tbtTag )
-    {
-        if ( g_opt.getBracketsDoTagIf() && (m_nnFileType.second & tfmHtmlCompatible) == 0 )
-            return;
-    }
-
     CSciMessager sciMsgr(m_nppMsgr.getCurrentScintillaWnd());
     Sci_Position nEditPos = sciMsgr.getSelectionStart();
     Sci_Position nEditEndPos = sciMsgr.getSelectionEnd();
@@ -482,23 +518,17 @@ void CXBrackets::AutoBracketsFunc(int nBracketType)
     {
         bNextCharOK = true;
     }
-    else if (
-      ( (next_ch == ')')  &&
-        (g_opt.getBracketsRightExistsOK() || (nBracketType != tbtBracket)) )  ||
-      ( (next_ch == ']')  &&
-        (g_opt.getBracketsRightExistsOK() || (nBracketType != tbtSquare)) )   ||
-      ( (next_ch == '}')  &&
-        (g_opt.getBracketsRightExistsOK() || (nBracketType != tbtBrace)) )    ||
-      ( (next_ch == '\"') &&
-        (g_opt.getBracketsRightExistsOK() || (nBracketType != tbtDblQuote)) ) ||
-      ( (next_ch == '\'') &&
-        ((!g_opt.getBracketsDoSingleQuote()) || g_opt.getBracketsRightExistsOK() ||
-         (nBracketType != tbtSglQuote)) ) ||
-      ( (next_ch == '>' || next_ch == '/') &&
-        ((!g_opt.getBracketsDoTag()) || g_opt.getBracketsRightExistsOK() ||
-         (nBracketType != tbtTag)) ) )
+    else
     {
-        bNextCharOK = true;
+        int nRightBracketType = getRightBracketType(next_ch, bofIgnoreMode);
+        if ( nRightBracketType == tbtTag2 )
+            nRightBracketType = tbtTag;
+
+        if ( nRightBracketType != tbtNone && 
+             (nRightBracketType != nBracketType || g_opt.getBracketsRightExistsOK()) )
+        {
+            bNextCharOK = true;
+        }
     }
 
     if ( bNextCharOK && (nBracketType == tbtDblQuote || nBracketType == tbtSglQuote) )
@@ -523,7 +553,8 @@ void CXBrackets::AutoBracketsFunc(int nBracketType)
         }
     }
 
-    if ( bPrevCharOK && bNextCharOK && g_opt.getBracketsSkipEscaped() )
+    if ( bPrevCharOK && bNextCharOK &&
+         g_opt.getBracketsSkipEscaped() && (m_nnFileType.second & tfmEscaped1) != 0 )
     {
         char szPrefix[MAX_ESCAPED_PREFIX + 2];
         Sci_Position pos;

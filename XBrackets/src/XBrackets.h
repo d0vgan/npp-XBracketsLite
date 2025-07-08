@@ -33,7 +33,7 @@ class CXBrackets : public CNppPlugin
             tbtDblQuote, //  "
             tbtSglQuote, //  '
             tbtTag,      //  <
-            tbtTag2,
+            tbtTag2,     //  />
 
             tbtCount
         };
@@ -85,6 +85,12 @@ class CXBrackets : public CNppPlugin
         void AutoBracketsFunc(int nBracketType);
         void UpdateFileType();
         std::pair<TFileType, unsigned short> getFileType();
+
+        enum eBracketOptions {
+            bofIgnoreMode = 0x01
+        };
+        TBracketType getLeftBracketType(const int ch, unsigned int uOptions = 0) const;
+        TBracketType getRightBracketType(const int ch, unsigned int uOptions = 0) const;
 
     protected:
         enum eMacroState {
