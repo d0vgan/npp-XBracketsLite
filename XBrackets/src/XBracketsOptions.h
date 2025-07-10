@@ -53,6 +53,14 @@ class CXBracketsOptions
             STR_FILEEXTS_SIZE   = 500
         };
 
+        enum eSelAutoBr {
+            sabNone = 0,
+            sabEnclose,
+            sabEncloseAndSel,
+            sabEncloseRemove,
+            sabEncloseRemoveOuter
+        };
+
         bool getBracketsAutoComplete() const
         {
             return getBoolFlag(OPTF_AUTOCOMPLETE);
@@ -143,6 +151,11 @@ class CXBracketsOptions
             setBoolFlag(OPTF_SKIPESCAPED, bBracketsSkipEscaped);
         }
 
+        UINT getBracketsSelAutoBr() const // one of eSelAutoBr
+        {
+            return m_uSelAutoBr;
+        }
+
         const tstr& getHtmlFileExts() const
         {
             return m_sHtmlFileExts;
@@ -176,6 +189,7 @@ class CXBracketsOptions
     protected:
         UINT  m_uFlags;
         UINT  m_uFlags0;
+        UINT  m_uSelAutoBr; // one of eSelAutoBr
         bool  m_bSaveFileExtsRule;
         tstr  m_sHtmlFileExts;
         tstr  m_sHtmlFileExts0;

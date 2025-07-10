@@ -84,6 +84,7 @@ namespace
 
 static const TCHAR INI_SECTION_OPTIONS[] = _T("Options");
 static const TCHAR INI_OPTION_FLAGS[] = _T("Flags");
+static const TCHAR INI_OPTION_SELAUTOBR[] = _T("Sel_AutoBr");
 static const TCHAR INI_OPTION_HTMLFILEEXTS[] = _T("HtmlFileExts");
 static const TCHAR INI_OPTION_ESCAPEDFILEEXTS[] = _T("EscapedFileExts");
 static const TCHAR INI_OPTION_SGLQUOTEFILEEXTS[] = _T("SingleQuoteFileExts");
@@ -94,6 +95,7 @@ CXBracketsOptions::CXBracketsOptions()
     // initial values
     m_uFlags = 0;
     m_uFlags0 = 0;
+    m_uSelAutoBr = 0;
     m_bSaveFileExtsRule = false;
     m_sHtmlFileExts = _T("htm; xml; php");
     m_sEscapedFileExts = _T("cs; java; js; php; rc");
@@ -177,6 +179,8 @@ void CXBracketsOptions::ReadOptions(const TCHAR* szIniFilePath)
     {
         m_uFlags = m_uFlags0;
     }
+
+    m_uSelAutoBr = ::GetPrivateProfileInt( INI_SECTION_OPTIONS, INI_OPTION_SELAUTOBR, sabNone, szIniFilePath );
 
     szTempExts[0] = 0;
     ::GetPrivateProfileString( INI_SECTION_OPTIONS, INI_OPTION_HTMLFILEEXTS,
