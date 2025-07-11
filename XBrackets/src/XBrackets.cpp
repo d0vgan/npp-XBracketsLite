@@ -698,8 +698,8 @@ CXBrackets::eCharProcessingResult CXBrackets::AutoBracketsFunc(int nBracketType)
 
 bool CXBrackets::isEnclosedInBrackets(const char* pszTextLeft, const char* pszTextRight, int* pnBracketType, bool bInSelection)
 {
-    // if ( pszTextLeft == pszTextRight )
-    //     return false;
+    if ( pszTextLeft == pszTextRight )
+        return false;
 
     int nBrType = *pnBracketType;
     const char* cszBrPair = strBrackets[nBrType];
