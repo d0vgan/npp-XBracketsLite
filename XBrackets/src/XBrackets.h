@@ -40,6 +40,12 @@ class CXBrackets : public CNppPlugin
             tbtCount
         };
 
+        enum eCharProcessingResult {
+            cprNone = 0,
+            cprBrAutoCompl,
+            cprSelAutoCompl
+        };
+
         enum eConsts {
             MAX_ESCAPED_PREFIX  = 20
         };
@@ -82,8 +88,8 @@ class CXBrackets : public CNppPlugin
         void OnNppMacro(int nMacroState);
 
         // custom scintilla notifications
-        void OnSciCharAdded(const int ch);
-        bool OnBeforeDeleteText(const SCNotification* pscn);
+        eCharProcessingResult OnSciCharAdded(const int ch);
+        bool OnSciBeforeDeleteText(const SCNotification* pscn);
 
         // timer
         void OnDelTextTimer(UINT_PTR idEvent);
@@ -94,7 +100,8 @@ class CXBrackets : public CNppPlugin
 
     protected:
         // custom functions
-        void AutoBracketsFunc(int nBracketType);
+        eCharProcessingResult AutoBracketsFunc(int nBracketType);
+        eCharProcessingResult OnSciCharAdded_Internal(const int ch);
         bool PrepareSelAutoBrFunc();
         bool SelAutoBrFunc(int nBracketType);
         void UpdateFileType();

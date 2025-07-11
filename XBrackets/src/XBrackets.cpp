@@ -90,10 +90,16 @@ LRESULT CALLBACK CXBrackets::nppNewWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, 
              pNmHdr->hwndFrom == nppMsgr.getSciSecondWnd() )
         {
             // notifications from Scintilla:
-            if ( pNmHdr->code == SCN_CHARADDED )
+            SCNotification* pscn = reinterpret_cast<SCNotification *>(lParam);
+
+            switch ( pscn->nmhdr.code )
             {
-                thePlugin.nppBeNotified(reinterpret_cast<SCNotification *>(lParam));
-                return 0; // avoid further processing by Notepad++
+                case SCN_CHARADDED:
+                    if ( thePlugin.OnSciCharAdded(pscn->ch) == cprSelAutoCompl )
+                    {
+                        return 0; // avoid further processing by Notepad++
+                    }
+                    break;
             }
         }
     }
@@ -198,20 +204,12 @@ void CXBrackets::nppBeNotified(SCNotification* pscn)
         // >>> notifications from Notepad++
         switch ( pscn->nmhdr.code )
         {
-            case SCN_CHARADDED:
-                OnSciCharAdded(pscn->ch);
-                // the previous selection is no more relevant:
-                m_nSelPos = 0;
-                m_nSelLen = 0;
-                m_pSelText.reset();
-                break;
-
             case SCN_MODIFIED:
                 if ( (pscn->modificationType & (SC_MOD_BEFOREDELETE | SC_PERFORMED_USER)) == (SC_MOD_BEFOREDELETE | SC_PERFORMED_USER) ) // deleting text
                 {
                     if ( (pscn->modificationType & (SC_PERFORMED_UNDO | SC_PERFORMED_REDO)) == 0 ) // not undo or redo
                     {
-                        if ( OnBeforeDeleteText(pscn) )
+                        if ( OnSciBeforeDeleteText(pscn) )
                         {
                             const int nDelTextTimerIntervalMs = 150;
 
@@ -441,18 +439,30 @@ CXBrackets::TBracketType CXBrackets::getRightBracketType(const int ch, unsigned 
     return nRightBracketType;
 }
 
-void CXBrackets::OnSciCharAdded(const int ch)
+CXBrackets::eCharProcessingResult CXBrackets::OnSciCharAdded(const int ch)
+{
+    eCharProcessingResult result = OnSciCharAdded_Internal(ch);
+
+    // the previous selection is no more relevant:
+    m_nSelPos = 0;
+    m_nSelLen = 0;
+    m_pSelText.reset();
+
+    return result;
+}
+
+CXBrackets::eCharProcessingResult CXBrackets::OnSciCharAdded_Internal(const int ch)
 {
     if ( !g_opt.getBracketsAutoComplete() )
-        return;
+        return cprNone;
 
     if ( (m_nnFileType.second & tfmIsSupported) == 0 )
-        return;
+        return cprNone;
 
     CSciMessager sciMsgr(m_nppMsgr.getCurrentScintillaWnd());
 
     if ( sciMsgr.getSelections() > 1 )
-        return; // nothing to do with multiple selections
+        return cprNone; // nothing to do with multiple selections
 
     if ( m_nAutoRightBracketPos >= 0 )
     {
@@ -485,7 +495,7 @@ void CXBrackets::OnSciCharAdded(const int ch)
                         sciMsgr.endUndoAction();
 
                         m_nAutoRightBracketPos = -1;
-                        return;
+                        return cprBrAutoCompl;
                     }
                 }
             }
@@ -495,14 +505,14 @@ void CXBrackets::OnSciCharAdded(const int ch)
     m_nAutoRightBracketPos = -1;
 
     int nLeftBracketType = getLeftBracketType(ch);
-    if ( nLeftBracketType != tbtNone )
-    {
-        // a typed character is a bracket
-        AutoBracketsFunc(nLeftBracketType);
-    }
+    if ( nLeftBracketType == tbtNone )
+        return cprNone;
+
+    // a typed character is a bracket
+    return AutoBracketsFunc(nLeftBracketType);
 }
 
-bool CXBrackets::OnBeforeDeleteText(const SCNotification* pscn)
+bool CXBrackets::OnSciBeforeDeleteText(const SCNotification* pscn)
 {
     (pscn);
     return PrepareSelAutoBrFunc();
@@ -566,10 +576,10 @@ static bool isEscapedPrefix(const char* str, int len)
     return (k % 2) ? true : false;
 }
 
-void CXBrackets::AutoBracketsFunc(int nBracketType)
+CXBrackets::eCharProcessingResult CXBrackets::AutoBracketsFunc(int nBracketType)
 {
     if ( SelAutoBrFunc(nBracketType) )
-        return;
+        return cprSelAutoCompl;
 
     CSciMessager sciMsgr(m_nppMsgr.getCurrentScintillaWnd());
     Sci_Position nEditPos = sciMsgr.getSelectionStart();
@@ -578,8 +588,9 @@ void CXBrackets::AutoBracketsFunc(int nBracketType)
     // is something selected?
     if ( nEditEndPos != nEditPos )
     {
-        if ( sciMsgr.getSelectionMode() == SC_SEL_RECTANGLE )
-            return;
+        const int nSelectionMode = sciMsgr.getSelectionMode();
+        if ( nSelectionMode == SC_SEL_RECTANGLE || nSelectionMode == SC_SEL_THIN )
+            return cprNone;
 
         // removing selection
         sciMsgr.replaceSelText("");
@@ -679,12 +690,17 @@ void CXBrackets::AutoBracketsFunc(int nBracketType)
         sciMsgr.endUndoAction();
 
         m_nAutoRightBracketPos = nEditPos;
+        return cprBrAutoCompl;
     }
 
+    return cprNone;
 }
 
 bool CXBrackets::isEnclosedInBrackets(const char* pszTextLeft, const char* pszTextRight, int* pnBracketType, bool bInSelection)
 {
+    // if ( pszTextLeft == pszTextRight )
+    //     return false;
+
     int nBrType = *pnBracketType;
     const char* cszBrPair = strBrackets[nBrType];
 
