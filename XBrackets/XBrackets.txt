@@ -1,6 +1,6 @@
 ***********************************************
 * XBrackets Lite for Notepad++ 8.x.x (and above)
-* by DV, Jan 2009 - Feb 2022
+* by DV, Jan 2009 - Jul 2025
 ***********************************************
 
 XBrackets Lite allows to autocomplete brackets ([{""}]) i.e. it inserts
@@ -29,10 +29,66 @@ Examples:
   ; tells XBrackets to support ANY file EXCEPT .c .cpp .cxx .h .hpp .hxx
   FileExtsRule=-c cpp cxx h hpp hxx
 
+* Special option "Sel_AutoBr" inside the file "XBrackets.ini" allows to
+specify what to do with the selected text when a left (opening) bracket
+has been typed.
+The following values are supported:
+  Sel_AutoBr=0
+    When left (opening) bracket is typed, the selected text is disappeared
+    (replaced with the bracket).
+    Examples:
+      |abc| + {  results in  {
+  Sel_AutoBr=1
+    When left (opening) bracket is typed, the selected text is enclosed with
+    the corresponding brackets pair.
+    Examples:
+      |abc| + {  results in  {|abc|}
+  Sel_AutoBr=2
+    When left (opening) bracket is typed, the selected text is enclosed with
+    the corresponding brackets pair, and the brackets pair become selected
+    also. If the selected text already starts and ends with the corresponding
+    brackets pair, the brackets will be removed.
+    Examples:
+      |abc| + {    results in  |{abc}|
+      |{abc}| + {  results in  |abc|
+  Sel_AutoBr=3
+    When left (opening) bracket is typed, the selected text is enclosed with
+    the corresponding brackets pair, and the brackets pair is _not_ selected
+    also. If the selected text already starts and ends with the corresponding
+    brackets pair, the brackets will be removed. If the surrounding brackets
+    are not selected, they are not removed. (This mode was inspired by the
+    Sublime Text editor.)
+    Examples:
+      |abc| + {    results in  {|abc|}
+      |{abc}| + {  results in  |abc|
+      {|abc|} + {  results in  {{|abc|}}
+  Sel_AutoBr=4
+    When left (opening) bracket is typed, the selected text is enclosed with
+    the corresponding brackets pair, and the brackets pair is _not_ selected
+    also. If the selected text already starts and ends with the corresponding
+    brackets pair, the brackets will be removed. If the surrounding brackets
+    are not selected, they are also removed. Thus, type a left bracket/quote
+    to enclose the selected text with the corresponding brackets pair, and
+    type the left bracket/quote again to remove the enclosing brackets/quotes.
+    (This mode was inspired by the Sublime Text editor.)
+    Examples:
+      |abc| + {    results in  {|abc|}
+      |{abc}| + {  results in  |abc|
+      {|abc|} + {  results in  |abc|
+
+
 
 *************
 *  History  *
 *************
+
+v1.4.0 - Jul 2025
+-----------------
+* Glory to Ukraine! Glory to the heroes!
++ enhanced Settings dialog
++ new manual option: Sel_AutoBr
+* updated to Notepad++ 8.8.2
+
 
 v1.3.1 - Feb 2022
 -----------------

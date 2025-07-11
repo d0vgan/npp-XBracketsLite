@@ -4,6 +4,8 @@
 #include "core/NppPlugin.h"
 #include "XBracketsMenu.h"
 #include <utility>
+#include <memory>
+#include <atomic>
 
 class CXBrackets : public CNppPlugin
 {
@@ -43,7 +45,7 @@ class CXBrackets : public CNppPlugin
         };
 
         static const TCHAR* PLUGIN_NAME;
-        static const char*  strBrackets[tbtCount - 1];
+        static const char*  strBrackets[tbtCount];
 
     protected:
         // plugin menu
@@ -52,18 +54,24 @@ class CXBrackets : public CNppPlugin
         // internal vars
         Sci_Position m_nAutoRightBracketPos;
         std::pair<TFileType, unsigned short> m_nnFileType;
+        Sci_Position m_nSelPos;
+        Sci_Position m_nSelLen;
+        std::unique_ptr<char[]> m_pSelText;
+        std::atomic_bool m_isProcessingSelAutoBr;
+        UINT_PTR m_nDelTextTimerId;
+        CRITICAL_SECTION m_csDelTextTimer;
 
     public:
         CXBrackets();
         virtual ~CXBrackets();
 
         // standard n++ plugin functions
-        virtual void         nppBeNotified(SCNotification* pscn);
-        virtual FuncItem*    nppGetFuncsArray(int* pnbFuncItems);
-        virtual const TCHAR* nppGetName();
+        virtual void         nppBeNotified(SCNotification* pscn) override;
+        virtual FuncItem*    nppGetFuncsArray(int* pnbFuncItems) override;
+        virtual const TCHAR* nppGetName() override;
 
         // common n++ notification
-        virtual void OnNppSetInfo(const NppData& nppd);
+        virtual void OnNppSetInfo(const NppData& nppd) override;
 
         // custom n++ notifications
         void OnNppBufferActivated();
@@ -75,6 +83,10 @@ class CXBrackets : public CNppPlugin
 
         // custom scintilla notifications
         void OnSciCharAdded(const int ch);
+        bool OnBeforeDeleteText(const SCNotification* pscn);
+
+        // timer
+        void OnDelTextTimer(UINT_PTR idEvent);
 
         // custom functions
         void ReadOptions();
@@ -83,7 +95,10 @@ class CXBrackets : public CNppPlugin
     protected:
         // custom functions
         void AutoBracketsFunc(int nBracketType);
+        bool PrepareSelAutoBrFunc();
+        bool SelAutoBrFunc(int nBracketType);
         void UpdateFileType();
+        bool isEnclosedInBrackets(const char* pszTextLeft, const char* pszTextRight, int* pnBracketType, bool bInSelection);
         std::pair<TFileType, unsigned short> getFileType();
 
         enum eBracketOptions {

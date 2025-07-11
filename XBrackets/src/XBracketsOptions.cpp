@@ -90,16 +90,17 @@ static const TCHAR INI_OPTION_ESCAPEDFILEEXTS[] = _T("EscapedFileExts");
 static const TCHAR INI_OPTION_SGLQUOTEFILEEXTS[] = _T("SingleQuoteFileExts");
 static const TCHAR INI_OPTION_FILEEXTSRULE[] = _T("FileExtsRule");
 
-CXBracketsOptions::CXBracketsOptions()
+CXBracketsOptions::CXBracketsOptions() :
+  // default values:
+  m_uFlags(0),
+  m_uFlags0(0),
+  m_uSelAutoBr(sabNone),
+  m_uSelAutoBr0(sabNone),
+  m_bSaveFileExtsRule(false),
+  m_sHtmlFileExts(_T("htm; xml; php")),
+  m_sEscapedFileExts(_T("cs; java; js; php; rc")),
+  m_sSglQuoteFileExts(_T("js; pas; py; ps1; sh; htm; html; xml"))
 {
-    // initial values
-    m_uFlags = 0;
-    m_uFlags0 = 0;
-    m_uSelAutoBr = 0;
-    m_bSaveFileExtsRule = false;
-    m_sHtmlFileExts = _T("htm; xml; php");
-    m_sEscapedFileExts = _T("cs; java; js; php; rc");
-    m_sSglQuoteFileExts = _T("js; pas; py; ps1; sh; htm; html; xml");
 }
 
 CXBracketsOptions::~CXBracketsOptions()
@@ -110,6 +111,7 @@ bool CXBracketsOptions::MustBeSaved() const
 {
     return ( m_bSaveFileExtsRule ||
              m_uFlags != m_uFlags0 ||
+             m_uSelAutoBr != m_uSelAutoBr0 ||
              lstrcmpi(m_sHtmlFileExts.c_str(), m_sHtmlFileExts0.c_str()) != 0 ||
              lstrcmpi(m_sEscapedFileExts.c_str(), m_sEscapedFileExts0.c_str()) != 0 ||
              lstrcmpi(m_sSglQuoteFileExts.c_str(), m_sSglQuoteFileExts0.c_str()) != 0
@@ -175,12 +177,16 @@ void CXBracketsOptions::ReadOptions(const TCHAR* szIniFilePath)
     TCHAR szTempExts[STR_FILEEXTS_SIZE];
 
     m_uFlags0 = ::GetPrivateProfileInt( INI_SECTION_OPTIONS, INI_OPTION_FLAGS, -1, szIniFilePath );
-    if ( m_uFlags0 != (UINT) -1 )
+    if ( m_uFlags0 != (UINT) (-1) )
     {
         m_uFlags = m_uFlags0;
     }
 
-    m_uSelAutoBr = ::GetPrivateProfileInt( INI_SECTION_OPTIONS, INI_OPTION_SELAUTOBR, sabNone, szIniFilePath );
+    m_uSelAutoBr0 = ::GetPrivateProfileInt( INI_SECTION_OPTIONS, INI_OPTION_SELAUTOBR, -1, szIniFilePath );
+    if ( m_uSelAutoBr0 != (UINT) (-1) )
+    {
+        m_uSelAutoBr = m_uSelAutoBr0;
+    }
 
     szTempExts[0] = 0;
     ::GetPrivateProfileString( INI_SECTION_OPTIONS, INI_OPTION_HTMLFILEEXTS,
@@ -242,5 +248,12 @@ void CXBracketsOptions::SaveOptions(const TCHAR* szIniFilePath)
     {
         if ( ::WritePrivateProfileString(INI_SECTION_OPTIONS, INI_OPTION_FILEEXTSRULE, m_sFileExtsRule.c_str(), szIniFilePath) )
             m_bSaveFileExtsRule = false;
+    }
+
+    if ( m_uSelAutoBr != m_uSelAutoBr0 )
+    {
+        ::wsprintf(szNum, _T("%u"), m_uSelAutoBr);
+        if ( ::WritePrivateProfileString(INI_SECTION_OPTIONS, INI_OPTION_SELAUTOBR, szNum, szIniFilePath) )
+            m_uSelAutoBr0 = m_uSelAutoBr;
     }
 }

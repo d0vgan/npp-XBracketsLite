@@ -26,6 +26,7 @@ class CSciMessager
         int           getSelectionMode() const; // SC_SEL_STREAM, SC_SEL_RECTANGLE, SC_SEL_LINES
         Sci_Position  getSelectionEnd() const;
         Sci_Position  getSelectionStart() const;
+        int           getSelections() const; // number of selections, there's always at least 1
         Sci_Position  getSelText(char* pText) const;
         Sci_Position  getText(Sci_Position len, char* pText) const;
         Sci_Position  getTextLength() const;
@@ -33,13 +34,13 @@ class CSciMessager
         void          goToPos(Sci_Position pos);
         bool          isModified() const;
         bool          isSelectionRectangle() const;
+        void          replaceSelText(const char* pText);
         void          setCodePage(unsigned int codePage);
         void          setSciWnd(HWND hSciWnd)  { m_hSciWnd = hSciWnd; }
         void          setSel(Sci_Position anchorPos, Sci_Position currentPos);
         void          setSelectionMode(int mode); // SC_SEL_STREAM, SC_SEL_RECTANGLE, SC_SEL_LINES
         void          setSelectionEnd(Sci_Position pos);
         void          setSelectionStart(Sci_Position pos);
-        void          setSelText(const char* pText);
         void          setText(const char* pText);
 };
 

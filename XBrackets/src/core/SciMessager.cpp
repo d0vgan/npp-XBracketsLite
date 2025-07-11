@@ -1,8 +1,7 @@
 #include "SciMessager.h"
 
-CSciMessager::CSciMessager(HWND hSciWnd )
+CSciMessager::CSciMessager(HWND hSciWnd) : m_hSciWnd(hSciWnd)
 {
-    m_hSciWnd = hSciWnd;
 }
 
 CSciMessager::~CSciMessager()
@@ -64,6 +63,11 @@ Sci_Position CSciMessager::getSelectionStart() const
     return (Sci_Position) SendSciMsg(SCI_GETSELECTIONSTART);
 }
 
+int CSciMessager::getSelections() const
+{
+    return (int) SendSciMsg(SCI_GETSELECTIONS);
+}
+
 Sci_Position CSciMessager::getSelText(char* pText) const
 {
     return (Sci_Position) SendSciMsg( SCI_GETSELTEXT, 0, (LPARAM) pText );
@@ -81,11 +85,11 @@ Sci_Position CSciMessager::getTextLength() const
 
 Sci_Position CSciMessager::getTextRange(Sci_Position pos1, Sci_Position pos2, char* pText) const
 {
-    Sci_TextRange tr;
+    Sci_TextRangeFull tr;
     tr.chrg.cpMin = pos1;
     tr.chrg.cpMax = pos2;
     tr.lpstrText = pText;
-    return (Sci_Position) SendSciMsg( SCI_GETTEXTRANGE, 0, (LPARAM) &tr );
+    return (Sci_Position) SendSciMsg( SCI_GETTEXTRANGEFULL, 0, (LPARAM) &tr );
 }
 
 void CSciMessager::goToPos(Sci_Position pos)
@@ -128,7 +132,7 @@ void CSciMessager::setSelectionStart(Sci_Position pos)
     SendSciMsg( SCI_SETSELECTIONSTART, (WPARAM) pos );
 }
 
-void CSciMessager::setSelText(const char* pText)
+void CSciMessager::replaceSelText(const char* pText)
 {
     SendSciMsg( SCI_REPLACESEL, 0, (LPARAM) pText );
 }

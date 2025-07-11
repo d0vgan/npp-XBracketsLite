@@ -30,6 +30,8 @@ class CNppMessager
         HMENU   getNppMainMenu() const;
         HMENU   getNppPluginMenu() const;
         void    getPluginsConfigDir(int strLen, TCHAR *str) const;
+        HWND    getSciMainWnd() const  { return m_nppData._scintillaMainHandle; }
+        HWND    getSciSecondWnd() const  { return m_nppData._scintillaSecondHandle; }
         void    makeCurrentBufferDirty();
         void    setNppData(const NppData& nppd)  { m_nppData = nppd; }
 

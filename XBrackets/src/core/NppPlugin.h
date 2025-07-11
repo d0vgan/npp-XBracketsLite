@@ -37,7 +37,8 @@ class CNppPlugin
         HMODULE getDllModule() const  { return m_hDllModule; }
         const TCHAR* getIniFileName() const  { return m_szIniFileName; }
         HWND getNppWnd() const  { return m_nppMsgr.getNppWnd(); }
-
+        const CNppMessager& getNppMsgr() const  { return m_nppMsgr; }
+        CNppMessager& getNppMsgr()  { return m_nppMsgr; }
 };
 
 //----------------------------------------------------------------------------

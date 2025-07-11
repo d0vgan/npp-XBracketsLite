@@ -190,6 +190,7 @@ class CXBracketsOptions
         UINT  m_uFlags;
         UINT  m_uFlags0;
         UINT  m_uSelAutoBr; // one of eSelAutoBr
+        UINT  m_uSelAutoBr0;
         bool  m_bSaveFileExtsRule;
         tstr  m_sHtmlFileExts;
         tstr  m_sHtmlFileExts0;

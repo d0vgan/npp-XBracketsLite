@@ -1,9 +1,8 @@
 #include "NppPlugin.h"
 
 
-CNppPlugin::CNppPlugin()
+CNppPlugin::CNppPlugin() : m_hDllModule(NULL)
 {
-    m_hDllModule = NULL;
     m_szDllFileName[0] = 0;
     m_szIniFileName[0] = 0;
 }

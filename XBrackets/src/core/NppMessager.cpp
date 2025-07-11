@@ -1,15 +1,11 @@
 #include "NppMessager.h"
 
-CNppMessager::CNppMessager()
+CNppMessager::CNppMessager() : m_nppData{}
 {
-    m_nppData._nppHandle = NULL;
-    m_nppData._scintillaMainHandle = NULL;
-    m_nppData._scintillaSecondHandle = NULL;
 }
 
-CNppMessager::CNppMessager(const NppData& nppd)
+CNppMessager::CNppMessager(const NppData& nppd) : m_nppData(nppd)
 {
-    m_nppData = nppd;
 }
 
 CNppMessager::~CNppMessager()
