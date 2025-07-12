@@ -4,8 +4,6 @@
 #include "core/NppPlugin.h"
 #include "XBracketsMenu.h"
 #include <utility>
-#include <memory>
-#include <atomic>
 
 class CXBrackets : public CNppPlugin
 {

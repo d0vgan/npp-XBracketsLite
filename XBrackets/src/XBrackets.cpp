@@ -1,6 +1,7 @@
 #include "XBrackets.h"
 #include "XBracketsOptions.h"
 #include "core/npp_files/resource.h"
+#include <memory>
 
 
 // can be _T(x), but _T(x) may be incompatible with ANSI mode
