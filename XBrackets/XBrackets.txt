@@ -13,8 +13,10 @@ This plugin is a Notepad++'es port of my XBrackets plugin for AkelPad.
 As Scintilla highlights pair brackets by itself, XBrackets Lite doesn't 
 do this (unlike XBrackets for AkelPad) - therefore I call it "XBrackets Lite".
 
-* Special option "FileExtsRule" inside the file "XBrackets.ini" allows to
-specify file extensions which will be supported or ignored by XBrackets.
+Special manual options inside the file "XBrackets.ini":
+
+1. "FileExtsRule" allows to specify file extensions which will be supported or
+ignored by XBrackets.
 Examples:
   ; tells XBrackets to support ANY file (by default)
   FileExtsRule=
@@ -29,9 +31,8 @@ Examples:
   ; tells XBrackets to support ANY file EXCEPT .c .cpp .cxx .h .hpp .hxx
   FileExtsRule=-c cpp cxx h hpp hxx
 
-* Special option "Sel_AutoBr" inside the file "XBrackets.ini" allows to
-specify what to do with the selected text when a left (opening) bracket
-has been typed.
+2. "Sel_AutoBr" allows to specify what to do with the selected text when a
+left (opening) bracket has been typed.
 The following values are supported:
   Sel_AutoBr=0
     When left (opening) bracket is typed, the selected text is disappeared
@@ -76,6 +77,25 @@ The following values are supported:
       |{abc}| + {  results in  |abc|
       {|abc|} + {  results in  |abc|
 
+3. "Next_Char_OK" defines a set of characters which are OK for brackets
+auto-completion when you type an opening bracket _before_ a character from
+this set.
+Also, brackets are auto-completed before the supported right brackets from
+the following set: )]}>"' .
+Additionally, brackets are auto-completed before the following white-space
+characters: '\0', '\r', '\n', ' ' and '\t'.
+Example:
+  Next_Char_OK=.,!?:;</
+
+4. "Prev_Char_OK" defines a set of characters which are OK for brackets
+auto-completion when you type a bracket _after_ such character.
+This rule is applied only to those bracket pairs which have identical opening
+and closing characters (such as "" and '').
+Additionally, such brackets are auto-completed after the following white-space
+characters: '\0', '\r', '\n', ' ' and '\t'.
+Example:
+  Prev_Char_OK=([{<=
+
 
 
 *************
@@ -87,6 +107,7 @@ v1.4.0 - Jul 2025
 * Glory to Ukraine! Glory to the heroes!
 + enhanced Settings dialog
 + new manual option: Sel_AutoBr
++ new manual options: Next_Char_OK and Prev_Char_OK
 * internal improvements
 * updated to Notepad++ 8.8.2
 

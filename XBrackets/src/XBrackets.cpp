@@ -107,7 +107,7 @@ LRESULT CALLBACK CXBrackets::sciNewWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, 
     if ( uMsg == WM_CHAR )
     {
         // this happens _before_ the character is processed by Scintilla
-        if ( thePlugin.OnSciChar(wParam) != cprNone )
+        if ( thePlugin.OnSciChar(static_cast<int>(wParam)) != cprNone )
         {
             return 0; // processed by XBrackets, don't forward to Scintilla
         }
@@ -477,6 +477,21 @@ static bool isEscapedPrefix(const char* str, int len)
     return (k % 2) ? true : false;
 }
 
+static bool isWhiteSpaceOrNulChar(const char ch)
+{
+    switch ( ch )
+    {
+        case '\x00':
+        case '\x0D':
+        case '\x0A':
+        case ' ':
+        case '\t':
+            return true;
+    }
+
+    return false;
+}
+
 CXBrackets::eCharProcessingResult CXBrackets::AutoBracketsFunc(int nBracketType)
 {
     if ( SelAutoBrFunc(nBracketType) )
@@ -512,32 +527,19 @@ CXBrackets::eCharProcessingResult CXBrackets::AutoBracketsFunc(int nBracketType)
     bool  bNextCharOK = false;
     char  next_ch = sciMsgr.getCharAt(nEditPos);
 
-    if ( next_ch == '\x0D' ||
-         next_ch == '\x0A' ||
-         next_ch == '\x00' ||
-         next_ch == ' '  ||
-         next_ch == '\t' ||
-         next_ch == '.'  ||
-         next_ch == ','  ||
-         next_ch == '!'  ||
-         next_ch == '?'  ||
-         next_ch == ':'  ||
-         next_ch == ';'  ||
-         next_ch == '<' )
+    if ( isWhiteSpaceOrNulChar(next_ch) ||
+         g_opt.getNextCharOK().find(static_cast<TCHAR>(next_ch)) != tstr::npos )
     {
         bNextCharOK = true;
     }
-    else
+
+    int nRightBracketType = getRightBracketType(next_ch, bofIgnoreMode);
+    if ( nRightBracketType != tbtNone )
     {
-        int nRightBracketType = getRightBracketType(next_ch, bofIgnoreMode);
         if ( nRightBracketType == tbtTag2 )
             nRightBracketType = tbtTag;
 
-        if ( nRightBracketType != tbtNone && 
-             (nRightBracketType != nBracketType || g_opt.getBracketsRightExistsOK()) )
-        {
-            bNextCharOK = true;
-        }
+        bNextCharOK = (nRightBracketType != nBracketType || g_opt.getBracketsRightExistsOK());
     }
 
     if ( bNextCharOK && (nBracketType == tbtDblQuote || nBracketType == tbtSglQuote) )
@@ -547,16 +549,8 @@ CXBrackets::eCharProcessingResult CXBrackets::AutoBracketsFunc(int nBracketType)
         // previous character
         char prev_ch = (nEditPos >= 1) ? sciMsgr.getCharAt(nEditPos - 1) : 0;
 
-        if ( prev_ch == '\x0D' ||
-             prev_ch == '\x0A' ||
-             prev_ch == '\x00' ||
-             prev_ch == ' '  ||
-             prev_ch == '\t' ||
-             prev_ch == '('  ||
-             prev_ch == '['  ||
-             prev_ch == '{'  ||
-             prev_ch == '<'  ||
-             prev_ch == '=' )
+        if ( isWhiteSpaceOrNulChar(prev_ch) ||
+             g_opt.getPrevCharOK().find(static_cast<TCHAR>(prev_ch)) != tstr::npos )
         {
             bPrevCharOK = true;
         }

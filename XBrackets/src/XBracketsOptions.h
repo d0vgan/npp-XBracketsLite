@@ -186,12 +186,24 @@ class CXBracketsOptions
             m_sSglQuoteFileExts = cszSglQuoteFileExts;
         }
 
+        const tstr& getNextCharOK() const
+        {
+            return m_sNextCharOK;
+        }
+
+        const tstr& getPrevCharOK() const
+        {
+            return m_sPrevCharOK;
+        }
+
     protected:
         UINT  m_uFlags;
         UINT  m_uFlags0;
         UINT  m_uSelAutoBr; // one of eSelAutoBr
         UINT  m_uSelAutoBr0;
         bool  m_bSaveFileExtsRule;
+        bool  m_bSaveNextCharOK;
+        bool  m_bSavePrevCharOK;
         tstr  m_sHtmlFileExts;
         tstr  m_sHtmlFileExts0;
         tstr  m_sEscapedFileExts;
@@ -199,6 +211,8 @@ class CXBracketsOptions
         tstr  m_sSglQuoteFileExts;
         tstr  m_sSglQuoteFileExts0;
         tstr  m_sFileExtsRule;
+        tstr  m_sNextCharOK;
+        tstr  m_sPrevCharOK;
 };
 
 //---------------------------------------------------------------------------
