@@ -1,7 +1,7 @@
 #include "XBrackets.h"
 #include "XBracketsOptions.h"
 #include "core/npp_files/resource.h"
-#include <memory>
+#include <vector>
 
 
 // can be _T(x), but _T(x) may be incompatible with ANSI mode
@@ -675,86 +675,86 @@ bool CXBrackets::SelAutoBrFunc(int nBracketType)
 
     // getting the selected text
     const Sci_Position nSelLen = sciMsgr.getSelText(nullptr);
-    auto pSelText = std::make_unique<char[]>(nSelLen + nBrPairLen + 1);
-    sciMsgr.getSelText(pSelText.get() + 1); // always starting from pSelText[1]
+    std::vector<char> vSelText(nSelLen + nBrPairLen + 1);
+    sciMsgr.getSelText(vSelText.data() + 1); // always starting from pSelText[1]
 
     sciMsgr.beginUndoAction();
 
     if ( uSelAutoBr == CXBracketsOptions::sabEncloseRemove ||
          uSelAutoBr == CXBracketsOptions::sabEncloseRemoveOuter )
     {
-        pSelText[0] = nSelPos != 0 ? sciMsgr.getCharAt(nSelPos - 1) : 0; // previous character (before the selection)
+        vSelText[0] = nSelPos != 0 ? sciMsgr.getCharAt(nSelPos - 1) : 0; // previous character (before the selection)
         for (int i = 0; i < nBrPairLen - 1; i++)
         {
-            pSelText[nSelLen + 1 + i] = sciMsgr.getCharAt(nSelPos + nSelLen + i); // next characters (after the selection)
+            vSelText[nSelLen + 1 + i] = sciMsgr.getCharAt(nSelPos + nSelLen + i); // next characters (after the selection)
         }
-        pSelText[nSelLen + nBrPairLen] = 0;
+        vSelText[nSelLen + nBrPairLen] = 0;
 
-        if ( isEnclosedInBrackets(pSelText.get() + 1, pSelText.get() + nSelLen - nBrPairLen + 2, &nBrAltType, true) )
+        if ( isEnclosedInBrackets(vSelText.data() + 1, vSelText.data() + nSelLen - nBrPairLen + 2, &nBrAltType, true) )
         {
             // already in brackets/quotes : ["text"] ; excluding them
             if ( nBrAltType != nBracketType )
             {
                 nBrPairLen = lstrlenA(strBrackets[nBrAltType]);
             }
-            pSelText[nSelLen - nBrPairLen + 2] = 0;
-            sciMsgr.replaceSelText(pSelText.get() + 2);
+            vSelText[nSelLen - nBrPairLen + 2] = 0;
+            sciMsgr.replaceSelText(vSelText.data() + 2);
             sciMsgr.setSel(nSelPos, nSelPos + nSelLen - nBrPairLen);
         }
         else if ( uSelAutoBr == CXBracketsOptions::sabEncloseRemoveOuter &&
                   nSelPos != 0 &&
-                  isEnclosedInBrackets(pSelText.get(), pSelText.get() + nSelLen + 1, &nBrAltType, false) )
+                  isEnclosedInBrackets(vSelText.data(), vSelText.data() + nSelLen + 1, &nBrAltType, false) )
         {
             // already in brackets/quotes : "[text]" ; excluding them
             if ( nBrAltType != nBracketType )
             {
                 nBrPairLen = lstrlenA(strBrackets[nBrAltType]);
             }
-            pSelText[nSelLen + 1] = 0;
+            vSelText[nSelLen + 1] = 0;
             sciMsgr.SendSciMsg(WM_SETREDRAW, FALSE, 0);
             sciMsgr.setSel(nSelPos - 1, nSelPos + nSelLen + nBrPairLen - 1);
             sciMsgr.SendSciMsg(WM_SETREDRAW, TRUE, 0);
-            sciMsgr.replaceSelText(pSelText.get() + 1);
+            sciMsgr.replaceSelText(vSelText.data() + 1);
             sciMsgr.setSel(nSelPos - 1, nSelPos + nSelLen - 1);
         }
         else
         {
             // enclose in brackets/quotes
-            pSelText[0] = strBrackets[nBracketType][0];
-            lstrcpyA(pSelText.get() + nSelLen + 1, strBrackets[nBracketType] + 1);
-            sciMsgr.replaceSelText(pSelText.get());
+            vSelText[0] = strBrackets[nBracketType][0];
+            lstrcpyA(vSelText.data() + nSelLen + 1, strBrackets[nBracketType] + 1);
+            sciMsgr.replaceSelText(vSelText.data());
             sciMsgr.setSel(nSelPos + 1, nSelPos + nSelLen + 1);
         }
     }
     else
     {
-        pSelText[0] = strBrackets[nBracketType][0];
+        vSelText[0] = strBrackets[nBracketType][0];
 
         if ( uSelAutoBr == CXBracketsOptions::sabEncloseAndSel )
         {
-            if ( isEnclosedInBrackets(pSelText.get() + 1, pSelText.get() + nSelLen - nBrPairLen + 2, &nBrAltType, true) )
+            if ( isEnclosedInBrackets(vSelText.data() + 1, vSelText.data() + nSelLen - nBrPairLen + 2, &nBrAltType, true) )
             {
                 // already in brackets/quotes; exclude them
                 if ( nBrAltType != nBracketType )
                 {
                     nBrPairLen = lstrlenA(strBrackets[nBrAltType]);
                 }
-                pSelText[nSelLen - nBrPairLen + 2] = 0;
-                sciMsgr.replaceSelText(pSelText.get() + 2);
+                vSelText[nSelLen - nBrPairLen + 2] = 0;
+                sciMsgr.replaceSelText(vSelText.data() + 2);
                 sciMsgr.setSel(nSelPos, nSelPos + nSelLen - nBrPairLen);
             }
             else
             {
                 // enclose in brackets/quotes
-                lstrcpyA(pSelText.get() + nSelLen + 1, strBrackets[nBracketType] + 1);
-                sciMsgr.replaceSelText(pSelText.get());
+                lstrcpyA(vSelText.data() + nSelLen + 1, strBrackets[nBracketType] + 1);
+                sciMsgr.replaceSelText(vSelText.data());
                 sciMsgr.setSel(nSelPos, nSelPos + nSelLen + nBrPairLen);
             }
         }
         else // CXBracketsOptions::sabEnclose
         {
-            lstrcpyA(pSelText.get() + nSelLen + 1, strBrackets[nBracketType] + 1);
-            sciMsgr.replaceSelText(pSelText.get());
+            lstrcpyA(vSelText.data() + nSelLen + 1, strBrackets[nBracketType] + 1);
+            sciMsgr.replaceSelText(vSelText.data());
             sciMsgr.setSel(nSelPos + 1, nSelPos + nSelLen + 1);
         }
     }
