@@ -60,12 +60,6 @@ class CXBrackets : public CNppPlugin
         // internal vars
         Sci_Position m_nAutoRightBracketPos;
         std::pair<TFileType, unsigned short> m_nnFileType;
-        Sci_Position m_nSelPos;
-        Sci_Position m_nSelLen;
-        std::unique_ptr<char[]> m_pSelText;
-        std::atomic_bool m_isProcessingSelAutoBr;
-        UINT_PTR m_nDelTextTimerId;
-        CRITICAL_SECTION m_csDelTextTimer;
 
     public:
         CXBrackets();
@@ -88,11 +82,7 @@ class CXBrackets : public CNppPlugin
         void OnNppMacro(int nMacroState);
 
         // custom scintilla notifications
-        eCharProcessingResult OnSciCharAdded(const int ch);
-        bool OnSciBeforeDeleteText(const SCNotification* pscn);
-
-        // timer
-        void OnDelTextTimer(UINT_PTR idEvent);
+        eCharProcessingResult OnSciChar(const int ch);
 
         // custom functions
         void ReadOptions();
@@ -101,8 +91,6 @@ class CXBrackets : public CNppPlugin
     protected:
         // custom functions
         eCharProcessingResult AutoBracketsFunc(int nBracketType);
-        eCharProcessingResult OnSciCharAdded_Internal(const int ch);
-        bool PrepareSelAutoBrFunc();
         bool SelAutoBrFunc(int nBracketType);
         void UpdateFileType();
         bool isEnclosedInBrackets(const char* pszTextLeft, const char* pszTextRight, int* pnBracketType, bool bInSelection);
@@ -124,8 +112,12 @@ class CXBrackets : public CNppPlugin
         static bool    isNppMacroStarted;
         static bool    isNppWndUnicode;
         static WNDPROC nppOriginalWndProc;
+        static WNDPROC sciOriginalWndProc1;
+        static WNDPROC sciOriginalWndProc2;
         static LRESULT nppCallWndProc(HWND, UINT, WPARAM, LPARAM);
+        static LRESULT sciCallWndProc(HWND, UINT, WPARAM, LPARAM);
         static LRESULT CALLBACK nppNewWndProc(HWND, UINT, WPARAM, LPARAM);
+        static LRESULT CALLBACK sciNewWndProc(HWND, UINT, WPARAM, LPARAM);
 };
 
 //---------------------------------------------------------------------------

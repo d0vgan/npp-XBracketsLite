@@ -27,6 +27,8 @@ const int nMaxBrPairLen = 3; // </>
 bool CXBrackets::isNppMacroStarted = false;
 bool CXBrackets::isNppWndUnicode = true;
 WNDPROC CXBrackets::nppOriginalWndProc = NULL;
+WNDPROC CXBrackets::sciOriginalWndProc1 = NULL;
+WNDPROC CXBrackets::sciOriginalWndProc2 = NULL;
 
 /*
 // from "resource.h" (Notepad++)
@@ -40,7 +42,15 @@ WNDPROC CXBrackets::nppOriginalWndProc = NULL;
 
 LRESULT CXBrackets::nppCallWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
-    return (isNppWndUnicode ? CallWindowProcW : CallWindowProcA)(nppOriginalWndProc, hWnd, uMsg, wParam, lParam);
+    auto pCallWindowProc = isNppWndUnicode ? CallWindowProcW : CallWindowProcA;
+    return pCallWindowProc(nppOriginalWndProc, hWnd, uMsg, wParam, lParam);
+}
+
+LRESULT CXBrackets::sciCallWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+    WNDPROC pSciWndProc = thePlugin.getNppMsgr().getSciMainWnd() == hWnd ? sciOriginalWndProc1 : sciOriginalWndProc2;
+    auto pCallWindowProc = isNppWndUnicode ? CallWindowProcW : CallWindowProcA;
+    return pCallWindowProc(pSciWndProc, hWnd, uMsg, wParam, lParam);
 }
 
 LRESULT CALLBACK CXBrackets::nppNewWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
@@ -82,27 +92,6 @@ LRESULT CALLBACK CXBrackets::nppNewWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, 
                 break;
         }
     }
-    else if ( uMsg == WM_NOTIFY )
-    {
-        const CNppMessager& nppMsgr = thePlugin.getNppMsgr();
-        const NMHDR* pNmHdr = reinterpret_cast<const NMHDR *>(lParam);
-        if ( pNmHdr->hwndFrom == nppMsgr.getSciMainWnd() ||
-             pNmHdr->hwndFrom == nppMsgr.getSciSecondWnd() )
-        {
-            // notifications from Scintilla:
-            SCNotification* pscn = reinterpret_cast<SCNotification *>(lParam);
-
-            switch ( pscn->nmhdr.code )
-            {
-                case SCN_CHARADDED:
-                    if ( thePlugin.OnSciCharAdded(pscn->ch) == cprSelAutoCompl )
-                    {
-                        return 0; // avoid further processing by Notepad++
-                    }
-                    break;
-            }
-        }
-    }
     else if ( uMsg == WM_MACRODLGRUNMACRO )
     {
         thePlugin.OnNppMacro(MACRO_START);
@@ -114,20 +103,28 @@ LRESULT CALLBACK CXBrackets::nppNewWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, 
     return nppCallWndProc(hWnd, uMsg, wParam, lParam);
 }
 
+LRESULT CALLBACK CXBrackets::sciNewWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+    if ( uMsg == WM_CHAR )
+    {
+        // this happens _before_ the character is processed by Scintilla
+        if ( thePlugin.OnSciChar(wParam) != cprNone )
+        {
+            return 0; // processed by XBrackets, don't forward to Scintilla
+        }
+    }
+
+    return sciCallWndProc(hWnd, uMsg, wParam, lParam);
+}
+
 CXBrackets::CXBrackets() :
   m_nAutoRightBracketPos(-1),
-  m_nnFileType{ tftNone, tfmIsSupported },
-  m_nSelPos(0),
-  m_nSelLen(0),
-  m_isProcessingSelAutoBr(false),
-  m_nDelTextTimerId(0)
+  m_nnFileType{ tftNone, tfmIsSupported }
 {
-    ::InitializeCriticalSection(&m_csDelTextTimer);
 }
 
 CXBrackets::~CXBrackets()
 {
-    ::DeleteCriticalSection(&m_csDelTextTimer);
 }
 
 FuncItem* CXBrackets::nppGetFuncsArray(int* pnbFuncItems)
@@ -139,32 +136,6 @@ FuncItem* CXBrackets::nppGetFuncsArray(int* pnbFuncItems)
 const TCHAR* CXBrackets::nppGetName()
 {
     return PLUGIN_NAME;
-}
-
-static void CALLBACK DelTextTimerProc(HWND /*hWnd*/, UINT /*uMsg*/, UINT_PTR idEvent, DWORD /*dwTime*/)
-{
-    thePlugin.OnDelTextTimer(idEvent);
-}
-
-void CXBrackets::OnDelTextTimer(UINT_PTR idEvent)
-{
-    ::EnterCriticalSection(&m_csDelTextTimer);
-
-    if ( idEvent == m_nDelTextTimerId )
-    {
-        ::KillTimer(NULL, idEvent);
-        m_nDelTextTimerId = 0;
-
-        if ( !m_isProcessingSelAutoBr )
-        {
-            // the previous selection is no more relevant:
-            m_nSelPos = 0;
-            m_nSelLen = 0;
-            // we don't reset m_pSelText here
-        }
-    }
-
-    ::LeaveCriticalSection(&m_csDelTextTimer);
 }
 
 void CXBrackets::nppBeNotified(SCNotification* pscn)
@@ -192,49 +163,6 @@ void CXBrackets::nppBeNotified(SCNotification* pscn)
 
             case NPPN_SHUTDOWN:
                 OnNppShutdown();
-                break;
-
-            default:
-                break;
-        }
-        // <<< notifications from Notepad++
-    }
-    else
-    {
-        // >>> notifications from Notepad++
-        switch ( pscn->nmhdr.code )
-        {
-            case SCN_MODIFIED:
-                if ( (pscn->modificationType & (SC_MOD_BEFOREDELETE | SC_PERFORMED_USER)) == (SC_MOD_BEFOREDELETE | SC_PERFORMED_USER) ) // deleting text
-                {
-                    if ( (pscn->modificationType & (SC_PERFORMED_UNDO | SC_PERFORMED_REDO)) == 0 ) // not undo or redo
-                    {
-                        if ( OnSciBeforeDeleteText(pscn) )
-                        {
-                            const int nDelTextTimerIntervalMs = 150;
-
-                            // Selected text can be deleted either by typing any character (we are interested in that)
-                            // or by pressing Delete/BackSpace button.
-                            // When SCN_CHARADDED happens during nDelTextTimerIntervalMs, it means the selected text
-                            // was deleted while typing a character (so SelAutoBrFunc shoud work).
-                            // If SCN_CHARADDED does not happen during nDelTextTimerIntervalMs, it means the selected
-                            // text was deleted by Delete/BackSpace button, and the DelTextTimer sets m_nSelPos and
-                            // m_nSelLen to 0 (so SelAutoBrFunc shoud exit immediately).
-
-                            // Side effect:
-                            // If the sequence of Delete/BackSpace and then '[' or "'" is quickly pressed, taking
-                            // less than nDelTextTimerIntervalMs, then the previously selected and deleted text
-                            // appears within the [] or ''.
-
-                            ::EnterCriticalSection(&m_csDelTextTimer);
-                            if ( m_nDelTextTimerId == 0 )
-                            {
-                                m_nDelTextTimerId = ::SetTimer(NULL, 0, nDelTextTimerIntervalMs, DelTextTimerProc);
-                            }
-                            ::LeaveCriticalSection(&m_csDelTextTimer);
-                        }
-                    }
-                }
                 break;
 
             default:
@@ -273,37 +201,35 @@ void CXBrackets::OnNppReady()
     CXBracketsMenu::UpdateMenuState();
     UpdateFileType();
 
-    if ( g_opt.getBracketsSelAutoBr() != CXBracketsOptions::sabNone )
-    {
-        m_nppMsgr.SendNppMsg(NPPM_ADDSCNMODIFIEDFLAGS, 0, SC_MOD_BEFOREINSERT | SC_MOD_BEFOREDELETE);
-    }
+    auto pSetWindowLongPtr = isNppWndUnicode ? SetWindowLongPtrW : SetWindowLongPtrA;
 
-    if ( isNppWndUnicode )
-    {
-        nppOriginalWndProc = (WNDPROC) SetWindowLongPtrW(
-          m_nppMsgr.getNppWnd(), GWLP_WNDPROC, (LONG_PTR) nppNewWndProc );
-    }
-    else
-    {
-        nppOriginalWndProc = (WNDPROC) SetWindowLongPtrA(
-          m_nppMsgr.getNppWnd(), GWLP_WNDPROC, (LONG_PTR) nppNewWndProc );
-    }
+    nppOriginalWndProc = (WNDPROC) pSetWindowLongPtr(
+      m_nppMsgr.getNppWnd(), GWLP_WNDPROC, (LONG_PTR) nppNewWndProc );
+
+    sciOriginalWndProc1 = (WNDPROC) pSetWindowLongPtr(
+      m_nppMsgr.getSciMainWnd(), GWLP_WNDPROC, (LONG_PTR) sciNewWndProc );
+
+    sciOriginalWndProc2 = (WNDPROC) pSetWindowLongPtr(
+        m_nppMsgr.getSciSecondWnd(), GWLP_WNDPROC, (LONG_PTR) sciNewWndProc );
 }
 
 void CXBrackets::OnNppShutdown()
 {
+    auto pSetWindowLongPtr = isNppWndUnicode ? SetWindowLongPtrW : SetWindowLongPtrA;
+
     if ( nppOriginalWndProc )
     {
-        if ( isNppWndUnicode )
-        {
-            ::SetWindowLongPtrW( m_nppMsgr.getNppWnd(),
-                GWLP_WNDPROC, (LONG_PTR) nppOriginalWndProc );
-        }
-        else
-        {
-            ::SetWindowLongPtrA( m_nppMsgr.getNppWnd(),
-                GWLP_WNDPROC, (LONG_PTR) nppOriginalWndProc );
-        }
+        pSetWindowLongPtr( m_nppMsgr.getNppWnd(), GWLP_WNDPROC, (LONG_PTR) nppOriginalWndProc );
+    }
+
+    if ( sciOriginalWndProc1 )
+    {
+        pSetWindowLongPtr( m_nppMsgr.getSciMainWnd(), GWLP_WNDPROC, (LONG_PTR) sciOriginalWndProc1 );
+    }
+
+    if ( sciOriginalWndProc2 )
+    {
+        pSetWindowLongPtr( m_nppMsgr.getSciSecondWnd(), GWLP_WNDPROC, (LONG_PTR) sciOriginalWndProc2 );
     }
 
     SaveOptions();
@@ -439,19 +365,7 @@ CXBrackets::TBracketType CXBrackets::getRightBracketType(const int ch, unsigned 
     return nRightBracketType;
 }
 
-CXBrackets::eCharProcessingResult CXBrackets::OnSciCharAdded(const int ch)
-{
-    eCharProcessingResult result = OnSciCharAdded_Internal(ch);
-
-    // the previous selection is no more relevant:
-    m_nSelPos = 0;
-    m_nSelLen = 0;
-    m_pSelText.reset();
-
-    return result;
-}
-
-CXBrackets::eCharProcessingResult CXBrackets::OnSciCharAdded_Internal(const int ch)
+CXBrackets::eCharProcessingResult CXBrackets::OnSciChar(const int ch)
 {
     if ( !g_opt.getBracketsAutoComplete() )
         return cprNone;
@@ -472,7 +386,7 @@ CXBrackets::eCharProcessingResult CXBrackets::OnSciCharAdded_Internal(const int 
 
         if ( nRightBracketType != tbtNone )
         {
-            Sci_Position pos = sciMsgr.getCurrentPos() - 1;
+            Sci_Position pos = sciMsgr.getCurrentPos();
 
             if ( pos == m_nAutoRightBracketPos )
             {
@@ -480,19 +394,13 @@ CXBrackets::eCharProcessingResult CXBrackets::OnSciCharAdded_Internal(const int 
                 char prev_ch = sciMsgr.getCharAt(pos - 1);
                 if ( prev_ch == strBrackets[nRightBracketType][0] )
                 {
-                    char next_ch = sciMsgr.getCharAt(pos + 1);
+                    char next_ch = sciMsgr.getCharAt(pos);
                     if ( next_ch == strBrackets[nRightBracketType][1] )
                     {
-                        sciMsgr.beginUndoAction();
-                        // remove just typed right bracket
-                        sciMsgr.setSel(pos, pos + 1);
-                        sciMsgr.replaceSelText("");
-                        // move the caret
                         ++pos;
                         if ( nRightBracketType == tbtTag2 )
                             ++pos;
                         sciMsgr.setSel(pos, pos);
-                        sciMsgr.endUndoAction();
 
                         m_nAutoRightBracketPos = -1;
                         return cprBrAutoCompl;
@@ -510,12 +418,6 @@ CXBrackets::eCharProcessingResult CXBrackets::OnSciCharAdded_Internal(const int 
 
     // a typed character is a bracket
     return AutoBracketsFunc(nLeftBracketType);
-}
-
-bool CXBrackets::OnSciBeforeDeleteText(const SCNotification* pscn)
-{
-    (pscn);
-    return PrepareSelAutoBrFunc();
 }
 
 void CXBrackets::ReadOptions()
@@ -644,7 +546,7 @@ CXBrackets::eCharProcessingResult CXBrackets::AutoBracketsFunc(int nBracketType)
         bPrevCharOK = false;
 
         // previous character
-        char prev_ch = (nEditPos >= 2) ? sciMsgr.getCharAt(nEditPos - 2) : 0;
+        char prev_ch = (nEditPos >= 1) ? sciMsgr.getCharAt(nEditPos - 1) : 0;
 
         if ( prev_ch == '\x0D' ||
              prev_ch == '\x0A' ||
@@ -683,9 +585,10 @@ CXBrackets::eCharProcessingResult CXBrackets::AutoBracketsFunc(int nBracketType)
         }
 
         sciMsgr.beginUndoAction();
-        // inserting the closing bracket
-        sciMsgr.replaceSelText(strBrackets[nBracketType] + 1);
+        // inserting the brackets pair
+        sciMsgr.replaceSelText(strBrackets[nBracketType]);
         // placing the caret between brackets
+        ++nEditPos;
         sciMsgr.setSel(nEditPos, nEditPos);
         sciMsgr.endUndoAction();
 
@@ -743,16 +646,8 @@ bool CXBrackets::isEnclosedInBrackets(const char* pszTextLeft, const char* pszTe
     return bRet;
 }
 
-bool CXBrackets::PrepareSelAutoBrFunc()
+bool CXBrackets::SelAutoBrFunc(int nBracketType)
 {
-    if ( m_isProcessingSelAutoBr )
-        return false; // avoiding recursive calls - not processed
-
-    // the previous selection is no more relevant:
-    m_nSelPos = 0;
-    m_nSelLen = 0;
-    m_pSelText.reset();
-
     const UINT uSelAutoBr = g_opt.getBracketsSelAutoBr();
     if ( uSelAutoBr == CXBracketsOptions::sabNone )
         return false; // nothing to do - not processed
@@ -775,36 +670,18 @@ bool CXBrackets::PrepareSelAutoBrFunc()
 
     // getting the selected text
     const Sci_Position nSelLen = sciMsgr.getSelText(nullptr);
-    m_pSelText = std::make_unique<char[]>(nSelLen + nMaxBrPairLen + 1);
-    sciMsgr.getSelText(m_pSelText.get() + 1); // always starting from pSelText[1]
+    auto pSelText = std::make_unique<char[]>(nSelLen + nMaxBrPairLen + 1);
+    sciMsgr.getSelText(pSelText.get() + 1); // always starting from pSelText[1]
 
     if ( uSelAutoBr == CXBracketsOptions::sabEncloseRemove ||
          uSelAutoBr == CXBracketsOptions::sabEncloseRemoveOuter )
     {
-        m_pSelText[0] = nEditPos != 0 ? sciMsgr.getCharAt(nEditPos - 1) : 0; // previous character (before the selection)
-        for ( int i = 0; i < nMaxBrPairLen - 1; i++ )
+        pSelText[0] = nSelPos != 0 ? sciMsgr.getCharAt(nSelPos - 1) : 0; // previous character (before the selection)
+        for (int i = 0; i < nMaxBrPairLen - 1; i++)
         {
-            m_pSelText[nSelLen + 1 + i] = sciMsgr.getCharAt(nEditPos + nSelLen + i); // next characters (after the selection)
+            pSelText[nSelLen + 1 + i] = sciMsgr.getCharAt(nSelPos + nSelLen + i); // next characters (after the selection)
         }
-        m_pSelText[nSelLen + nMaxBrPairLen] = 0;
-    }
-
-    ::EnterCriticalSection(&m_csDelTextTimer);
-    m_nSelPos = nSelPos;
-    m_nSelLen = nSelLen;
-    ::LeaveCriticalSection(&m_csDelTextTimer);
-
-    return true;
-}
-
-bool CXBrackets::SelAutoBrFunc(int nBracketType)
-{
-    m_isProcessingSelAutoBr = true;
-
-    if ( m_nSelLen == 0 || !m_pSelText )
-    {
-        m_isProcessingSelAutoBr = false;
-        return false; // no previously selected text - not processed
+        pSelText[nSelLen + nMaxBrPairLen] = 0;
     }
 
     if ( nBracketType == tbtTag && g_opt.getBracketsDoTag2() )
@@ -813,91 +690,83 @@ bool CXBrackets::SelAutoBrFunc(int nBracketType)
     int nBrAltType = nBracketType;
     int nBrPairLen = lstrlenA(strBrackets[nBracketType]);
 
-    CSciMessager sciMsgr(m_nppMsgr.getCurrentScintillaWnd());
-
     sciMsgr.beginUndoAction();
 
-    sciMsgr.SendSciMsg(WM_SETREDRAW, FALSE, 0);
-    sciMsgr.setSel(m_nSelPos, m_nSelPos + 1); // selecting the just typed bracket character
-    sciMsgr.SendSciMsg(WM_SETREDRAW, TRUE, 0);
-
-    const UINT uSelAutoBr = g_opt.getBracketsSelAutoBr();
     if ( uSelAutoBr == CXBracketsOptions::sabEncloseRemove ||
          uSelAutoBr == CXBracketsOptions::sabEncloseRemoveOuter )
     {
-        if ( isEnclosedInBrackets(m_pSelText.get() + 1, m_pSelText.get() + m_nSelLen - nBrPairLen + 2, &nBrAltType, true) )
+        if ( isEnclosedInBrackets(pSelText.get() + 1, pSelText.get() + nSelLen - nBrPairLen + 2, &nBrAltType, true) )
         {
             // already in brackets/quotes : ["text"] ; excluding them
             if ( nBrAltType != nBracketType )
             {
                 nBrPairLen = lstrlenA(strBrackets[nBrAltType]);
             }
-            m_pSelText[m_nSelLen - nBrPairLen + 2] = 0;
-            sciMsgr.replaceSelText(m_pSelText.get() + 2);
-            sciMsgr.setSel(m_nSelPos, m_nSelPos + m_nSelLen - nBrPairLen);
+            pSelText[nSelLen - nBrPairLen + 2] = 0;
+            sciMsgr.replaceSelText(pSelText.get() + 2);
+            sciMsgr.setSel(nSelPos, nSelPos + nSelLen - nBrPairLen);
         }
         else if ( uSelAutoBr == CXBracketsOptions::sabEncloseRemoveOuter &&
-                  m_nSelPos != 0 &&
-                  isEnclosedInBrackets(m_pSelText.get(), m_pSelText.get() + m_nSelLen + 1, &nBrAltType, false) )
+                  nSelPos != 0 &&
+                  isEnclosedInBrackets(pSelText.get(), pSelText.get() + nSelLen + 1, &nBrAltType, false) )
         {
             // already in brackets/quotes : "[text]" ; excluding them
             if ( nBrAltType != nBracketType )
             {
                 nBrPairLen = lstrlenA(strBrackets[nBrAltType]);
             }
-            m_pSelText[m_nSelLen + 1] = 0;
+            pSelText[nSelLen + 1] = 0;
             sciMsgr.SendSciMsg(WM_SETREDRAW, FALSE, 0);
-            sciMsgr.setSel(m_nSelPos - 1, m_nSelPos + nBrPairLen); // including the just typed bracket character
+            sciMsgr.setSel(nSelPos - 1, nSelPos + nSelLen + nBrPairLen - 1);
             sciMsgr.SendSciMsg(WM_SETREDRAW, TRUE, 0);
-            sciMsgr.replaceSelText(m_pSelText.get() + 1);
-            sciMsgr.setSel(m_nSelPos - 1, m_nSelPos + m_nSelLen - 1);
+            sciMsgr.replaceSelText(pSelText.get() + 1);
+            sciMsgr.setSel(nSelPos - 1, nSelPos + nSelLen - 1);
         }
         else
         {
             // enclose in brackets/quotes
-            m_pSelText[0] = strBrackets[nBracketType][0];
-            lstrcpyA(m_pSelText.get() + m_nSelLen + 1, strBrackets[nBracketType] + 1);
-            sciMsgr.replaceSelText(m_pSelText.get());
-            sciMsgr.setSel(m_nSelPos + 1, m_nSelPos + m_nSelLen + 1);
+            pSelText[0] = strBrackets[nBracketType][0];
+            lstrcpyA(pSelText.get() + nSelLen + 1, strBrackets[nBracketType] + 1);
+            sciMsgr.replaceSelText(pSelText.get());
+            sciMsgr.setSel(nSelPos + 1, nSelPos + nSelLen + 1);
         }
     }
     else
     {
-        m_pSelText[0] = strBrackets[nBracketType][0];
+        pSelText[0] = strBrackets[nBracketType][0];
 
         if ( uSelAutoBr == CXBracketsOptions::sabEncloseAndSel )
         {
-            if ( isEnclosedInBrackets(m_pSelText.get() + 1, m_pSelText.get() + m_nSelLen - nBrPairLen + 2, &nBrAltType, true) )
+            if ( isEnclosedInBrackets(pSelText.get() + 1, pSelText.get() + nSelLen - nBrPairLen + 2, &nBrAltType, true) )
             {
                 // already in brackets/quotes; exclude them
                 if ( nBrAltType != nBracketType )
                 {
                     nBrPairLen = lstrlenA(strBrackets[nBrAltType]);
                 }
-                m_pSelText[m_nSelLen - nBrPairLen + 2] = 0;
-                sciMsgr.replaceSelText(m_pSelText.get() + 2);
-                sciMsgr.setSel(m_nSelPos, m_nSelPos + m_nSelLen - nBrPairLen);
+                pSelText[nSelLen - nBrPairLen + 2] = 0;
+                sciMsgr.replaceSelText(pSelText.get() + 2);
+                sciMsgr.setSel(nSelPos, nSelPos + nSelLen - nBrPairLen);
             }
             else
             {
                 // enclose in brackets/quotes
-                lstrcpyA(m_pSelText.get() + m_nSelLen + 1, strBrackets[nBracketType] + 1);
-                sciMsgr.replaceSelText(m_pSelText.get());
-                sciMsgr.setSel(m_nSelPos, m_nSelPos + m_nSelLen + nBrPairLen);
+                lstrcpyA(pSelText.get() + nSelLen + 1, strBrackets[nBracketType] + 1);
+                sciMsgr.replaceSelText(pSelText.get());
+                sciMsgr.setSel(nSelPos, nSelPos + nSelLen + nBrPairLen);
             }
         }
         else // CXBracketsOptions::sabEnclose
         {
-            lstrcpyA(m_pSelText.get() + m_nSelLen + 1, strBrackets[nBracketType] + 1);
-            sciMsgr.replaceSelText(m_pSelText.get());
-            sciMsgr.setSel(m_nSelPos + 1, m_nSelPos + m_nSelLen + 1);
+            lstrcpyA(pSelText.get() + nSelLen + 1, strBrackets[nBracketType] + 1);
+            sciMsgr.replaceSelText(pSelText.get());
+            sciMsgr.setSel(nSelPos + 1, nSelPos + nSelLen + 1);
         }
     }
 
     sciMsgr.endUndoAction();
 
     m_nAutoRightBracketPos = -1;
-    m_isProcessingSelAutoBr = false;
 
     return true; // processed
 }
