@@ -3,11 +3,11 @@
 * by DV, Jan 2009 - Jul 2025
 ***********************************************
 
-XBrackets Lite allows to autocomplete brackets ([{""}]) i.e. it inserts
-corresponding right bracket when the left bracket is typed.
-The plugin uses "smart" autocompletion:
-- next character is analysed for ([{ brackets;
-- next & previous characters are analysed for " quote.
+XBrackets Lite allows to auto-complete brackets ([{<"">}]) i.e. it inserts the
+corresponding right (closing) bracket when a left (opening) bracket is typed.
+The plugin uses "smart" auto-completion:
+- next character is analysed for ([{< brackets;
+- next & previous characters are analysed for " and ' quotes.
 
 This plugin is a Notepad++'es port of my XBrackets plugin for AkelPad. 
 As Scintilla highlights pair brackets by itself, XBrackets Lite doesn't 
@@ -35,43 +35,43 @@ Examples:
 left (opening) bracket has been typed.
 The following values are supported:
   Sel_AutoBr=0
-    When left (opening) bracket is typed, the selected text is disappeared
+    When a left (opening) bracket is typed, the selected text is removed
     (replaced with the bracket).
     Examples:
       |abc| + {  results in  {
   Sel_AutoBr=1
-    When left (opening) bracket is typed, the selected text is enclosed with
+    When a left (opening) bracket is typed, the selected text is enclosed with
     the corresponding brackets pair.
     Examples:
       |abc| + {  results in  {|abc|}
   Sel_AutoBr=2
-    When left (opening) bracket is typed, the selected text is enclosed with
-    the corresponding brackets pair, and the brackets pair become selected
+    When a left (opening) bracket is typed, the selected text is enclosed with
+    the corresponding brackets pair, and the brackets pair becomes selected
     also. If the selected text already starts and ends with the corresponding
     brackets pair, the brackets will be removed.
     Examples:
       |abc| + {    results in  |{abc}|
       |{abc}| + {  results in  |abc|
   Sel_AutoBr=3
-    When left (opening) bracket is typed, the selected text is enclosed with
+    When a left (opening) bracket is typed, the selected text is enclosed with
     the corresponding brackets pair, and the brackets pair is _not_ selected
     also. If the selected text already starts and ends with the corresponding
     brackets pair, the brackets will be removed. If the surrounding brackets
     are not selected, they are not removed. (This mode was inspired by the
-    Sublime Text editor.)
+    Sublime Text editor).
     Examples:
       |abc| + {    results in  {|abc|}
       |{abc}| + {  results in  |abc|
       {|abc|} + {  results in  {{|abc|}}
   Sel_AutoBr=4
-    When left (opening) bracket is typed, the selected text is enclosed with
+    When a left (opening) bracket is typed, the selected text is enclosed with
     the corresponding brackets pair, and the brackets pair is _not_ selected
     also. If the selected text already starts and ends with the corresponding
     brackets pair, the brackets will be removed. If the surrounding brackets
     are not selected, they are also removed. Thus, type a left bracket/quote
     to enclose the selected text with the corresponding brackets pair, and
     type the left bracket/quote again to remove the enclosing brackets/quotes.
-    (This mode was inspired by the Sublime Text editor.)
+    (This mode was inspired by the Sublime Text editor).
     Examples:
       |abc| + {    results in  {|abc|}
       |{abc}| + {  results in  |abc|
@@ -84,7 +84,9 @@ Also, brackets are auto-completed before the supported right brackets from
 the following set: )]}>"' .
 Additionally, brackets are auto-completed before the following white-space
 characters: '\0', '\r', '\n', ' ' and '\t'.
+Otherwise a bracket is not auto-completed.
 Example:
+  ; auto-complete before .,!?:;</ and )]}>"' and '\0', '\r', '\n', ' ', '\t'
   Next_Char_OK=.,!?:;</
 
 4. "Prev_Char_OK" defines a set of characters which are OK for brackets
@@ -93,7 +95,9 @@ This rule is applied only to those bracket pairs which have identical opening
 and closing characters (such as "" and '').
 Additionally, such brackets are auto-completed after the following white-space
 characters: '\0', '\r', '\n', ' ' and '\t'.
+Otherwise a quote is not auto-completed.
 Example:
+  ; auto-complete after ([{<= and '\0', '\r', '\n', ' ', '\t'
   Prev_Char_OK=([{<=
 
 
@@ -132,7 +136,7 @@ v1.2.1 - Oct 2012
 v1.2 - May 2011
 ---------------
 * header files in "src/core/npp_stuff" updated to version 5.9 of Notepad++
-* now brackets autocompletion is disabled during multiple selection mode
+* now brackets auto-completion is disabled during multiple selection mode
 
 
 v1.1 - Feb 2009
