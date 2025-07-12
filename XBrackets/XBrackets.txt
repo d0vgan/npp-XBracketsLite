@@ -87,6 +87,7 @@ v1.4.0 - Jul 2025
 * Glory to Ukraine! Glory to the heroes!
 + enhanced Settings dialog
 + new manual option: Sel_AutoBr
+* internal improvements
 * updated to Notepad++ 8.8.2
 
 
