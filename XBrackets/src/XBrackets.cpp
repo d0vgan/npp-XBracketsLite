@@ -678,6 +678,8 @@ bool CXBrackets::SelAutoBrFunc(int nBracketType)
     auto pSelText = std::make_unique<char[]>(nSelLen + nBrPairLen + 1);
     sciMsgr.getSelText(pSelText.get() + 1); // always starting from pSelText[1]
 
+    sciMsgr.beginUndoAction();
+
     if ( uSelAutoBr == CXBracketsOptions::sabEncloseRemove ||
          uSelAutoBr == CXBracketsOptions::sabEncloseRemoveOuter )
     {
@@ -687,13 +689,7 @@ bool CXBrackets::SelAutoBrFunc(int nBracketType)
             pSelText[nSelLen + 1 + i] = sciMsgr.getCharAt(nSelPos + nSelLen + i); // next characters (after the selection)
         }
         pSelText[nSelLen + nBrPairLen] = 0;
-    }
 
-    sciMsgr.beginUndoAction();
-
-    if ( uSelAutoBr == CXBracketsOptions::sabEncloseRemove ||
-         uSelAutoBr == CXBracketsOptions::sabEncloseRemoveOuter )
-    {
         if ( isEnclosedInBrackets(pSelText.get() + 1, pSelText.get() + nSelLen - nBrPairLen + 2, &nBrAltType, true) )
         {
             // already in brackets/quotes : ["text"] ; excluding them
