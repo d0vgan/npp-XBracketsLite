@@ -112,6 +112,13 @@ LRESULT CALLBACK CXBrackets::sciNewWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, 
             return 0; // processed by XBrackets, don't forward to Scintilla
         }
     }
+    else if ( uMsg == WM_KEYDOWN )
+    {
+        if ( wParam == VK_DELETE || wParam == VK_BACK )
+        {
+            thePlugin.m_nAutoRightBracketPos = -1;
+        }
+    }
 
     return sciCallWndProc(hWnd, uMsg, wParam, lParam);
 }
