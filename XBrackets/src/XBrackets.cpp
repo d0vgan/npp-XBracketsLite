@@ -23,8 +23,6 @@ const char* CXBrackets::strBrackets[tbtCount] = {
     "</>"   // tbtTag2
 };
 
-const int nMaxBrPairLen = 3; // </>
-
 bool CXBrackets::isNppMacroStarted = false;
 bool CXBrackets::isNppWndUnicode = true;
 WNDPROC CXBrackets::nppOriginalWndProc = NULL;
@@ -669,27 +667,27 @@ bool CXBrackets::SelAutoBrFunc(int nBracketType)
 
     const Sci_Position nSelPos = nEditPos < nEditEndPos ? nEditPos : nEditEndPos;
 
+    if (nBracketType == tbtTag && g_opt.getBracketsDoTag2())
+        nBracketType = tbtTag2;
+
+    int nBrAltType = nBracketType;
+    int nBrPairLen = lstrlenA(strBrackets[nBracketType]);
+
     // getting the selected text
     const Sci_Position nSelLen = sciMsgr.getSelText(nullptr);
-    auto pSelText = std::make_unique<char[]>(nSelLen + nMaxBrPairLen + 1);
+    auto pSelText = std::make_unique<char[]>(nSelLen + nBrPairLen + 1);
     sciMsgr.getSelText(pSelText.get() + 1); // always starting from pSelText[1]
 
     if ( uSelAutoBr == CXBracketsOptions::sabEncloseRemove ||
          uSelAutoBr == CXBracketsOptions::sabEncloseRemoveOuter )
     {
         pSelText[0] = nSelPos != 0 ? sciMsgr.getCharAt(nSelPos - 1) : 0; // previous character (before the selection)
-        for (int i = 0; i < nMaxBrPairLen - 1; i++)
+        for (int i = 0; i < nBrPairLen - 1; i++)
         {
             pSelText[nSelLen + 1 + i] = sciMsgr.getCharAt(nSelPos + nSelLen + i); // next characters (after the selection)
         }
-        pSelText[nSelLen + nMaxBrPairLen] = 0;
+        pSelText[nSelLen + nBrPairLen] = 0;
     }
-
-    if ( nBracketType == tbtTag && g_opt.getBracketsDoTag2() )
-        nBracketType = tbtTag2;
-
-    int nBrAltType = nBracketType;
-    int nBrPairLen = lstrlenA(strBrackets[nBracketType]);
 
     sciMsgr.beginUndoAction();
 
