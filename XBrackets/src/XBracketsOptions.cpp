@@ -181,7 +181,7 @@ bool CXBracketsOptions::IsSupportedFile(const TCHAR* szExt) const
 
 void CXBracketsOptions::ReadOptions(const TCHAR* szIniFilePath)
 {
-    const TCHAR* NOKEYSTR = _T("%*@$^!~#");
+    const TCHAR NOKEYSTR[] = _T("=:=%*@$^!~#");
     TCHAR szTempExts[STR_FILEEXTS_SIZE];
 
     m_uFlags0 = ::GetPrivateProfileInt( INI_SECTION_OPTIONS, INI_OPTION_FLAGS, -1, szIniFilePath );

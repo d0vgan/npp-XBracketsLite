@@ -563,7 +563,7 @@ CXBrackets::eCharProcessingResult CXBrackets::AutoBracketsFunc(int nBracketType)
         Sci_Position pos;
         int len; // len <= MAX_ESCAPED_PREFIX, so 'int' is always enough
 
-        getEscapedPrefixPos(nEditPos - 1, &pos, &len);
+        getEscapedPrefixPos(nEditPos, &pos, &len);
         len = static_cast<int>(sciMsgr.getTextRange(pos, pos + len, szPrefix));
         if ( isEscapedPrefix(szPrefix, len) )
             bPrevCharOK = false;
