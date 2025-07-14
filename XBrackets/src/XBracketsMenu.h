@@ -10,6 +10,11 @@ class CXBracketsMenu : public CNppPluginMenu
             N_AUTOCOMPLETE = 0,
             N_SETTINGS,
             N_SEPARATOR1,
+            N_GOTOMATCHINGBR,
+            N_GOTONEARESTBR,
+            N_SELTOMATCHINGBR,
+            N_SELTONEARESTBR,
+            N_SEPARATOR2,
             N_ABOUT,
             
             N_NBFUNCITEMS
@@ -22,6 +27,10 @@ class CXBracketsMenu : public CNppPluginMenu
         static void    AllowAutocomplete(bool bAllow);
         static void    funcAutocomplete();
         static void    funcSettings();
+        static void    funcGoToMatchingBracket();
+        static void    funcGoToNearestBracket();
+        static void    funcSelToMatchingBracket();
+        static void    funcSelToNearestBrackets();
         static void    funcAbout();
         
 };

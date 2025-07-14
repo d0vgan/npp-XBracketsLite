@@ -3,19 +3,10 @@
 //---------------------------------------------------------------------------
 #include "core/NppPlugin.h"
 #include "XBracketsMenu.h"
-#include <utility>
 
 class CXBrackets : public CNppPlugin
 {
     public:
-        enum TFileType {
-            tftNone = 0,
-            tftText,
-            tftC_Cpp,
-            tftH_Hpp,
-            tftPas
-        };
-
         enum TFileType2 {
             tfmNone           = 0x0000,
             tfmComment1       = 0x0001,
@@ -57,7 +48,7 @@ class CXBrackets : public CNppPlugin
         
         // internal vars
         Sci_Position m_nAutoRightBracketPos;
-        std::pair<TFileType, unsigned short> m_nnFileType;
+        unsigned int m_uFileType;
 
     public:
         CXBrackets();
@@ -83,22 +74,75 @@ class CXBrackets : public CNppPlugin
         eCharProcessingResult OnSciChar(const int ch);
 
         // custom functions
+        void GoToMatchingBracket();
+        void GoToNearestBracket();
+        void SelToMatchingBracket();
+        void SelToNearestBrackets();
+
         void ReadOptions();
         void SaveOptions();
 
     protected:
+        enum eDupPairDirection
+        {
+            DP_NONE          = 0x00,
+            DP_FORWARD       = 0x01,
+            DP_BACKWARD      = 0x02,
+            DP_DETECT        = 0x08,
+            DP_MAYBEFORWARD  = (DP_DETECT | DP_FORWARD),
+            DP_MAYBEBACKWARD = (DP_DETECT | DP_BACKWARD)
+        };
+
+        enum eAtBrChar {
+            abcNone        = 0x00,
+            abcLeftBr      = 0x01, // left:  (
+            abcRightBr     = 0x02, // right: )
+            abcDetectBr    = 0x04, // can be either left or right
+            abcBrIsOnLeft  = 0x10, // on left:  (|  or  )|
+            abcBrIsOnRight = 0x20  // on right: |(  or  |)
+        };
+
+        struct tGetBracketsState
+        {
+            Sci_Position nSelStart{-1};
+            Sci_Position nSelEnd{-1};
+            Sci_Position nCharPos{-1};
+            Sci_Position nLeftBrPos{-1};
+            Sci_Position nRightBrPos{-1};
+            TBracketType nLeftBrType{tbtNone};
+            TBracketType nRightBrType{tbtNone};
+            eDupPairDirection nLeftDupDirection{DP_NONE};
+            eDupPairDirection nRightDupDirection{DP_NONE};
+        };
+
         // custom functions
-        eCharProcessingResult AutoBracketsFunc(int nBracketType);
-        bool SelAutoBrFunc(int nBracketType);
+        eCharProcessingResult AutoBracketsFunc(TBracketType nBracketType);
+        bool SelAutoBrFunc(TBracketType nBracketType);
         void UpdateFileType();
-        bool isEnclosedInBrackets(const char* pszTextLeft, const char* pszTextRight, int* pnBracketType, bool bInSelection);
-        std::pair<TFileType, unsigned short> getFileType();
+        bool isEnclosedInBrackets(const char* pszTextLeft, const char* pszTextRight, TBracketType* pnBracketType, bool bInSelection);
+        unsigned int getFileType();
+
+        bool isDoubleQuoteSupported() const;
+        bool isSingleQuoteSupported() const;
+        bool isTagSupported() const;
+        bool isTag2Supported() const;
+        bool isSkipEscapedSupported() const;
 
         enum eBracketOptions {
             bofIgnoreMode = 0x01
         };
         TBracketType getLeftBracketType(const int ch, unsigned int uOptions = 0) const;
         TBracketType getRightBracketType(const int ch, unsigned int uOptions = 0) const;
+
+        static int getDirectionIndex(const eDupPairDirection direction);
+        static int getDirectionRank(const eDupPairDirection leftDirection, const eDupPairDirection rightDirection);
+
+        bool isEscapedPos(const CSciMessager& sciMsgr, const Sci_Position nCharPos) const;
+        bool isDuplicatedPair(TBracketType nBracketType) const;
+        eDupPairDirection getDuplicatedPairDirection(const CSciMessager& sciMsgr, const Sci_Position nCharPos, const char curr_ch) const;
+        unsigned int isAtBracketCharacter(const CSciMessager& sciMsgr, const Sci_Position nCharPos, TBracketType* out_nBrType, eDupPairDirection* out_nDupDirection) const;
+        bool findLeftBracket(const CSciMessager& sciMsgr, const Sci_Position nStartPos, tGetBracketsState* state);
+        bool findRightBracket(const CSciMessager& sciMsgr, const Sci_Position nStartPos, tGetBracketsState* state);
 
     protected:
         enum eMacroState {

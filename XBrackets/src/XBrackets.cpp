@@ -2,6 +2,7 @@
 #include "XBracketsOptions.h"
 #include "core/npp_files/resource.h"
 #include <vector>
+#include <stack>
 
 
 // can be _T(x), but _T(x) may be incompatible with ANSI mode
@@ -29,15 +30,64 @@ WNDPROC CXBrackets::nppOriginalWndProc = NULL;
 WNDPROC CXBrackets::sciOriginalWndProc1 = NULL;
 WNDPROC CXBrackets::sciOriginalWndProc2 = NULL;
 
-/*
-// from "resource.h" (Notepad++)
-#define ID_MACRO                       20000
-#define ID_MACRO_LIMIT                 20200
-#define IDCMD                          50000
-#define IDC_EDIT_TOGGLEMACRORECORDING  (IDCMD + 5)
-#define MACRO_USER                     (WM_USER + 4000)
-#define WM_MACRODLGRUNMACRO            (MACRO_USER + 02)
-*/
+namespace
+{
+    void getEscapedPrefixPos(const Sci_Position nOffset, Sci_Position* pnPos, int* pnLen)
+    {
+        if ( nOffset > CXBrackets::MAX_ESCAPED_PREFIX )
+        {
+            *pnPos = nOffset - CXBrackets::MAX_ESCAPED_PREFIX;
+            *pnLen = CXBrackets::MAX_ESCAPED_PREFIX;
+        }
+        else
+        {
+            *pnPos = 0;
+            *pnLen = static_cast<int>(nOffset);
+        }
+    }
+
+    bool isEscapedPrefix(const char* str, int len)
+    {
+        int k = 0;
+        while ( (len > 0) && (str[--len] == '\\') )
+        {
+            ++k;
+        }
+        return (k % 2) ? true : false;
+    }
+
+    bool isWhiteSpaceOrNulChar(const char ch)
+    {
+        switch ( ch )
+        {
+        case '\x00':
+        case '\x0D':
+        case '\x0A':
+        case ' ':
+        case '\t':
+            return true;
+        }
+
+        return false;
+    }
+
+    bool isSepOrOneOf(const char ch, const char* pChars)
+    {
+        return ( isWhiteSpaceOrNulChar(ch) || strchr(pChars, ch) != NULL );
+    }
+
+    bool isSentenceEndChar(const char ch)
+    {
+        switch ( ch )
+        {
+        case '.':
+        case '?':
+        case '!':
+            return true;
+        }
+        return false;
+    }
+}
 
 LRESULT CXBrackets::nppCallWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
@@ -125,7 +175,7 @@ LRESULT CALLBACK CXBrackets::sciNewWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, 
 
 CXBrackets::CXBrackets() :
   m_nAutoRightBracketPos(-1),
-  m_nnFileType{ tftNone, tfmIsSupported }
+  m_uFileType(tfmIsSupported)
 {
 }
 
@@ -275,6 +325,34 @@ void CXBrackets::OnNppMacro(int nMacroState)
     CXBracketsMenu::AllowAutocomplete(!isNppMacroStarted);
 }
 
+bool CXBrackets::isDoubleQuoteSupported() const
+{
+    return g_opt.getBracketsDoDoubleQuote();
+}
+
+bool CXBrackets::isSingleQuoteSupported() const
+{
+    return ( g_opt.getBracketsDoSingleQuote() &&
+             ((m_uFileType & tfmSingleQuote) != 0 || !g_opt.getBracketsDoSingleQuoteIf()) );
+}
+
+bool CXBrackets::isTagSupported() const
+{
+    return ( g_opt.getBracketsDoTag() &&
+             ((m_uFileType & tfmHtmlCompatible) != 0 || !g_opt.getBracketsDoTagIf()) );
+}
+
+bool CXBrackets::isTag2Supported() const
+{
+    return ( g_opt.getBracketsDoTag2() &&
+             ((m_uFileType & tfmHtmlCompatible) != 0 || !g_opt.getBracketsDoTagIf()) );
+}
+
+bool CXBrackets::isSkipEscapedSupported() const
+{
+    return ( g_opt.getBracketsSkipEscaped() && (m_uFileType & tfmEscaped1) != 0 );
+}
+
 CXBrackets::TBracketType CXBrackets::getLeftBracketType(const int ch, unsigned int uOptions) const
 {
     TBracketType nLeftBracketType = tbtNone;
@@ -292,24 +370,19 @@ CXBrackets::TBracketType CXBrackets::getLeftBracketType(const int ch, unsigned i
         nLeftBracketType = tbtBrace;
         break;
     case _TCH('\"') :
-        if ( (uOptions & bofIgnoreMode) != 0 ||
-             g_opt.getBracketsDoDoubleQuote() )
+        if ( (uOptions & bofIgnoreMode) != 0 || isDoubleQuoteSupported() )
         {
             nLeftBracketType = tbtDblQuote;
         }
         break;
     case _TCH('\'') :
-        if ( (uOptions & bofIgnoreMode) != 0 ||
-             (g_opt.getBracketsDoSingleQuote() &&
-              ((m_nnFileType.second & tfmSingleQuote) != 0 || !g_opt.getBracketsDoSingleQuoteIf())) )
+        if ( (uOptions & bofIgnoreMode) != 0 || isSingleQuoteSupported() )
         {
             nLeftBracketType = tbtSglQuote;
         }
         break;
     case _TCH('<') :
-        if ( (uOptions & bofIgnoreMode) != 0 ||
-             (g_opt.getBracketsDoTag() &&
-              ((m_nnFileType.second & tfmHtmlCompatible) != 0 || !g_opt.getBracketsDoTagIf())) )
+        if ( (uOptions & bofIgnoreMode) != 0 || isTagSupported() )
         {
             nLeftBracketType = tbtTag;
         }
@@ -336,32 +409,25 @@ CXBrackets::TBracketType CXBrackets::getRightBracketType(const int ch, unsigned 
         nRightBracketType = tbtBrace;
         break;
     case _TCH('\"') :
-        if ( (uOptions & bofIgnoreMode) != 0 ||
-             g_opt.getBracketsDoDoubleQuote() )
+        if ( (uOptions & bofIgnoreMode) != 0 || isDoubleQuoteSupported() )
         {
             nRightBracketType = tbtDblQuote;
         }
         break;
     case _TCH('\'') :
-        if ( (uOptions & bofIgnoreMode) != 0 ||
-             (g_opt.getBracketsDoSingleQuote() &&
-              ((m_nnFileType.second & tfmSingleQuote) != 0 || !g_opt.getBracketsDoSingleQuoteIf())) )
+        if ( (uOptions & bofIgnoreMode) != 0 || isSingleQuoteSupported() )
         {
             nRightBracketType = tbtSglQuote;
         }
         break;
     case _TCH('>') :
-        if ( (uOptions & bofIgnoreMode) != 0 || 
-             (g_opt.getBracketsDoTag() &&
-              ((m_nnFileType.second & tfmHtmlCompatible) != 0 || !g_opt.getBracketsDoTagIf())) )
+        if ( (uOptions & bofIgnoreMode) != 0 || isTagSupported() )
         {
             nRightBracketType = tbtTag;
         }
         // no break here
     case _TCH('/') :
-        if ( (uOptions & bofIgnoreMode) != 0 ||
-             (g_opt.getBracketsDoTag2() &&
-              ((m_nnFileType.second & tfmHtmlCompatible) != 0 || !g_opt.getBracketsDoTagIf())) )
+        if ( (uOptions & bofIgnoreMode) != 0 || isTag2Supported() )
         {
             nRightBracketType = tbtTag2;
         }
@@ -371,12 +437,469 @@ CXBrackets::TBracketType CXBrackets::getRightBracketType(const int ch, unsigned 
     return nRightBracketType;
 }
 
+int CXBrackets::getDirectionIndex(const eDupPairDirection direction)
+{
+    int i = 0;
+
+    switch (direction)
+    {
+        case DP_BACKWARD:
+            i = 0;
+            break;
+        case DP_MAYBEBACKWARD:
+            i = 1;
+            break;
+        case DP_DETECT:
+            i = 2;
+            break;
+        case DP_MAYBEFORWARD:
+            i = 3;
+            break;
+        case DP_FORWARD:
+            i = 4;
+            break;
+    }
+
+    return i;
+}
+
+int CXBrackets::getDirectionRank(const eDupPairDirection leftDirection, const eDupPairDirection rightDirection)
+{
+    //  The *exact* numbers in the table below have no special meaning.
+    //  The only important thing is relative comparison of the numbers:
+    //  which of them are greater than others, and which of them are equal.
+    //
+    // --> leftDirection --> DP_BACKWARD  DP_MAYBEBACKWARD   DP_DETECT      DP_MAYBEFORWARD   DP_FORWARD
+    //    DP_FORWARD         <<( )>>  0   <?( )>>   1        ?(? )>>   2    (?> )>>   3       (>> )>>   4
+    //    DP_MAYBEFORWARD    <<( )?>  1   <?( )?>   5        ?(? )?>   9    (?> )?>  13       (>> )?>  17
+    //    DP_DETECT          <<( ?)?  2   <?( ?)?   9        ?(? ?)?  16    (?> ?)?  23       (>> ?)?  30
+    //    DP_MAYBEBACKWARD   <<( <?)  3   <?( <?)  13        ?(? <?)  23    (?> <?)  33       (>> <?)  43
+    //    DP_BACWARD         <<( <<)  4   <?( <<)  17        ?(? <<)  30    (?> <<)  43       (>> <<)  56
+    // ^ rightDirection ^
+    static const int Ranking[5][5] = {
+        { 4, 17, 30, 43, 56 }, // DP_BACKWARD
+        { 3, 13, 23, 33, 43 }, // DP_MAYBEBACKWARD
+        { 2,  9, 16, 23, 30 }, // DP_DETECT
+        { 1,  5,  9, 13, 17 }, // DP_MAYBEFORWARD
+        { 0,  1,  2,  3,  4 }  // DP_FORWARD
+    };
+
+    int leftIndex = getDirectionIndex(leftDirection);
+    int rightIndex = getDirectionIndex(rightDirection);
+
+    return Ranking[rightIndex][leftIndex];
+}
+
+bool CXBrackets::isEscapedPos(const CSciMessager& sciMsgr, const Sci_Position nCharPos) const
+{
+    if ( !isSkipEscapedSupported() )
+        return false;
+
+    char szPrefix[MAX_ESCAPED_PREFIX + 2];
+    Sci_Position pos;
+    int len; // len <= MAX_ESCAPED_PREFIX, so 'int' is always enough
+
+    getEscapedPrefixPos(nCharPos, &pos, &len);
+    len = static_cast<int>(sciMsgr.getTextRange(pos, pos + len, szPrefix));
+    return isEscapedPrefix(szPrefix, len);
+}
+
+bool CXBrackets::isDuplicatedPair(TBracketType nBracketType) const
+{
+    return (nBracketType == tbtDblQuote || nBracketType == tbtSglQuote);
+}
+
+CXBrackets::eDupPairDirection CXBrackets::getDuplicatedPairDirection(const CSciMessager& sciMsgr, const Sci_Position nCharPos, const char curr_ch) const
+{
+    static HWND hLocalEditWnd = NULL;
+    static char szWordDelimiters[] = " \t\n'`\"\\|[](){}<>,.;:+-=~!@#$%^&*/?";
+
+    if (nCharPos <= 0)
+        return DP_FORWARD; // no char before, search forward
+
+    char prev_ch = sciMsgr.getCharAt(nCharPos - 1);
+    if ( prev_ch == 0 )
+        return DP_FORWARD; // beginning of the file
+
+    if ( prev_ch == curr_ch )
+        return DP_BACKWARD; // pair found, search backward
+
+    char next_ch = sciMsgr.getCharAt(nCharPos + 1);
+    if ( next_ch == 0 )
+        return DP_BACKWARD; // end of the file
+
+    if ( next_ch == curr_ch )
+        return DP_FORWARD; // pair found, search forward
+
+    if ( prev_ch == '\r' || prev_ch == '\n' )
+    {
+        // previous char is EOL, search forward
+        return isSepOrOneOf(next_ch, szWordDelimiters) ? DP_MAYBEFORWARD : DP_FORWARD;
+    }
+
+    if ( next_ch == '\r' || next_ch == '\n')
+    {
+        // next char is EOL, search backward
+        return isSepOrOneOf(prev_ch, szWordDelimiters) ? DP_MAYBEBACKWARD : DP_BACKWARD;
+    }
+
+    if ( isSepOrOneOf(prev_ch, szWordDelimiters) )
+    {
+        // previous char is a separator
+        if ( !isSepOrOneOf(next_ch, szWordDelimiters) )
+            return DP_FORWARD; // next char is not a separator, search forward
+
+        if ( isSentenceEndChar(prev_ch) )
+        {
+            if ( !isSentenceEndChar(next_ch) ) // e.g.  ."-
+                return DP_MAYBEBACKWARD;
+        }
+    }
+    else if ( isSepOrOneOf(next_ch, szWordDelimiters) )
+    {
+        // next char is a separator
+        if ( !isSepOrOneOf(prev_ch, szWordDelimiters) )
+            return DP_BACKWARD; // previous char is not a separator, search backward
+
+        if ( isSentenceEndChar(prev_ch) )
+        {
+            if ( !isSentenceEndChar(next_ch) ) // e.g.  ."-
+                return DP_MAYBEBACKWARD;
+        }
+    }
+
+    return DP_DETECT;
+}
+
+unsigned int CXBrackets::isAtBracketCharacter(const CSciMessager& sciMsgr, const Sci_Position nCharPos, TBracketType* out_nBrType, eDupPairDirection* out_nDupDirection) const
+{
+    TBracketType nBrType = tbtNone;
+    eDupPairDirection nDupDir = DP_NONE;
+    TBracketType nDetectBrType = tbtNone;
+    unsigned int nDetectBrAtPos = abcNone;
+
+    *out_nBrType = tbtNone;
+    *out_nDupDirection = DP_NONE;
+
+    const char prev_ch = (nCharPos != 0) ? sciMsgr.getCharAt(nCharPos - 1) : 0;
+    const char curr_ch = sciMsgr.getCharAt(nCharPos);
+
+    if ( prev_ch != 0 )
+    {
+        nBrType = getLeftBracketType(prev_ch);
+        if ( nBrType != tbtNone && !isEscapedPos(sciMsgr, nCharPos - 1) ) //  (|
+        {
+            if ( isDuplicatedPair(nBrType) )
+            {
+                if ( nCharPos < 2 )
+                {
+                    *out_nBrType = nBrType;
+                    *out_nDupDirection = DP_FORWARD;
+                    return (abcLeftBr | abcBrIsOnLeft);
+                }
+
+                const int nStyleBefore = sciMsgr.SendSciMsg(SCI_GETSTYLEINDEXAT, nCharPos - 2);
+                const int nStyle = sciMsgr.SendSciMsg(SCI_GETSTYLEINDEXAT, nCharPos - 1);
+                const int nStyleAfter = sciMsgr.SendSciMsg(SCI_GETSTYLEINDEXAT, nCharPos);
+
+                if ( nStyleAfter == nStyle && nStyle != nStyleBefore )
+                {
+                    *out_nBrType = nBrType;
+                    *out_nDupDirection = DP_FORWARD;
+                    return (abcLeftBr | abcBrIsOnLeft);
+                }
+
+                if ( nStyleBefore == nStyle && nStyle != nStyleAfter )
+                {
+                    *out_nBrType = nBrType;
+                    *out_nDupDirection = DP_BACKWARD;
+                    return (abcRightBr | abcBrIsOnLeft);
+                }
+
+                nDupDir = getDuplicatedPairDirection(sciMsgr, nCharPos - 1, prev_ch);
+                if ( nDupDir == DP_FORWARD || nDupDir == DP_MAYBEFORWARD )
+                {
+                    *out_nDupDirection = nDupDir;
+                }
+                else if ( nDupDir == DP_DETECT )
+                {
+                    nDetectBrAtPos = abcBrIsOnLeft;
+                    nDetectBrType = nBrType;
+                    nBrType = tbtNone;
+                }
+                else
+                    nBrType = tbtNone;
+            }
+            if ( nBrType != tbtNone )
+            {
+                *out_nBrType = nBrType;
+                return (abcLeftBr | abcBrIsOnLeft);
+            }
+        }
+    }
+
+    if ( curr_ch != 0 )
+    {
+        nBrType = getLeftBracketType(curr_ch);
+        if ( nBrType != tbtNone && !isEscapedPos(sciMsgr, nCharPos) ) //  |(
+        {
+            if ( isDuplicatedPair(nBrType) )
+            {
+                if ( sciMsgr.getCharAt(nCharPos + 1) != 0 )
+                {
+                    const int nStyleBefore = sciMsgr.SendSciMsg(SCI_GETSTYLEINDEXAT, nCharPos - 1);
+                    const int nStyle = sciMsgr.SendSciMsg(SCI_GETSTYLEINDEXAT, nCharPos);
+                    const int nStyleAfter = sciMsgr.SendSciMsg(SCI_GETSTYLEINDEXAT, nCharPos + 1);
+
+                    if ( nStyleAfter == nStyle && nStyle != nStyleBefore )
+                    {
+                        *out_nBrType = nBrType;
+                        *out_nDupDirection = DP_FORWARD;
+                        return (abcLeftBr | abcBrIsOnRight);
+                    }
+
+                    if ( nStyleBefore == nStyle && nStyle != nStyleAfter )
+                    {
+                        *out_nBrType = nBrType;
+                        *out_nDupDirection = DP_BACKWARD;
+                        return (abcRightBr | abcBrIsOnRight);
+                    }
+                }
+
+                nDupDir = getDuplicatedPairDirection(sciMsgr, nCharPos, curr_ch);
+                if ( nDupDir == DP_FORWARD || nDupDir == DP_MAYBEFORWARD )
+                {
+                    *out_nDupDirection = nDupDir;
+                }
+                else if ( nDupDir == DP_DETECT )
+                {
+                    nDetectBrAtPos = abcBrIsOnRight;
+                    nDetectBrType = nBrType;
+                    nBrType = tbtNone;
+                }
+                else
+                    nBrType = tbtNone;
+            }
+            if ( nBrType != tbtNone )
+            {
+                *out_nBrType = nBrType;
+                return (abcLeftBr | abcBrIsOnRight);
+            }
+        }
+    }
+
+    if ( curr_ch != 0 )
+    {
+        nBrType = getRightBracketType(curr_ch);
+        if ( nBrType != tbtNone && !isEscapedPos(sciMsgr, nCharPos) ) //  |)
+        {
+            if ( isDuplicatedPair(nBrType) )
+            {
+                nDupDir = getDuplicatedPairDirection(sciMsgr, nCharPos, curr_ch);
+                if ( nDupDir == DP_BACKWARD || nDupDir == DP_MAYBEBACKWARD )
+                    *out_nDupDirection = nDupDir;
+                else
+                    nBrType = tbtNone;
+            }
+            if ( nBrType != tbtNone )
+            {
+                *out_nBrType = nBrType;
+                return (abcRightBr | abcBrIsOnRight);
+            }
+        }
+    }
+
+    if ( prev_ch != 0 )
+    {
+        nBrType = getRightBracketType(prev_ch);
+        if ( nBrType != tbtNone && !isEscapedPos(sciMsgr, nCharPos - 1) ) //  )|
+        {
+            if ( isDuplicatedPair(nBrType) )
+            {
+                nDupDir = getDuplicatedPairDirection(sciMsgr, nCharPos - 1, prev_ch);
+                if ( nDupDir == DP_BACKWARD || nDupDir == DP_MAYBEBACKWARD )
+                    *out_nDupDirection = nDupDir;
+                else
+                    nBrType = tbtNone;
+            }
+            if ( nBrType != tbtNone )
+            {
+                *out_nBrType = nBrType;
+                return (abcRightBr | abcBrIsOnLeft);
+            }
+        }
+    }
+
+    if ( nDetectBrType != tbtNone )
+    {
+        *out_nBrType = nDetectBrType;
+        *out_nDupDirection = DP_DETECT;
+        return (abcDetectBr | nDetectBrAtPos);
+    }
+
+    return (abcNone);
+}
+
+bool CXBrackets::findLeftBracket(const CSciMessager& sciMsgr, const Sci_Position nStartPos, tGetBracketsState* state)
+{
+    return false;
+}
+
+bool CXBrackets::findRightBracket(const CSciMessager& sciMsgr, const Sci_Position nStartPos, tGetBracketsState* state)
+{
+    std::stack<std::pair<TBracketType, eDupPairDirection>> bracketsStack;
+    std::vector<char> vLine;
+
+    const Sci_Position nLinesCount = sciMsgr.getLineCount();
+    const Sci_Position nStartLine = sciMsgr.getLineFromPosition(nStartPos);
+
+    for ( Sci_Position nLine = nStartLine; nLine < nLinesCount; ++nLine )
+    {
+        Sci_Position nLineStartPos = sciMsgr.getPositionFromLine(nLine);
+        Sci_Position nLineLen = sciMsgr.getLine(nLine, nullptr);
+
+        vLine.resize(nLineLen + 1);
+        nLineLen = sciMsgr.getLine(nLine, vLine.data());
+
+        for ( Sci_Position i = (nLine != nStartLine) ? 0 : (nStartPos - nLineStartPos); i < nLineLen; ++i )
+        {
+            char ch = vLine[i];
+            TBracketType nBrType = getRightBracketType(ch);
+            if ( nBrType != tbtNone )
+            {
+                Sci_Position nBrPos = nLineStartPos + i;
+                if ( isEscapedPos(sciMsgr, nBrPos) )
+                {
+                    nBrType = tbtNone;
+                }
+                else
+                {
+                    if ( isDuplicatedPair(nBrType) )
+                    {
+                        eDupPairDirection nDupPairDirection = getDuplicatedPairDirection(sciMsgr, nBrPos, ch);
+                        if ( nDupPairDirection == DP_BACKWARD || nDupPairDirection == DP_MAYBEBACKWARD )
+                        {
+                            // right quote found
+                            if ( bracketsStack.empty() )
+                            {
+                                state->nRightBrType = nBrType;
+                                state->nRightBrPos = nBrPos;
+                                state->nRightDupDirection = nDupPairDirection;
+                                break; // OK, found
+                            }
+                            else if ( bracketsStack.top().first == nBrType )
+                            {
+                                if ( getDirectionRank(bracketsStack.top().second, nDupPairDirection) >= getDirectionRank(DP_DETECT, DP_BACKWARD) )
+                                    bracketsStack.pop();
+                                else
+                                    break; // can't be sure if it is a pair of quotes
+                            }
+                            else
+                            {
+                                // could be either a right quote inside (another) quotes
+                                // or a right quote outside (another) quotes, not sure...
+                                break;
+                            }
+                        }
+                        else if ( nDupPairDirection == DP_DETECT )
+                        {
+                            if ( bracketsStack.empty() )
+                            {
+                                if ( state->nLeftBrType == nBrType &&
+                                     state->nLeftDupDirection == DP_FORWARD )
+                                {
+                                    state->nRightBrType = nBrType;
+                                    state->nRightBrPos = nBrPos;
+                                    state->nRightDupDirection = nDupPairDirection;
+                                    break; // OK, found
+                                }
+                                else
+                                {
+                                    // treating it as a left quote
+                                    bracketsStack.push({nBrType, nDupPairDirection});
+                                }
+                            }
+                            else if ( bracketsStack.top().first == nBrType )
+                            {
+                                if ( bracketsStack.top().second == DP_FORWARD )
+                                    bracketsStack.pop();
+                                else
+                                    break; // can't be sure if it's a pair of quotes or not
+                            }
+                            else if ( state->nLeftBrType == nBrType &&
+                                      state->nLeftDupDirection == DP_FORWARD )
+                            {
+                                // could be either a right quote inside (another) quotes
+                                // or a right quote outside (another) quotes, not sure...
+                                break;
+                            }
+                            else
+                            {
+                                // treating it as a left quote
+                                bracketsStack.push({nBrType, nDupPairDirection});
+                            }
+                        }
+                        else
+                        {
+                            // left quote found while looking for a right one
+                            bracketsStack.push({nBrType, nDupPairDirection});
+                        }
+                    }
+                    else
+                    {
+                        if ( bracketsStack.empty() )
+                        {
+                            state->nRightBrType = nBrType;
+                            state->nRightBrPos = nBrPos;
+                            state->nRightDupDirection = DP_NONE;
+                            break; // OK, found
+                        }
+                        else if ( bracketsStack.top().first == nBrType )
+                        {
+                            bracketsStack.pop();
+                        }
+                        else
+                        {
+                            // could be either a right bracket inside quotes
+                            // or a right bracket outside quotes, not sure...
+                            break;
+                        }
+                    }
+                }
+            }
+            else
+            {
+                nBrType = getLeftBracketType(ch);
+                if ( nBrType != tbtNone )
+                {
+                    Sci_Position nBrPos = nLineStartPos + i;
+                    if ( !isEscapedPos(sciMsgr, nBrPos) )
+                    {
+                        // found a left bracket instead of a right bracket
+                        eDupPairDirection nDupPairDirection = DP_NONE;
+                        if ( isDuplicatedPair(nBrType) )
+                        {
+                            nDupPairDirection = getDuplicatedPairDirection(sciMsgr, nBrPos, ch);
+                        }
+                        bracketsStack.push({nBrType, nDupPairDirection});
+                    }
+                }
+            }
+        }
+
+        if ( state->nRightBrType != tbtNone )
+            break;
+    }
+
+    return (state->nRightBrType != tbtNone);
+}
+
 CXBrackets::eCharProcessingResult CXBrackets::OnSciChar(const int ch)
 {
     if ( !g_opt.getBracketsAutoComplete() )
         return cprNone;
 
-    if ( (m_nnFileType.second & tfmIsSupported) == 0 )
+    if ( (m_uFileType & tfmIsSupported) == 0 )
         return cprNone;
 
     CSciMessager sciMsgr(m_nppMsgr.getCurrentScintillaWnd());
@@ -388,7 +911,7 @@ CXBrackets::eCharProcessingResult CXBrackets::OnSciChar(const int ch)
     {
         // the right bracket has been just added (automatically)
         // but you may duplicate it manually
-        int nRightBracketType = getRightBracketType(ch);
+        TBracketType nRightBracketType = getRightBracketType(ch);
 
         if ( nRightBracketType != tbtNone )
         {
@@ -418,12 +941,83 @@ CXBrackets::eCharProcessingResult CXBrackets::OnSciChar(const int ch)
 
     m_nAutoRightBracketPos = -1;
 
-    int nLeftBracketType = getLeftBracketType(ch);
+    TBracketType nLeftBracketType = getLeftBracketType(ch);
     if ( nLeftBracketType == tbtNone )
         return cprNone;
 
     // a typed character is a bracket
     return AutoBracketsFunc(nLeftBracketType);
+}
+
+void CXBrackets::GoToMatchingBracket()
+{
+    CSciMessager sciMsgr(m_nppMsgr.getCurrentScintillaWnd());
+
+    if ( sciMsgr.getSelections() > 1 )
+        return; // multiple selections
+
+    tGetBracketsState state;
+    state.nSelStart = sciMsgr.getSelectionStart();
+    state.nSelEnd = sciMsgr.getSelectionEnd();
+    if ( state.nSelStart != state.nSelEnd )
+        return; // something is selected
+
+    state.nCharPos = state.nSelStart;
+
+    Sci_Position nStartPos = state.nCharPos;
+    TBracketType nBrType = tbtNone;
+    eDupPairDirection nDupDir = DP_NONE;
+    unsigned int nAtBr = isAtBracketCharacter(sciMsgr, nStartPos, &nBrType, &nDupDir);
+
+    if ( nBrType == tbtTag2 )
+        nBrType = tbtTag;
+
+    if ( nAtBr & abcLeftBr )
+    {
+        // at left bracket...
+        if ( nAtBr & abcBrIsOnRight )
+            ++nStartPos; //  |(  ->  (|
+
+        state.nLeftBrPos = nStartPos; // exclude the bracket itself
+        state.nLeftBrType = nBrType;
+        state.nLeftDupDirection = nDupDir;
+
+        if ( findRightBracket(sciMsgr, nStartPos, &state) && nBrType == state.nRightBrType )
+        {
+            sciMsgr.setSel(state.nRightBrPos, state.nRightBrPos);
+        }
+    }
+    else if ( nAtBr & abcRightBr )
+    {
+        // at right bracket...
+        if ( nAtBr & abcBrIsOnLeft )
+            --nStartPos; //  )|  ->  |)
+
+        state.nRightBrPos = nStartPos;
+        state.nRightBrType = nBrType;
+        state.nRightDupDirection = nDupDir;
+
+        findLeftBracket(sciMsgr, nStartPos, &state);
+    }
+    else if ( nAtBr & abcDetectBr )
+    {
+        // TODO
+    }
+}
+
+void CXBrackets::GoToNearestBracket()
+{
+
+}
+
+void CXBrackets::SelToMatchingBracket()
+{
+
+}
+
+void CXBrackets::SelToNearestBrackets()
+{
+
 }
 
 void CXBrackets::ReadOptions()
@@ -453,53 +1047,11 @@ void CXBrackets::SaveOptions()
 
 void CXBrackets::UpdateFileType() // <-- call it when the plugin becomes active!!!
 {
-    if ( !g_opt.getBracketsAutoComplete() )
-        return;
-
     m_nAutoRightBracketPos = -1;
-    m_nnFileType = getFileType();
+    m_uFileType = getFileType();
 }
 
-static void getEscapedPrefixPos(const Sci_Position nOffset, Sci_Position* pnPos, int* pnLen)
-{
-    if ( nOffset > CXBrackets::MAX_ESCAPED_PREFIX )
-    {
-        *pnPos = nOffset - CXBrackets::MAX_ESCAPED_PREFIX;
-        *pnLen = CXBrackets::MAX_ESCAPED_PREFIX;
-    }
-    else
-    {
-        *pnPos = 0;
-        *pnLen = static_cast<int>(nOffset);
-    }
-}
-
-static bool isEscapedPrefix(const char* str, int len)
-{
-    int k = 0;
-    while ( (len > 0) && (str[--len] == '\\') )
-    {
-        ++k;
-    }
-    return (k % 2) ? true : false;
-}
-
-static bool isWhiteSpaceOrNulChar(const char ch)
-{
-    switch ( ch )
-    {
-        case '\x00':
-        case '\x0D':
-        case '\x0A':
-        case ' ':
-        case '\t':
-            return true;
-    }
-
-    return false;
-}
-
-CXBrackets::eCharProcessingResult CXBrackets::AutoBracketsFunc(int nBracketType)
+CXBrackets::eCharProcessingResult CXBrackets::AutoBracketsFunc(TBracketType nBracketType)
 {
     if ( SelAutoBrFunc(nBracketType) )
         return cprSelAutoCompl;
@@ -540,7 +1092,7 @@ CXBrackets::eCharProcessingResult CXBrackets::AutoBracketsFunc(int nBracketType)
         bNextCharOK = true;
     }
 
-    int nRightBracketType = getRightBracketType(next_ch, bofIgnoreMode);
+    TBracketType nRightBracketType = getRightBracketType(next_ch, bofIgnoreMode);
     if ( nRightBracketType != tbtNone )
     {
         if ( nRightBracketType == tbtTag2 )
@@ -563,16 +1115,9 @@ CXBrackets::eCharProcessingResult CXBrackets::AutoBracketsFunc(int nBracketType)
         }
     }
 
-    if ( bPrevCharOK && bNextCharOK &&
-         g_opt.getBracketsSkipEscaped() && (m_nnFileType.second & tfmEscaped1) != 0 )
+    if ( bPrevCharOK && bNextCharOK )
     {
-        char szPrefix[MAX_ESCAPED_PREFIX + 2];
-        Sci_Position pos;
-        int len; // len <= MAX_ESCAPED_PREFIX, so 'int' is always enough
-
-        getEscapedPrefixPos(nEditPos, &pos, &len);
-        len = static_cast<int>(sciMsgr.getTextRange(pos, pos + len, szPrefix));
-        if ( isEscapedPrefix(szPrefix, len) )
+        if ( isEscapedPos(sciMsgr, nEditPos) )
             bPrevCharOK = false;
     }
 
@@ -599,12 +1144,12 @@ CXBrackets::eCharProcessingResult CXBrackets::AutoBracketsFunc(int nBracketType)
     return cprNone;
 }
 
-bool CXBrackets::isEnclosedInBrackets(const char* pszTextLeft, const char* pszTextRight, int* pnBracketType, bool bInSelection)
+bool CXBrackets::isEnclosedInBrackets(const char* pszTextLeft, const char* pszTextRight, TBracketType* pnBracketType, bool bInSelection)
 {
     if ( pszTextLeft == pszTextRight )
         return false;
 
-    int nBrType = *pnBracketType;
+    TBracketType nBrType = *pnBracketType;
     const char* cszBrPair = strBrackets[nBrType];
 
     if ( pszTextLeft[0] != cszBrPair[0] )
@@ -646,7 +1191,7 @@ bool CXBrackets::isEnclosedInBrackets(const char* pszTextLeft, const char* pszTe
     return bRet;
 }
 
-bool CXBrackets::SelAutoBrFunc(int nBracketType)
+bool CXBrackets::SelAutoBrFunc(TBracketType nBracketType)
 {
     const UINT uSelAutoBr = g_opt.getBracketsSelAutoBr();
     if ( uSelAutoBr == CXBracketsOptions::sabNone )
@@ -671,7 +1216,7 @@ bool CXBrackets::SelAutoBrFunc(int nBracketType)
     if (nBracketType == tbtTag && g_opt.getBracketsDoTag2())
         nBracketType = tbtTag2;
 
-    int nBrAltType = nBracketType;
+    TBracketType nBrAltType = nBracketType;
     int nBrPairLen = lstrlenA(strBrackets[nBracketType]);
 
     // getting the selected text
@@ -767,10 +1312,10 @@ bool CXBrackets::SelAutoBrFunc(int nBracketType)
     return true; // processed
 }
 
-std::pair<CXBrackets::TFileType, unsigned short> CXBrackets::getFileType()
+unsigned int CXBrackets::getFileType()
 {
     TCHAR szExt[CXBracketsOptions::MAX_EXT];
-    std::pair<TFileType, unsigned short> nnType = std::make_pair(tftNone, tfmIsSupported);
+    unsigned int uType = tfmIsSupported;
 
     szExt[0] = 0;
     m_nppMsgr.getCurrentFileExtPart(CXBracketsOptions::MAX_EXT - 1, szExt);
@@ -783,7 +1328,7 @@ std::pair<CXBrackets::TFileType, unsigned short> CXBrackets::getFileType()
         {
             ++pszExt;
             if ( !(*pszExt) )
-                return nnType;
+                return uType;
         }
 
         ::CharLower(pszExt);
@@ -791,43 +1336,35 @@ std::pair<CXBrackets::TFileType, unsigned short> CXBrackets::getFileType()
         if ( lstrcmp(pszExt, _T("c")) == 0 ||
              lstrcmp(pszExt, _T("cc")) == 0 ||
              lstrcmp(pszExt, _T("cpp")) == 0 ||
-             lstrcmp(pszExt, _T("cxx")) == 0 )
+             lstrcmp(pszExt, _T("cxx")) == 0 ||
+             lstrcmp(pszExt, _T("h")) == 0 ||
+             lstrcmp(pszExt, _T("hh")) == 0 ||
+             lstrcmp(pszExt, _T("hpp")) == 0 ||
+             lstrcmp(pszExt, _T("hxx")) == 0 )
         {
-            nnType.first = tftC_Cpp;
-            nnType.second = tfmComment1 | tfmEscaped1;
-        }
-        else if ( lstrcmp(pszExt, _T("h")) == 0 ||
-                  lstrcmp(pszExt, _T("hh")) == 0 ||
-                  lstrcmp(pszExt, _T("hpp")) == 0 ||
-                  lstrcmp(pszExt, _T("hxx")) == 0 )
-        {
-            nnType.first = tftH_Hpp;
-            nnType.second = tfmComment1 | tfmEscaped1;
+            uType |= tfmComment1 | tfmEscaped1;
         }
         else if ( lstrcmp(pszExt, _T("pas")) == 0 )
         {
-            nnType.first = tftPas;
-            nnType.second = tfmComment1;
+            uType |= tfmComment1;
         }
         else
         {
-            nnType.first = tftText;
-
             if ( g_opt.IsHtmlCompatible(pszExt) )
-                nnType.second |= tfmHtmlCompatible;
+                uType |= tfmHtmlCompatible;
 
             if ( g_opt.IsEscapedFileExt(pszExt) )
-                nnType.second |= tfmEscaped1;
+                uType |= tfmEscaped1;
         }
 
         if ( g_opt.IsSingleQuoteFileExt(pszExt) )
-            nnType.second |= tfmSingleQuote;
+            uType |= tfmSingleQuote;
 
         if ( g_opt.IsSupportedFile(pszExt) )
-            nnType.second |= tfmIsSupported;
-        else if ( (nnType.second & tfmIsSupported) != 0 )
-            nnType.second ^= tfmIsSupported;
+            uType |= tfmIsSupported;
+        else if ( (uType & tfmIsSupported) != 0 )
+            uType ^= tfmIsSupported;
     }
 
-    return nnType;
+    return uType;
 }

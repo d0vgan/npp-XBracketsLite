@@ -48,6 +48,41 @@ LRESULT CSciMessager::getDocPointer() const
     return SendSciMsg(SCI_GETDOCPOINTER);
 }
 
+Sci_Position CSciMessager::getLine(Sci_Position line, char* pText) const
+{
+    Sci_Position len = (Sci_Position) SendSciMsg(SCI_GETLINE, line, (LPARAM) pText);
+    if ( pText )
+    {
+        pText[len] = 0;
+    }
+    return len;
+}
+
+Sci_Position CSciMessager::getLineCount() const
+{
+    return (Sci_Position) SendSciMsg(SCI_GETLINECOUNT);
+}
+
+Sci_Position CSciMessager::getLineEndPos(Sci_Position line) const
+{
+    return (Sci_Position) SendSciMsg(SCI_GETLINEENDPOSITION, line);
+}
+
+Sci_Position CSciMessager::getLineFromPosition(Sci_Position pos) const
+{
+    return (Sci_Position) SendSciMsg(SCI_LINEFROMPOSITION, pos);
+}
+
+Sci_Position CSciMessager::getLineLength(Sci_Position line) const
+{
+    return (Sci_Position) SendSciMsg(SCI_LINELENGTH, line);
+}
+
+Sci_Position CSciMessager::getPositionFromLine(Sci_Position line) const
+{
+    return (Sci_Position) SendSciMsg(SCI_POSITIONFROMLINE, line);
+}
+
 int CSciMessager::getSelectionMode() const
 {
     return (int) SendSciMsg(SCI_GETSELECTIONMODE);

@@ -22,6 +22,12 @@ class CSciMessager
         unsigned int  getCodePage() const; // 0 (non-Unicode), SC_CP_UTF8, DBCS etc.
         Sci_Position  getCurrentPos() const;
         LRESULT       getDocPointer() const; // identifies the document
+        Sci_Position  getLine(Sci_Position line, char* pText) const; // returns the number of characters copied to the buffer
+        Sci_Position  getLineCount() const; // number of lines in the document
+        Sci_Position  getLineEndPos(Sci_Position line) const;
+        Sci_Position  getLineFromPosition(Sci_Position pos) const;
+        Sci_Position  getLineLength(Sci_Position line) const;
+        Sci_Position  getPositionFromLine(Sci_Position line) const; // start of the line
         HWND          getSciWnd() const  { return m_hSciWnd; }
         int           getSelectionMode() const; // SC_SEL_STREAM, SC_SEL_RECTANGLE, SC_SEL_LINES
         Sci_Position  getSelectionEnd() const;

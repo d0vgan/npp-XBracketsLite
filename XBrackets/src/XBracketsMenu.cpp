@@ -10,10 +10,15 @@ extern CXBracketsOptions g_opt;
 
 
 FuncItem CXBracketsMenu::arrFuncItems[N_NBFUNCITEMS] = {
-    { _T("Autocomplete brackets"), funcAutocomplete, 0, false, NULL },
-    { _T("Settings..."),           funcSettings,     0, false, NULL },
-    { _T(""),                      NULL,             0, false, NULL }, // separator
-    { _T("About"),                 funcAbout,        0, false, NULL }
+    { _T("Autocomplete brackets"),      funcAutocomplete,         0, false, NULL },
+    { _T("Settings..."),                funcSettings,             0, false, NULL },
+    { _T(""),                           NULL,                     0, false, NULL }, // separator
+    { _T("Go To Matching Bracket"),     funcGoToMatchingBracket,  0, false, NULL },
+    { _T("Go To Nearest Bracket"),      funcGoToNearestBracket,   0, false, NULL },
+    { _T("Select To Matching Bracket"), funcSelToMatchingBracket, 0, false, NULL },
+    { _T("Select To Nearest Brackets"), funcSelToNearestBrackets, 0, false, NULL },
+    { _T(""),                           NULL,                     0, false, NULL }, // separator
+    { _T("About"),                      funcAbout,                0, false, NULL }
 };
 
 void CXBracketsMenu::funcAutocomplete()
@@ -29,6 +34,26 @@ void CXBracketsMenu::funcSettings()
         UpdateMenuState();
         thePlugin.SaveOptions();
     }
+}
+
+void CXBracketsMenu::funcGoToMatchingBracket()
+{
+    thePlugin.GoToMatchingBracket();
+}
+
+void CXBracketsMenu::funcGoToNearestBracket()
+{
+    thePlugin.GoToNearestBracket();
+}
+
+void CXBracketsMenu::funcSelToMatchingBracket()
+{
+    thePlugin.SelToMatchingBracket();
+}
+
+void CXBracketsMenu::funcSelToNearestBrackets()
+{
+    thePlugin.SelToNearestBrackets();
 }
 
 void CXBracketsMenu::funcAbout()
