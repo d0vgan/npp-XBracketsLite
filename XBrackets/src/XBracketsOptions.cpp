@@ -94,10 +94,10 @@ static const TCHAR INI_OPTION_FILEEXTSRULE[] = _T("FileExtsRule");
 
 CXBracketsOptions::CXBracketsOptions() :
   // default values:
-  m_uFlags(0),
-  m_uFlags0(0),
+  m_uFlags(OPTF_AUTOCOMPLETE | OPTF_DOSINGLEQUOTE | OPTF_DOSINGLEQUOTEIF | OPTF_DOTAG | OPTF_DOTAGIF | OPTF_SKIPESCAPED),
+  m_uFlags0(-1),
   m_uSelAutoBr(sabNone),
-  m_uSelAutoBr0(sabNone),
+  m_uSelAutoBr0(-1),
   m_bSaveFileExtsRule(false),
   m_bSaveNextCharOK(false),
   m_bSavePrevCharOK(false),
