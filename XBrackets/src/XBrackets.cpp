@@ -934,9 +934,26 @@ bool CXBrackets::findLeftBracket(const CSciMessager& sciMsgr, const Sci_Position
                     {
                         // found a right bracket instead of a left bracket
                         // this can't be a duplicated pair since they have been handled above
+                        Sci_Position nMatchBrPos = static_cast<Sci_Position>(sciMsgr.SendSciMsg(SCI_BRACEMATCH, nBrPos));
+                        if ( nMatchBrPos != -1 )
+                        {
+                            // skipping everything up to nMatchBrPos
+                            Sci_Position nMatchLine = sciMsgr.getLineFromPosition(nMatchBrPos);
+                            if ( nMatchLine != nLine )
+                            {
+                                nLine = nMatchLine;
+                                nLineStartPos = sciMsgr.getPositionFromLine(nLine);
+                                nLineLen = sciMsgr.getLine(nLine, nullptr);
 
-                        // TODO: use SCI_BRACEMATCH
-                        bracketsStack.push({nBrType, DP_NONE});
+                                vLine.resize(nLineLen + 1);
+                                nLineLen = sciMsgr.getLine(nLine, vLine.data());
+                            }
+                            i = nMatchBrPos - nLineStartPos;
+                        }
+                        else
+                        {
+                            bracketsStack.push({nBrType, DP_NONE});
+                        }
                     }
                 }
             }
@@ -1103,9 +1120,26 @@ bool CXBrackets::findRightBracket(const CSciMessager& sciMsgr, const Sci_Positio
                     {
                         // found a left bracket instead of a right bracket
                         // this can't be a duplicated pair since they have been handled above
+                        Sci_Position nMatchBrPos = static_cast<Sci_Position>(sciMsgr.SendSciMsg(SCI_BRACEMATCH, nBrPos));
+                        if ( nMatchBrPos != -1 )
+                        {
+                            // skipping everything up to nMatchBrPos
+                            Sci_Position nMatchLine = sciMsgr.getLineFromPosition(nMatchBrPos);
+                            if ( nMatchLine != nLine )
+                            {
+                                nLine = nMatchLine;
+                                nLineStartPos = sciMsgr.getPositionFromLine(nLine);
+                                nLineLen = sciMsgr.getLine(nLine, nullptr);
 
-                        // TODO: use SCI_BRACEMATCH
-                        bracketsStack.push({nBrType, DP_NONE});
+                                vLine.resize(nLineLen + 1);
+                                nLineLen = sciMsgr.getLine(nLine, vLine.data());
+                            }
+                            i = nMatchBrPos - nLineStartPos;
+                        }
+                        else
+                        {
+                            bracketsStack.push({nBrType, DP_NONE});
+                        }
                     }
                 }
             }
