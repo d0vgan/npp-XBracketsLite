@@ -1101,7 +1101,18 @@ void CXBrackets::performBracketsAction(eGetBracketsAction nBrAction)
     state.nSelStart = sciMsgr.getSelectionStart();
     state.nSelEnd = sciMsgr.getSelectionEnd();
     if ( state.nSelStart != state.nSelEnd )
-        return; // something is selected
+    {
+        // something is selected
+        if ( nBrAction == baSelToMatching || nBrAction == baSelToNearest )
+        {
+            // inverting the selection positions
+            if ( sciMsgr.getCurrentPos() == state.nSelEnd )
+                sciMsgr.setSel(state.nSelEnd, state.nSelStart);
+            else
+                sciMsgr.setSel(state.nSelStart, state.nSelEnd);
+        }
+        return;
+    }
 
     state.nCharPos = state.nSelStart;
 
