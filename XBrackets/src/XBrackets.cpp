@@ -893,12 +893,10 @@ bool CXBrackets::findLeftBracket(const CSciMessager& sciMsgr, const Sci_Position
                     if ( !isEscapedPos(sciMsgr, nBrPos) )
                     {
                         // found a right bracket instead of a left bracket
-                        eDupPairDirection nDupPairDirection = DP_NONE;
-                        if ( isDuplicatedPair(nBrType) )
-                        {
-                            nDupPairDirection = getDuplicatedPairDirection(sciMsgr, nBrPos, ch);
-                        }
-                        bracketsStack.push({nBrType, nDupPairDirection});
+                        // this can't be a duplicated pair since they have been handled above
+
+                        // TODO: use SCI_BRACEMATCH
+                        bracketsStack.push({nBrType, DP_NONE});
                     }
                 }
             }
@@ -1064,12 +1062,10 @@ bool CXBrackets::findRightBracket(const CSciMessager& sciMsgr, const Sci_Positio
                     if ( !isEscapedPos(sciMsgr, nBrPos) )
                     {
                         // found a left bracket instead of a right bracket
-                        eDupPairDirection nDupPairDirection = DP_NONE;
-                        if ( isDuplicatedPair(nBrType) )
-                        {
-                            nDupPairDirection = getDuplicatedPairDirection(sciMsgr, nBrPos, ch);
-                        }
-                        bracketsStack.push({nBrType, nDupPairDirection});
+                        // this can't be a duplicated pair since they have been handled above
+
+                        // TODO: use SCI_BRACEMATCH
+                        bracketsStack.push({nBrType, DP_NONE});
                     }
                 }
             }
