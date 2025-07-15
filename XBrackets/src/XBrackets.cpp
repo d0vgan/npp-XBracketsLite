@@ -733,6 +733,25 @@ unsigned int CXBrackets::isAtBracketCharacter(const CSciMessager& sciMsgr, const
 
 bool CXBrackets::findLeftBracket(const CSciMessager& sciMsgr, const Sci_Position nStartPos, tGetBracketsState* state)
 {
+    switch ( state->nRightBrType )
+    {
+        case tbtBracket:
+        case tbtSquare:
+        case tbtBrace:
+        case tbtTag:
+        {
+            Sci_Position nMatchBrPos = static_cast<Sci_Position>(sciMsgr.SendSciMsg(SCI_BRACEMATCH, nStartPos));
+            if ( nMatchBrPos != -1 )
+            {
+                state->nLeftBrType = state->nRightBrType;
+                state->nLeftBrPos = nMatchBrPos + 1;
+                state->nLeftDupDirection = DP_NONE;
+                return true; // rely on Scintilla
+            }
+        }
+        break;
+    }
+
     std::stack<std::pair<TBracketType, eDupPairDirection>> bracketsStack;
     std::vector<char> vLine;
 
@@ -888,6 +907,25 @@ bool CXBrackets::findLeftBracket(const CSciMessager& sciMsgr, const Sci_Position
 
 bool CXBrackets::findRightBracket(const CSciMessager& sciMsgr, const Sci_Position nStartPos, tGetBracketsState* state)
 {
+    switch ( state->nLeftBrType )
+    {
+        case tbtBracket:
+        case tbtSquare:
+        case tbtBrace:
+        case tbtTag:
+        {
+            Sci_Position nMatchBrPos = static_cast<Sci_Position>(sciMsgr.SendSciMsg(SCI_BRACEMATCH, nStartPos - 1));
+            if ( nMatchBrPos != -1 )
+            {
+                state->nRightBrType = state->nLeftBrType;
+                state->nRightBrPos = nMatchBrPos;
+                state->nRightDupDirection = DP_NONE;
+                return true; // rely on Scintilla
+            }
+        }
+        break;
+    }
+
     std::stack<std::pair<TBracketType, eDupPairDirection>> bracketsStack;
     std::vector<char> vLine;
 
