@@ -514,22 +514,55 @@ CXBrackets::eDupPairDirection CXBrackets::getDuplicatedPairDirection(const CSciM
     static HWND hLocalEditWnd = NULL;
     static char szWordDelimiters[] = " \t\n'`\"\\|[](){}<>,.;:+-=~!@#$%^&*/?";
 
-    if (nCharPos <= 0)
+    if ( nCharPos <= 0 )
         return DP_FORWARD; // no char before, search forward
 
-    char prev_ch = sciMsgr.getCharAt(nCharPos - 1);
-    if ( prev_ch == 0 )
-        return DP_FORWARD; // beginning of the file
-
+    const char prev_ch = sciMsgr.getCharAt(nCharPos - 1);
     if ( prev_ch == curr_ch )
-        return DP_BACKWARD; // pair found, search backward
+        return DP_BACKWARD; // quoted text, search backward
 
-    char next_ch = sciMsgr.getCharAt(nCharPos + 1);
-    if ( next_ch == 0 )
+    int nStyles[4] = {
+        -1,  // [0]  nCharPos - 1
+        -1,  // [1]  nCharPos
+        -1,  // [2]  nCharPos + 1
+        -1   // [3]  nCharPos + 2
+    };
+
+    if ( nCharPos > 0 )
+    {
+        nStyles[0] = sciMsgr.SendSciMsg(SCI_GETSTYLEINDEXAT, nCharPos - 1);
+        nStyles[1] = sciMsgr.SendSciMsg(SCI_GETSTYLEINDEXAT, nCharPos);
+        nStyles[2] = sciMsgr.SendSciMsg(SCI_GETSTYLEINDEXAT, nCharPos + 1);
+
+        if ( nStyles[2] == nStyles[1] && nStyles[1] != nStyles[0] )
+            return DP_FORWARD;
+
+        if ( nStyles[0] == nStyles[1] && nStyles[1] != nStyles[2] )
+            return DP_BACKWARD;
+    }
+
+    const Sci_Position nTextLen = sciMsgr.getTextLength();
+    if ( nTextLen <= nCharPos + 1 )
         return DP_BACKWARD; // end of the file
 
+    const char next_ch = sciMsgr.getCharAt(nCharPos + 1);
     if ( next_ch == curr_ch )
-        return DP_FORWARD; // pair found, search forward
+        return DP_FORWARD; //  quoted text, search forward
+
+    if ( nTextLen > nCharPos + 2 )
+    {
+        if ( nStyles[1] == -1 )
+            nStyles[1] = sciMsgr.SendSciMsg(SCI_GETSTYLEINDEXAT, nCharPos);
+        if ( nStyles[2] == -1 )
+            nStyles[2] = sciMsgr.SendSciMsg(SCI_GETSTYLEINDEXAT, nCharPos + 1);
+        nStyles[3] = sciMsgr.SendSciMsg(SCI_GETSTYLEINDEXAT, nCharPos + 2);
+
+        if ( nStyles[3] == nStyles[2] && nStyles[2] != nStyles[1] )
+            return DP_FORWARD;
+
+        if ( nStyles[1] == nStyles[2] && nStyles[2] != nStyles[3] )
+            return DP_BACKWARD;
+    }
 
     if ( prev_ch == '\r' || prev_ch == '\n' )
     {
@@ -591,34 +624,19 @@ unsigned int CXBrackets::isAtBracketCharacter(const CSciMessager& sciMsgr, const
         {
             if ( isDuplicatedPair(nBrType) )
             {
-                if ( nCharPos < 2 )
+                // quotes
+                nDupDir = getDuplicatedPairDirection(sciMsgr, nCharPos - 1, prev_ch);
+                if ( nDupDir == DP_BACKWARD || nDupDir == DP_MAYBEBACKWARD )
                 {
-                    *out_nBrType = nBrType;
-                    *out_nDupDirection = DP_FORWARD;
-                    return (abcLeftBr | abcBrIsOnLeft);
-                }
-
-                const int nStyleBefore = sciMsgr.SendSciMsg(SCI_GETSTYLEINDEXAT, nCharPos - 2);
-                const int nStyle = sciMsgr.SendSciMsg(SCI_GETSTYLEINDEXAT, nCharPos - 1);
-                const int nStyleAfter = sciMsgr.SendSciMsg(SCI_GETSTYLEINDEXAT, nCharPos);
-
-                if ( nStyleAfter == nStyle && nStyle != nStyleBefore )
-                {
-                    *out_nBrType = nBrType;
-                    *out_nDupDirection = DP_FORWARD;
-                    return (abcLeftBr | abcBrIsOnLeft);
-                }
-
-                if ( nStyleBefore == nStyle && nStyle != nStyleAfter )
-                {
+                    // right quote
                     *out_nBrType = nBrType;
                     *out_nDupDirection = DP_BACKWARD;
                     return (abcRightBr | abcBrIsOnLeft);
                 }
 
-                nDupDir = getDuplicatedPairDirection(sciMsgr, nCharPos - 1, prev_ch);
                 if ( nDupDir == DP_FORWARD || nDupDir == DP_MAYBEFORWARD )
                 {
+                    // left quote
                     *out_nDupDirection = nDupDir;
                 }
                 else if ( nDupDir == DP_DETECT )
@@ -645,30 +663,19 @@ unsigned int CXBrackets::isAtBracketCharacter(const CSciMessager& sciMsgr, const
         {
             if ( isDuplicatedPair(nBrType) )
             {
-                if ( sciMsgr.getCharAt(nCharPos + 1) != 0 )
+                // quotes
+                nDupDir = getDuplicatedPairDirection(sciMsgr, nCharPos, curr_ch);
+                if ( nDupDir == DP_BACKWARD || nDupDir == DP_MAYBEBACKWARD )
                 {
-                    const int nStyleBefore = sciMsgr.SendSciMsg(SCI_GETSTYLEINDEXAT, nCharPos - 1);
-                    const int nStyle = sciMsgr.SendSciMsg(SCI_GETSTYLEINDEXAT, nCharPos);
-                    const int nStyleAfter = sciMsgr.SendSciMsg(SCI_GETSTYLEINDEXAT, nCharPos + 1);
-
-                    if ( nStyleAfter == nStyle && nStyle != nStyleBefore )
-                    {
-                        *out_nBrType = nBrType;
-                        *out_nDupDirection = DP_FORWARD;
-                        return (abcLeftBr | abcBrIsOnRight);
-                    }
-
-                    if ( nStyleBefore == nStyle && nStyle != nStyleAfter )
-                    {
-                        *out_nBrType = nBrType;
-                        *out_nDupDirection = DP_BACKWARD;
-                        return (abcRightBr | abcBrIsOnRight);
-                    }
+                    // right quote
+                    *out_nBrType = nBrType;
+                    *out_nDupDirection = DP_BACKWARD;
+                    return (abcRightBr | abcBrIsOnRight);
                 }
 
-                nDupDir = getDuplicatedPairDirection(sciMsgr, nCharPos, curr_ch);
                 if ( nDupDir == DP_FORWARD || nDupDir == DP_MAYBEFORWARD )
                 {
+                    // left quote
                     *out_nDupDirection = nDupDir;
                 }
                 else if ( nDupDir == DP_DETECT )
@@ -693,15 +700,7 @@ unsigned int CXBrackets::isAtBracketCharacter(const CSciMessager& sciMsgr, const
         nBrType = getRightBracketType(curr_ch);
         if ( nBrType != tbtNone && !isEscapedPos(sciMsgr, nCharPos) ) //  |)
         {
-            if ( isDuplicatedPair(nBrType) )
-            {
-                nDupDir = getDuplicatedPairDirection(sciMsgr, nCharPos, curr_ch);
-                if ( nDupDir == DP_BACKWARD || nDupDir == DP_MAYBEBACKWARD )
-                    *out_nDupDirection = nDupDir;
-                else
-                    nBrType = tbtNone;
-            }
-            if ( nBrType != tbtNone )
+            if ( !isDuplicatedPair(nBrType) )
             {
                 *out_nBrType = nBrType;
                 return (abcRightBr | abcBrIsOnRight);
@@ -714,15 +713,7 @@ unsigned int CXBrackets::isAtBracketCharacter(const CSciMessager& sciMsgr, const
         nBrType = getRightBracketType(prev_ch);
         if ( nBrType != tbtNone && !isEscapedPos(sciMsgr, nCharPos - 1) ) //  )|
         {
-            if ( isDuplicatedPair(nBrType) )
-            {
-                nDupDir = getDuplicatedPairDirection(sciMsgr, nCharPos - 1, prev_ch);
-                if ( nDupDir == DP_BACKWARD || nDupDir == DP_MAYBEBACKWARD )
-                    *out_nDupDirection = nDupDir;
-                else
-                    nBrType = tbtNone;
-            }
-            if ( nBrType != tbtNone )
+            if ( !isDuplicatedPair(nBrType) )
             {
                 *out_nBrType = nBrType;
                 return (abcRightBr | abcBrIsOnLeft);
@@ -742,7 +733,157 @@ unsigned int CXBrackets::isAtBracketCharacter(const CSciMessager& sciMsgr, const
 
 bool CXBrackets::findLeftBracket(const CSciMessager& sciMsgr, const Sci_Position nStartPos, tGetBracketsState* state)
 {
-    return false;
+    std::stack<std::pair<TBracketType, eDupPairDirection>> bracketsStack;
+    std::vector<char> vLine;
+
+    const Sci_Position nStartLine = sciMsgr.getLineFromPosition(nStartPos);
+
+    for ( Sci_Position nLine = nStartLine; ; --nLine )
+    {
+        Sci_Position nLineStartPos = sciMsgr.getPositionFromLine(nLine);
+        Sci_Position nLineLen = sciMsgr.getLine(nLine, nullptr);
+
+        vLine.resize(nLineLen + 1);
+        nLineLen = sciMsgr.getLine(nLine, vLine.data());
+
+        Sci_Position i = (nLine != nStartLine) ? nLineLen : (nStartPos - nLineStartPos);
+        if ( i == 0 )
+            continue;
+
+        for ( --i; ; --i )
+        {
+            const char ch = vLine[i];
+            TBracketType nBrType = getLeftBracketType(ch);
+            if ( nBrType != tbtNone )
+            {
+                Sci_Position nBrPos = nLineStartPos + i;
+                if ( isEscapedPos(sciMsgr, nBrPos) )
+                {
+                    nBrType = tbtNone;
+                }
+                else
+                {
+                    if ( isDuplicatedPair(nBrType) )
+                    {
+                        eDupPairDirection nDupPairDirection = getDuplicatedPairDirection(sciMsgr, nBrPos, ch);
+                        if ( nDupPairDirection == DP_FORWARD || nDupPairDirection == DP_MAYBEFORWARD )
+                        {
+                            // left quote found
+                            if ( bracketsStack.empty() )
+                            {
+                                state->nLeftBrType = nBrType;
+                                state->nLeftBrPos = nBrPos + 1; // exclude the bracket itself
+                                state->nLeftDupDirection = nDupPairDirection;
+                                break; // OK, found
+                            }
+                            else if ( bracketsStack.top().first == nBrType )
+                            {
+                                if ( getDirectionRank(nDupPairDirection, bracketsStack.top().second) >= getDirectionRank(DP_FORWARD, DP_DETECT) )
+                                    bracketsStack.pop();
+                                else
+                                    break; // can't be sure if it is a pair of quotes
+                            }
+                            else
+                            {
+                                // could be either a left quote inside (another) quotes
+                                // or a left quote outside (another) quotes, not sure...
+                                break;
+                            }
+                        }
+                        else if ( nDupPairDirection == DP_DETECT )
+                        {
+                            if ( bracketsStack.empty() )
+                            {
+                                if ( state->nRightBrType == nBrType &&
+                                     state->nRightDupDirection == DP_BACKWARD )
+                                {
+                                    state->nLeftBrType = nBrType;
+                                    state->nLeftBrPos = nBrPos + 1; // exclude the bracket itself
+                                    state->nLeftDupDirection = nDupPairDirection;
+                                    break; // OK, found
+                                }
+                                else
+                                {
+                                    // treating it as a right quote
+                                    bracketsStack.push({nBrType, nDupPairDirection});
+                                }
+                            }
+                            else if ( bracketsStack.top().first == nBrType )
+                            {
+                                if ( bracketsStack.top().second == DP_BACKWARD )
+                                    bracketsStack.pop();
+                                else
+                                    break; // can't be sure if it's a pair of quotes or not
+                            }
+                            else if ( state->nRightBrType == nBrType &&
+                                      state->nRightDupDirection == DP_BACKWARD )
+                            {
+                                // could be either a left bracket inside quotes
+                                // or a left bracket outside quotes, not sure...
+                                break;
+                            }
+                            else
+                            {
+                                // treating it as a right quote
+                                bracketsStack.push({nBrType, nDupPairDirection});
+                            }
+                        }
+                        else
+                        {
+                            // right quote found while looking for a left one
+                            bracketsStack.push({nBrType, nDupPairDirection});
+                        }
+                    }
+                    else
+                    {
+                        if ( bracketsStack.empty() )
+                        {
+                            state->nLeftBrType = nBrType;
+                            state->nLeftBrPos = nBrPos + 1; // exclude the bracket itself
+                            state->nLeftDupDirection = DP_NONE;
+                            break; // OK, found
+                        }
+                        else if ( bracketsStack.top().first == nBrType )
+                        {
+                            bracketsStack.pop();
+                        }
+                        else
+                        {
+                            // could be either a left bracket inside quotes
+                            // or a left bracket outside quotes, not sure...
+                            break;
+                        }
+                    }
+                }
+            }
+            else
+            {
+                nBrType = getRightBracketType(ch);
+                if ( nBrType != tbtNone )
+                {
+                    Sci_Position nBrPos = nLineStartPos + i;
+                    if ( !isEscapedPos(sciMsgr, nBrPos) )
+                    {
+                        // found a right bracket instead of a left bracket
+                        eDupPairDirection nDupPairDirection = DP_NONE;
+                        if ( isDuplicatedPair(nBrType) )
+                        {
+                            nDupPairDirection = getDuplicatedPairDirection(sciMsgr, nBrPos, ch);
+                        }
+                        bracketsStack.push({nBrType, nDupPairDirection});
+                    }
+                }
+            }
+
+            if ( i == 0 )
+                break;
+        }
+
+        if ( nLine == 0 || state->nLeftBrType != tbtNone )
+            break;
+    }
+
+    return (state->nLeftBrType != tbtNone);
 }
 
 bool CXBrackets::findRightBracket(const CSciMessager& sciMsgr, const Sci_Position nStartPos, tGetBracketsState* state)
@@ -763,7 +904,7 @@ bool CXBrackets::findRightBracket(const CSciMessager& sciMsgr, const Sci_Positio
 
         for ( Sci_Position i = (nLine != nStartLine) ? 0 : (nStartPos - nLineStartPos); i < nLineLen; ++i )
         {
-            char ch = vLine[i];
+            const char ch = vLine[i];
             TBracketType nBrType = getRightBracketType(ch);
             if ( nBrType != tbtNone )
             {
@@ -997,7 +1138,10 @@ void CXBrackets::GoToMatchingBracket()
         state.nRightBrType = nBrType;
         state.nRightDupDirection = nDupDir;
 
-        findLeftBracket(sciMsgr, nStartPos, &state);
+        if ( findLeftBracket(sciMsgr, nStartPos, &state) && nBrType == state.nLeftBrType )
+        {
+            sciMsgr.setSel(state.nLeftBrPos, state.nLeftBrPos);
+        }
     }
     else if ( nAtBr & abcDetectBr )
     {
