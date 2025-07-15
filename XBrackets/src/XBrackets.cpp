@@ -607,7 +607,8 @@ CXBrackets::eDupPairDirection CXBrackets::getDuplicatedPairDirection(const CSciM
 unsigned int CXBrackets::isAtBracketCharacter(const CSciMessager& sciMsgr, const Sci_Position nCharPos, TBracketType* out_nBrType, eDupPairDirection* out_nDupDirection) const
 {
     TBracketType nBrType = tbtNone;
-    eDupPairDirection nDupDir = DP_NONE;
+    eDupPairDirection nDupDirCurr = DP_NONE;
+    eDupPairDirection nDupDirPrev = DP_NONE;
     TBracketType nDetectBrType = tbtNone;
     unsigned int nDetectBrAtPos = abcNone;
 
@@ -625,21 +626,13 @@ unsigned int CXBrackets::isAtBracketCharacter(const CSciMessager& sciMsgr, const
             if ( isDuplicatedPair(nBrType) )
             {
                 // quotes
-                nDupDir = getDuplicatedPairDirection(sciMsgr, nCharPos - 1, prev_ch);
-                if ( nDupDir == DP_BACKWARD || nDupDir == DP_MAYBEBACKWARD )
-                {
-                    // right quote
-                    *out_nBrType = nBrType;
-                    *out_nDupDirection = DP_BACKWARD;
-                    return (abcRightBr | abcBrIsOnLeft);
-                }
-
-                if ( nDupDir == DP_FORWARD || nDupDir == DP_MAYBEFORWARD )
+                nDupDirPrev = getDuplicatedPairDirection(sciMsgr, nCharPos - 1, prev_ch);
+                if ( nDupDirPrev == DP_FORWARD || nDupDirPrev == DP_MAYBEFORWARD )
                 {
                     // left quote
-                    *out_nDupDirection = nDupDir;
+                    *out_nDupDirection = nDupDirPrev;
                 }
-                else if ( nDupDir == DP_DETECT )
+                else if ( nDupDirPrev == DP_DETECT )
                 {
                     nDetectBrAtPos = abcBrIsOnLeft;
                     nDetectBrType = nBrType;
@@ -664,21 +657,13 @@ unsigned int CXBrackets::isAtBracketCharacter(const CSciMessager& sciMsgr, const
             if ( isDuplicatedPair(nBrType) )
             {
                 // quotes
-                nDupDir = getDuplicatedPairDirection(sciMsgr, nCharPos, curr_ch);
-                if ( nDupDir == DP_BACKWARD || nDupDir == DP_MAYBEBACKWARD )
-                {
-                    // right quote
-                    *out_nBrType = nBrType;
-                    *out_nDupDirection = DP_BACKWARD;
-                    return (abcRightBr | abcBrIsOnRight);
-                }
-
-                if ( nDupDir == DP_FORWARD || nDupDir == DP_MAYBEFORWARD )
+                nDupDirCurr = getDuplicatedPairDirection(sciMsgr, nCharPos, curr_ch);
+                if ( nDupDirCurr == DP_FORWARD || nDupDirCurr == DP_MAYBEFORWARD )
                 {
                     // left quote
-                    *out_nDupDirection = nDupDir;
+                    *out_nDupDirection = nDupDirCurr;
                 }
-                else if ( nDupDir == DP_DETECT )
+                else if ( nDupDirCurr == DP_DETECT )
                 {
                     nDetectBrAtPos = abcBrIsOnRight;
                     nDetectBrType = nBrType;
@@ -700,7 +685,19 @@ unsigned int CXBrackets::isAtBracketCharacter(const CSciMessager& sciMsgr, const
         nBrType = getRightBracketType(curr_ch);
         if ( nBrType != tbtNone && !isEscapedPos(sciMsgr, nCharPos) ) //  |)
         {
-            if ( !isDuplicatedPair(nBrType) )
+            if ( isDuplicatedPair(nBrType) )
+            {
+                // quotes
+                if ( nDupDirCurr == DP_NONE )
+                    nDupDirCurr = getDuplicatedPairDirection(sciMsgr, nCharPos, curr_ch);
+
+                if ( nDupDirCurr == DP_BACKWARD || nDupDirCurr == DP_MAYBEBACKWARD )
+                    *out_nDupDirection = nDupDirCurr; // right quote
+                else
+                    nBrType = tbtNone;
+            }
+
+            if ( nBrType != tbtNone )
             {
                 *out_nBrType = nBrType;
                 return (abcRightBr | abcBrIsOnRight);
@@ -713,7 +710,19 @@ unsigned int CXBrackets::isAtBracketCharacter(const CSciMessager& sciMsgr, const
         nBrType = getRightBracketType(prev_ch);
         if ( nBrType != tbtNone && !isEscapedPos(sciMsgr, nCharPos - 1) ) //  )|
         {
-            if ( !isDuplicatedPair(nBrType) )
+            if ( isDuplicatedPair(nBrType) )
+            {
+                // quotes
+                if ( nDupDirPrev == DP_NONE )
+                    nDupDirPrev = getDuplicatedPairDirection(sciMsgr, nCharPos - 1, prev_ch);
+
+                if ( nDupDirPrev == DP_BACKWARD || nDupDirPrev == DP_MAYBEBACKWARD )
+                    *out_nDupDirection = nDupDirPrev; // right quote
+                else
+                    nBrType = tbtNone;
+            }
+
+            if ( nBrType != tbtNone )
             {
                 *out_nBrType = nBrType;
                 return (abcRightBr | abcBrIsOnLeft);
