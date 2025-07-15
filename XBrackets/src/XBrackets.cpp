@@ -1108,6 +1108,7 @@ void CXBrackets::performBracketsAction(eGetBracketsAction nBrAction)
     Sci_Position nStartPos = state.nCharPos;
     TBracketType nBrType = tbtNone;
     eDupPairDirection nDupDir = DP_NONE;
+    bool isBrPairFound = false;
     unsigned int nAtBr = isAtBracketCharacter(sciMsgr, nStartPos, &nBrType, &nDupDir);
 
     if ( nBrType == tbtTag2 )
@@ -1131,10 +1132,7 @@ void CXBrackets::performBracketsAction(eGetBracketsAction nBrAction)
                 --state.nLeftBrPos;  //  (|  ->  |(
             }
 
-            if ( nBrAction == baGoToMatching || nBrAction == baGoToNearest )
-                sciMsgr.setSel(state.nRightBrPos, state.nRightBrPos);
-            else
-                sciMsgr.setSel(state.nLeftBrPos, state.nRightBrPos);
+            isBrPairFound = true;
         }
     }
     else if ( nAtBr & abcRightBr )
@@ -1155,19 +1153,88 @@ void CXBrackets::performBracketsAction(eGetBracketsAction nBrAction)
                 --state.nLeftBrPos;  //  (|  ->  |(
             }
 
-            if ( nBrAction == baGoToMatching || nBrAction == baGoToNearest )
-                sciMsgr.setSel(state.nLeftBrPos, state.nLeftBrPos);
-            else
-                sciMsgr.setSel(state.nLeftBrPos, state.nRightBrPos);
+            isBrPairFound = true;
         }
     }
     else if ( nAtBr & abcDetectBr )
     {
-        // TODO
+        // detect: either at left or at right quote
+        unsigned int nAtBrNow = nAtBr;
+
+        // 1. try as a left quote...
+        if ( nAtBr & abcBrIsOnRight )
+        {
+            ++nStartPos; //  |(  ->  (|
+            nAtBrNow = abcDetectBr | abcBrIsOnLeft;
+        }
+
+        state.nLeftBrPos = nStartPos; // exclude the quote itself
+        state.nLeftBrType = nBrType;
+        state.nLeftDupDirection = nDupDir;
+
+        if ( findRightBracket(sciMsgr, nStartPos, &state) && nBrType == state.nRightBrType )
+        {
+            if ( nAtBr & abcBrIsOnRight )
+            {
+                ++state.nRightBrPos; //  |)  ->  )|
+                --state.nLeftBrPos;  //  (|  ->  |(
+            }
+
+            isBrPairFound = true;
+        }
+        else
+        {
+            state.nLeftBrPos = -1;
+            state.nLeftBrType = tbtNone;
+            state.nLeftDupDirection = DP_NONE;
+
+            // 2. try as a right quote...
+            nAtBrNow = nAtBr;
+            if ( (nAtBr & abcBrIsOnLeft) || (nAtBr & abcBrIsOnRight) )
+            {
+                --nStartPos; //  )|  ->  |)
+                nAtBrNow = abcDetectBr | abcBrIsOnRight;
+            }
+
+            state.nRightBrPos = nStartPos;
+            state.nRightBrType = nBrType;
+            state.nRightDupDirection = nDupDir;
+
+            if ( findLeftBracket(sciMsgr, nStartPos, &state) && nBrType == state.nLeftBrType )
+            {
+                if ( nAtBr & abcBrIsOnLeft )
+                {
+                    ++state.nRightBrPos; //  |)  ->  )|
+                    --state.nLeftBrPos;  //  (|  ->  |(
+                }
+
+                isBrPairFound = true;
+            }
+        }
     }
     else
     {
+        // not at a bracket
+
         // TODO
+    }
+
+    if ( isBrPairFound )
+    {
+        if ( nBrAction == baGoToMatching || nBrAction == baGoToNearest )
+        {
+            if ( state.nSelStart == state.nLeftBrPos )
+                sciMsgr.setSel(state.nRightBrPos, state.nRightBrPos);
+            else
+                sciMsgr.setSel(state.nLeftBrPos, state.nLeftBrPos);
+        }
+        else
+        {
+            if ( state.nSelStart == state.nLeftBrPos )
+                sciMsgr.setSel(state.nLeftBrPos, state.nRightBrPos);
+            else
+                sciMsgr.setSel(state.nRightBrPos, state.nLeftBrPos);
+        }
     }
 }
 
