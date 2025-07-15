@@ -109,6 +109,10 @@ LRESULT CALLBACK CXBrackets::nppNewWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, 
         const WORD id = LOWORD(wParam);
         switch ( id )
         {
+            case IDM_FILE_RELOAD:
+                thePlugin.OnNppFileReload();
+                break;
+
             case IDM_MACRO_STARTRECORDINGMACRO:
                 thePlugin.OnNppMacro(MACRO_START);
                 break;
@@ -140,6 +144,14 @@ LRESULT CALLBACK CXBrackets::nppNewWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, 
                 }
                 break;
         }
+    }
+    else if ( uMsg == NPPM_RELOADFILE )
+    {
+        thePlugin.OnNppFileReload();
+    }
+    else if ( uMsg == NPPM_RELOADBUFFERID )
+    {
+        thePlugin.OnNppBufferReload();
     }
     else if ( uMsg == WM_MACRODLGRUNMACRO )
     {
@@ -175,6 +187,8 @@ LRESULT CALLBACK CXBrackets::sciNewWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, 
 
 CXBrackets::CXBrackets() :
   m_nAutoRightBracketPos(-1),
+  m_nCachedLeftBrPos(-1),
+  m_nCachedRightBrPos(-1),
   m_uFileType(tfmIsSupported)
 {
 }
@@ -226,6 +240,17 @@ void CXBrackets::nppBeNotified(SCNotification* pscn)
         }
         // <<< notifications from Notepad++
     }
+    else
+    {
+        // >>> notifications from Scintilla
+        switch ( pscn->nmhdr.code )
+        {
+            case SCN_MODIFIED:
+                OnSciModified(pscn);
+                break;
+        }
+        // <<< notifications from Scintilla
+    }
 }
 
 void CXBrackets::OnNppSetInfo(const NppData& nppd)
@@ -237,13 +262,26 @@ void CXBrackets::OnNppSetInfo(const NppData& nppd)
 void CXBrackets::OnNppBufferActivated()
 {
     UpdateFileType();
+    m_nCachedLeftBrPos = -1;
+    m_nCachedRightBrPos = -1;
+}
+
+void CXBrackets::OnNppBufferReload()
+{
+    m_nCachedLeftBrPos = -1;
+    m_nCachedRightBrPos = -1;
 }
 
 void CXBrackets::OnNppFileOpened()
 {
     //this handler is not needed because file opening
     //is handled by OnNppBufferActivated()
-    // UpdateFileType();
+}
+
+void CXBrackets::OnNppFileReload()
+{
+    m_nCachedLeftBrPos = -1;
+    m_nCachedRightBrPos = -1;
 }
 
 void CXBrackets::OnNppFileSaved()
@@ -256,6 +294,8 @@ void CXBrackets::OnNppReady()
     ReadOptions();
     CXBracketsMenu::UpdateMenuState();
     UpdateFileType();
+
+    m_nppMsgr.SendNppMsg(NPPM_ADDSCNMODIFIEDFLAGS, 0, SC_MOD_INSERTTEXT | SC_MOD_DELETETEXT);
 
     auto pSetWindowLongPtr = isNppWndUnicode ? SetWindowLongPtrW : SetWindowLongPtrA;
 
@@ -1133,6 +1173,16 @@ CXBrackets::eCharProcessingResult CXBrackets::OnSciChar(const int ch)
     return AutoBracketsFunc(nLeftBracketType);
 }
 
+void CXBrackets::OnSciModified(SCNotification* pscn)
+{
+    if ( pscn->modificationType & (SC_MOD_INSERTTEXT | SC_MOD_DELETETEXT) )
+    {
+        // text has been changed
+        m_nCachedLeftBrPos = -1;
+        m_nCachedRightBrPos = -1;
+    }
+}
+
 void CXBrackets::performBracketsAction(eGetBracketsAction nBrAction)
 {
     CSciMessager sciMsgr(m_nppMsgr.getCurrentScintillaWnd());
@@ -1145,19 +1195,41 @@ void CXBrackets::performBracketsAction(eGetBracketsAction nBrAction)
     state.nSelEnd = sciMsgr.getSelectionEnd();
     if ( state.nSelStart != state.nSelEnd )
     {
-        // something is selected
-        if ( nBrAction == baSelToMatching || nBrAction == baSelToNearest )
-        {
-            // inverting the selection positions
-            if ( sciMsgr.getCurrentPos() == state.nSelEnd )
-                sciMsgr.setSel(state.nSelEnd, state.nSelStart);
-            else
-                sciMsgr.setSel(state.nSelStart, state.nSelEnd);
-        }
+        // something is selected: inverting the selection positions
+        if ( sciMsgr.getCurrentPos() == state.nSelEnd )
+            sciMsgr.setSel(state.nSelEnd, state.nSelStart);
+        else
+            sciMsgr.setSel(state.nSelStart, state.nSelEnd);
         return;
     }
 
     state.nCharPos = state.nSelStart;
+
+    if ( m_nCachedLeftBrPos != -1 && m_nCachedRightBrPos != -1 )
+    {
+        Sci_Position nTargetSelEnd(-1);
+        Sci_Position nTargetSelStart(-1);
+
+        if ( state.nCharPos == m_nCachedLeftBrPos )
+            nTargetSelEnd = m_nCachedRightBrPos;
+        else if ( state.nCharPos == m_nCachedLeftBrPos - 1 )
+            nTargetSelEnd = m_nCachedRightBrPos + 1;
+        else if ( state.nCharPos == m_nCachedRightBrPos )
+            nTargetSelEnd = m_nCachedLeftBrPos;
+        else if ( state.nCharPos == m_nCachedRightBrPos + 1 )
+            nTargetSelEnd = m_nCachedLeftBrPos - 1;
+
+        if ( nTargetSelEnd != -1 )
+        {
+            if ( nBrAction == baGoToMatching || nBrAction == baGoToNearest )
+                nTargetSelStart = nTargetSelEnd;
+            else
+                nTargetSelStart = state.nCharPos;
+
+            sciMsgr.setSel(nTargetSelStart, nTargetSelEnd);
+            return;
+        }
+    }
 
     Sci_Position nStartPos = state.nCharPos;
     TBracketType nBrType = tbtNone;
@@ -1180,6 +1252,9 @@ void CXBrackets::performBracketsAction(eGetBracketsAction nBrAction)
 
         if ( findRightBracket(sciMsgr, nStartPos, &state) && nBrType == state.nRightBrType )
         {
+            m_nCachedLeftBrPos = state.nLeftBrPos;
+            m_nCachedRightBrPos = state.nRightBrPos;
+
             if ( nAtBr & abcBrIsOnRight )
             {
                 ++state.nRightBrPos; //  |)  ->  )|
@@ -1201,6 +1276,9 @@ void CXBrackets::performBracketsAction(eGetBracketsAction nBrAction)
 
         if ( findLeftBracket(sciMsgr, nStartPos, &state) && nBrType == state.nLeftBrType )
         {
+            m_nCachedLeftBrPos = state.nLeftBrPos;
+            m_nCachedRightBrPos = state.nRightBrPos;
+
             if ( nAtBr & abcBrIsOnLeft )
             {
                 ++state.nRightBrPos; //  |)  ->  )|
@@ -1228,6 +1306,9 @@ void CXBrackets::performBracketsAction(eGetBracketsAction nBrAction)
 
         if ( findRightBracket(sciMsgr, nStartPos, &state) && nBrType == state.nRightBrType )
         {
+            m_nCachedLeftBrPos = state.nLeftBrPos;
+            m_nCachedRightBrPos = state.nRightBrPos;
+
             if ( nAtBr & abcBrIsOnRight )
             {
                 ++state.nRightBrPos; //  |)  ->  )|
@@ -1256,6 +1337,9 @@ void CXBrackets::performBracketsAction(eGetBracketsAction nBrAction)
 
             if ( findLeftBracket(sciMsgr, nStartPos, &state) && nBrType == state.nLeftBrType )
             {
+                m_nCachedLeftBrPos = state.nLeftBrPos;
+                m_nCachedRightBrPos = state.nRightBrPos;
+
                 if ( nAtBr & abcBrIsOnLeft )
                 {
                     ++state.nRightBrPos; //  |)  ->  )|
@@ -1275,20 +1359,36 @@ void CXBrackets::performBracketsAction(eGetBracketsAction nBrAction)
 
     if ( isBrPairFound )
     {
+        Sci_Position nTargetSelStart(-1), nTargetSelEnd(-1);
+
         if ( nBrAction == baGoToMatching || nBrAction == baGoToNearest )
         {
             if ( state.nSelStart == state.nLeftBrPos )
-                sciMsgr.setSel(state.nRightBrPos, state.nRightBrPos);
+            {
+                nTargetSelStart = state.nRightBrPos;
+                nTargetSelEnd = state.nRightBrPos;
+            }
             else
-                sciMsgr.setSel(state.nLeftBrPos, state.nLeftBrPos);
+            {
+                nTargetSelStart = state.nLeftBrPos;
+                nTargetSelEnd = state.nLeftBrPos;
+            }
         }
         else
         {
             if ( state.nSelStart == state.nLeftBrPos )
-                sciMsgr.setSel(state.nLeftBrPos, state.nRightBrPos);
+            {
+                nTargetSelStart = state.nLeftBrPos;
+                nTargetSelEnd = state.nRightBrPos;
+            }
             else
-                sciMsgr.setSel(state.nRightBrPos, state.nLeftBrPos);
+            {
+                nTargetSelStart = state.nRightBrPos;
+                nTargetSelEnd = state.nLeftBrPos;
+            }
         }
+
+        sciMsgr.setSel(nTargetSelStart, nTargetSelEnd);
     }
 }
 

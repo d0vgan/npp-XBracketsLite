@@ -48,6 +48,8 @@ class CXBrackets : public CNppPlugin
         
         // internal vars
         Sci_Position m_nAutoRightBracketPos;
+        Sci_Position m_nCachedLeftBrPos;
+        Sci_Position m_nCachedRightBrPos;
         unsigned int m_uFileType;
 
     public:
@@ -64,7 +66,9 @@ class CXBrackets : public CNppPlugin
 
         // custom n++ notifications
         void OnNppBufferActivated();
+        void OnNppBufferReload();
         void OnNppFileOpened();
+        void OnNppFileReload();
         void OnNppFileSaved();
         void OnNppReady();
         void OnNppShutdown();
@@ -72,6 +76,7 @@ class CXBrackets : public CNppPlugin
 
         // custom scintilla notifications
         eCharProcessingResult OnSciChar(const int ch);
+        void OnSciModified(SCNotification* pscn);
 
         // custom functions
         void GoToMatchingBracket();
