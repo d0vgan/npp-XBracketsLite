@@ -1090,7 +1090,7 @@ CXBrackets::eCharProcessingResult CXBrackets::OnSciChar(const int ch)
     return AutoBracketsFunc(nLeftBracketType);
 }
 
-void CXBrackets::GoToMatchingBracket()
+void CXBrackets::performBracketsAction(eGetBracketsAction nBrAction)
 {
     CSciMessager sciMsgr(m_nppMsgr.getCurrentScintillaWnd());
 
@@ -1125,7 +1125,16 @@ void CXBrackets::GoToMatchingBracket()
 
         if ( findRightBracket(sciMsgr, nStartPos, &state) && nBrType == state.nRightBrType )
         {
-            sciMsgr.setSel(state.nRightBrPos, state.nRightBrPos);
+            if ( nAtBr & abcBrIsOnRight )
+            {
+                ++state.nRightBrPos; //  |)  ->  )|
+                --state.nLeftBrPos;  //  (|  ->  |(
+            }
+
+            if ( nBrAction == baGoToMatching || nBrAction == baGoToNearest )
+                sciMsgr.setSel(state.nRightBrPos, state.nRightBrPos);
+            else
+                sciMsgr.setSel(state.nLeftBrPos, state.nRightBrPos);
         }
     }
     else if ( nAtBr & abcRightBr )
@@ -1140,28 +1149,46 @@ void CXBrackets::GoToMatchingBracket()
 
         if ( findLeftBracket(sciMsgr, nStartPos, &state) && nBrType == state.nLeftBrType )
         {
-            sciMsgr.setSel(state.nLeftBrPos, state.nLeftBrPos);
+            if ( nAtBr & abcBrIsOnLeft )
+            {
+                ++state.nRightBrPos; //  |)  ->  )|
+                --state.nLeftBrPos;  //  (|  ->  |(
+            }
+
+            if ( nBrAction == baGoToMatching || nBrAction == baGoToNearest )
+                sciMsgr.setSel(state.nLeftBrPos, state.nLeftBrPos);
+            else
+                sciMsgr.setSel(state.nLeftBrPos, state.nRightBrPos);
         }
     }
     else if ( nAtBr & abcDetectBr )
     {
         // TODO
     }
+    else
+    {
+        // TODO
+    }
+}
+
+void CXBrackets::GoToMatchingBracket()
+{
+    performBracketsAction(baGoToMatching);
 }
 
 void CXBrackets::GoToNearestBracket()
 {
-
+    performBracketsAction(baGoToNearest);
 }
 
 void CXBrackets::SelToMatchingBracket()
 {
-
+    performBracketsAction(baSelToMatching);
 }
 
 void CXBrackets::SelToNearestBrackets()
 {
-
+    performBracketsAction(baSelToNearest);
 }
 
 void CXBrackets::ReadOptions()

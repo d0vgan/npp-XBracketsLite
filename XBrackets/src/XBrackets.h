@@ -102,6 +102,13 @@ class CXBrackets : public CNppPlugin
             abcBrIsOnRight = 0x20  // on right: |(  or  |)
         };
 
+        enum eGetBracketsAction {
+            baGoToMatching = 0,
+            baSelToMatching,
+            baGoToNearest,
+            baSelToNearest
+        };
+
         struct tGetBracketsState
         {
             Sci_Position nSelStart{-1};
@@ -143,6 +150,7 @@ class CXBrackets : public CNppPlugin
         unsigned int isAtBracketCharacter(const CSciMessager& sciMsgr, const Sci_Position nCharPos, TBracketType* out_nBrType, eDupPairDirection* out_nDupDirection) const;
         bool findLeftBracket(const CSciMessager& sciMsgr, const Sci_Position nStartPos, tGetBracketsState* state);
         bool findRightBracket(const CSciMessager& sciMsgr, const Sci_Position nStartPos, tGetBracketsState* state);
+        void performBracketsAction(eGetBracketsAction nBrAction);
 
     protected:
         enum eMacroState {
