@@ -574,34 +574,34 @@ unsigned int CXBracketsLogic::isAtBracketCharacter(const CSciMessager& sciMsgr, 
     return (abcNone);
 }
 
-bool CXBracketsLogic::isInBracketsStack(const std::vector<std::pair<TBracketType, eDupPairDirection>>& bracketsStack, TBracketType nBrType)
+bool CXBracketsLogic::isInBracketsStack(const std::vector<tBracketItem>& bracketsStack, TBracketType nBrType)
 {
     const auto itrEnd = bracketsStack.end();
-    return (std::find_if(bracketsStack.begin(), itrEnd, [nBrType](const auto& item){ return item.first == nBrType; }) != itrEnd);
+    return (std::find_if(bracketsStack.begin(), itrEnd, [nBrType](const tBracketItem& item){ return item.nBrType == nBrType; }) != itrEnd);
 }
 
 bool CXBracketsLogic::findLeftBracket(const CSciMessager& sciMsgr, const Sci_Position nStartPos, tGetBracketsState* state)
 {
     switch ( state->nRightBrType )
     {
-    case tbtBracket:
-    case tbtSquare:
-    case tbtBrace:
-    case tbtTag:
-    {
-        Sci_Position nMatchBrPos = static_cast<Sci_Position>(sciMsgr.SendSciMsg(SCI_BRACEMATCH, nStartPos));
-        if ( nMatchBrPos != -1 )
+        case tbtBracket:
+        case tbtSquare:
+        case tbtBrace:
+        case tbtTag:
         {
-            state->nLeftBrType = state->nRightBrType;
-            state->nLeftBrPos = nMatchBrPos + 1;
-            state->nLeftDupDirection = DP_NONE;
-            return true; // rely on Scintilla
+            Sci_Position nMatchBrPos = static_cast<Sci_Position>(sciMsgr.SendSciMsg(SCI_BRACEMATCH, nStartPos));
+            if ( nMatchBrPos != -1 )
+            {
+                state->nLeftBrPos = nMatchBrPos + 1;
+                state->nLeftBrType = state->nRightBrType;
+                state->nLeftDupDirection = DP_NONE;
+                return true; // rely on Scintilla
+            }
         }
-    }
-    break;
+        break;
     }
 
-    std::vector<std::pair<TBracketType, eDupPairDirection>> bracketsStack;
+    std::vector<tBracketItem> bracketsStack;
     std::vector<char> vLine;
 
     const Sci_Position nStartLine = sciMsgr.getLineFromPosition(nStartPos);
@@ -640,15 +640,15 @@ bool CXBracketsLogic::findLeftBracket(const CSciMessager& sciMsgr, const Sci_Pos
                             // left quote found
                             if ( bracketsStack.empty() )
                             {
-                                state->nLeftBrType = nBrType;
                                 state->nLeftBrPos = nBrPos + 1; // exclude the bracket itself
+                                state->nLeftBrType = nBrType;
                                 state->nLeftDupDirection = nDupPairDirection;
                                 bExitLoop = true;
                                 break; // OK, found
                             }
 
-                            if ( bracketsStack.back().first != nBrType ||  // (1)
-                                 getDirectionRank(nDupPairDirection, bracketsStack.back().second) < getDirectionRank(DP_FORWARD, DP_DETECT) )  // (2)
+                            if ( bracketsStack.back().nBrType != nBrType ||  // (1)
+                                 getDirectionRank(nDupPairDirection, bracketsStack.back().nDupDir) < getDirectionRank(DP_FORWARD, DP_DETECT) )  // (2)
                             {
                                 // (1) could be either a left quote inside (another) quotes
                                 // (1) or a left quote outside (another) quotes, not sure...
@@ -667,8 +667,8 @@ bool CXBracketsLogic::findLeftBracket(const CSciMessager& sciMsgr, const Sci_Pos
                                 if ( state->nRightBrType == nBrType &&
                                      state->nRightDupDirection == DP_BACKWARD )
                                 {
-                                    state->nLeftBrType = nBrType;
                                     state->nLeftBrPos = nBrPos + 1; // exclude the bracket itself
+                                    state->nLeftBrType = nBrType;
                                     state->nLeftDupDirection = nDupPairDirection;
                                     bExitLoop = true;
                                     break; // OK, found
@@ -682,11 +682,11 @@ bool CXBracketsLogic::findLeftBracket(const CSciMessager& sciMsgr, const Sci_Pos
                                 }
 
                                 // treating it as a right quote
-                                bracketsStack.push_back({nBrType, nDupPairDirection});
+                                bracketsStack.push_back({nBrPos, nBrType, nDupPairDirection});
                             }
-                            else if ( bracketsStack.back().first == nBrType )
+                            else if ( bracketsStack.back().nBrType == nBrType )
                             {
-                                if ( bracketsStack.back().second != DP_BACKWARD )
+                                if ( bracketsStack.back().nDupDir != DP_BACKWARD )
                                 {
                                     bExitLoop = true;
                                     break; // can't be sure if it's a pair of quotes or not
@@ -704,7 +704,7 @@ bool CXBracketsLogic::findLeftBracket(const CSciMessager& sciMsgr, const Sci_Pos
                                 }
 
                                 // treating it as a right quote
-                                bracketsStack.push_back({nBrType, nDupPairDirection});
+                                bracketsStack.push_back({nBrPos, nBrType, nDupPairDirection});
                             }
                         }
                         else
@@ -717,21 +717,21 @@ bool CXBracketsLogic::findLeftBracket(const CSciMessager& sciMsgr, const Sci_Pos
                             }
 
                             // right quote found while looking for a left one
-                            bracketsStack.push_back({nBrType, nDupPairDirection});
+                            bracketsStack.push_back({nBrPos, nBrType, nDupPairDirection});
                         }
                     }
                     else
                     {
                         if ( bracketsStack.empty() )
                         {
-                            state->nLeftBrType = nBrType;
                             state->nLeftBrPos = nBrPos + 1; // exclude the bracket itself
+                            state->nLeftBrType = nBrType;
                             state->nLeftDupDirection = DP_NONE;
                             bExitLoop = true;
                             break; // OK, found
                         }
 
-                        if ( bracketsStack.back().first != nBrType )
+                        if ( bracketsStack.back().nBrType != nBrType )
                         {
                             // could be either a left bracket inside quotes
                             // or a left bracket outside quotes, not sure...
@@ -771,7 +771,7 @@ bool CXBracketsLogic::findLeftBracket(const CSciMessager& sciMsgr, const Sci_Pos
                         }
                         else
                         {
-                            bracketsStack.push_back({nBrType, DP_NONE});
+                            bracketsStack.push_back({nBrPos, nBrType, DP_NONE});
                         }
                     }
                 }
@@ -785,6 +785,19 @@ bool CXBracketsLogic::findLeftBracket(const CSciMessager& sciMsgr, const Sci_Pos
             break;
     }
 
+    if ( state->nLeftBrType == tbtNone &&   // no left bracket found
+         state->nRightBrType == tbtNone &&  // no right bracket was given
+         bracketsStack.size() == 1 )        // exactly 1 item in the stack
+    {
+        const tBracketItem brItem = bracketsStack.back();
+        if ( isDuplicatedPair(brItem.nBrType) && brItem.nDupDir == DP_DETECT )
+        {
+            state->nLeftBrPos = brItem.nBrPos + 1; // exclude the bracket itself
+            state->nLeftBrType = brItem.nBrType;
+            state->nLeftDupDirection = brItem.nDupDir;
+        }
+    }
+
     return (state->nLeftBrType != tbtNone);
 }
 
@@ -792,24 +805,24 @@ bool CXBracketsLogic::findRightBracket(const CSciMessager& sciMsgr, const Sci_Po
 {
     switch ( state->nLeftBrType )
     {
-    case tbtBracket:
-    case tbtSquare:
-    case tbtBrace:
-    case tbtTag:
-    {
-        Sci_Position nMatchBrPos = static_cast<Sci_Position>(sciMsgr.SendSciMsg(SCI_BRACEMATCH, nStartPos - 1));
-        if ( nMatchBrPos != -1 )
+        case tbtBracket:
+        case tbtSquare:
+        case tbtBrace:
+        case tbtTag:
         {
-            state->nRightBrType = state->nLeftBrType;
-            state->nRightBrPos = nMatchBrPos;
-            state->nRightDupDirection = DP_NONE;
-            return true; // rely on Scintilla
+            Sci_Position nMatchBrPos = static_cast<Sci_Position>(sciMsgr.SendSciMsg(SCI_BRACEMATCH, nStartPos - 1));
+            if ( nMatchBrPos != -1 )
+            {
+                state->nRightBrPos = nMatchBrPos;
+                state->nRightBrType = state->nLeftBrType;
+                state->nRightDupDirection = DP_NONE;
+                return true; // rely on Scintilla
+            }
         }
-    }
-    break;
+        break;
     }
 
-    std::vector<std::pair<TBracketType, eDupPairDirection>> bracketsStack;
+    std::vector<tBracketItem> bracketsStack;
     std::vector<char> vLine;
 
     const Sci_Position nLinesCount = sciMsgr.getLineCount();
@@ -845,15 +858,15 @@ bool CXBracketsLogic::findRightBracket(const CSciMessager& sciMsgr, const Sci_Po
                             // right quote found
                             if ( bracketsStack.empty() )
                             {
-                                state->nRightBrType = nBrType;
                                 state->nRightBrPos = nBrPos;
+                                state->nRightBrType = nBrType;
                                 state->nRightDupDirection = nDupPairDirection;
                                 bExitLoop = true;
                                 break; // OK, found
                             }
 
-                            if ( bracketsStack.back().first != nBrType ||  // (1)
-                                 getDirectionRank(bracketsStack.back().second, nDupPairDirection) < getDirectionRank(DP_DETECT, DP_BACKWARD) )  // (2)
+                            if ( bracketsStack.back().nBrType != nBrType ||  // (1)
+                                 getDirectionRank(bracketsStack.back().nDupDir, nDupPairDirection) < getDirectionRank(DP_DETECT, DP_BACKWARD) )  // (2)
                             {
                                 // (1) could be either a right quote inside (another) quotes
                                 // (1) or a right quote outside (another) quotes, not sure...
@@ -872,8 +885,8 @@ bool CXBracketsLogic::findRightBracket(const CSciMessager& sciMsgr, const Sci_Po
                                 if ( state->nLeftBrType == nBrType &&
                                      state->nLeftDupDirection == DP_FORWARD )
                                 {
-                                    state->nRightBrType = nBrType;
                                     state->nRightBrPos = nBrPos;
+                                    state->nRightBrType = nBrType;
                                     state->nRightDupDirection = nDupPairDirection;
                                     bExitLoop = true;
                                     break; // OK, found
@@ -887,11 +900,11 @@ bool CXBracketsLogic::findRightBracket(const CSciMessager& sciMsgr, const Sci_Po
                                 }
 
                                 // treating it as a left quote
-                                bracketsStack.push_back({nBrType, nDupPairDirection});
+                                bracketsStack.push_back({nBrPos, nBrType, nDupPairDirection});
                             }
-                            else if ( bracketsStack.back().first == nBrType )
+                            else if ( bracketsStack.back().nBrType == nBrType )
                             {
-                                if ( bracketsStack.back().second != DP_FORWARD )
+                                if ( bracketsStack.back().nDupDir != DP_FORWARD )
                                 {
                                     bExitLoop = true;
                                     break; // can't be sure if it's a pair of quotes or not
@@ -909,7 +922,7 @@ bool CXBracketsLogic::findRightBracket(const CSciMessager& sciMsgr, const Sci_Po
                                 }
 
                                 // treating it as a left quote
-                                bracketsStack.push_back({nBrType, nDupPairDirection});
+                                bracketsStack.push_back({nBrPos, nBrType, nDupPairDirection});
                             }
                         }
                         else
@@ -922,21 +935,21 @@ bool CXBracketsLogic::findRightBracket(const CSciMessager& sciMsgr, const Sci_Po
                             }
 
                             // left quote found while looking for a right one
-                            bracketsStack.push_back({nBrType, nDupPairDirection});
+                            bracketsStack.push_back({nBrPos, nBrType, nDupPairDirection});
                         }
                     }
                     else
                     {
                         if ( bracketsStack.empty() )
                         {
-                            state->nRightBrType = nBrType;
                             state->nRightBrPos = nBrPos;
+                            state->nRightBrType = nBrType;
                             state->nRightDupDirection = DP_NONE;
                             bExitLoop = true;
                             break; // OK, found
                         }
 
-                        if ( bracketsStack.back().first != nBrType )
+                        if ( bracketsStack.back().nBrType != nBrType )
                         {
                             // could be either a right bracket inside quotes
                             // or a right bracket outside quotes, not sure...
@@ -976,7 +989,7 @@ bool CXBracketsLogic::findRightBracket(const CSciMessager& sciMsgr, const Sci_Po
                         }
                         else
                         {
-                            bracketsStack.push_back({nBrType, DP_NONE});
+                            bracketsStack.push_back({nBrPos, nBrType, DP_NONE});
                         }
                     }
                 }
@@ -985,6 +998,19 @@ bool CXBracketsLogic::findRightBracket(const CSciMessager& sciMsgr, const Sci_Po
 
         if ( bExitLoop )
             break;
+    }
+
+    if ( state->nRightBrType == tbtNone &&  // no right bracket found
+         state->nLeftBrType == tbtNone &&   // no left bracket was given
+         bracketsStack.size() == 1 )        // exactly 1 item in the stack
+    {
+        const tBracketItem brItem = bracketsStack.back();
+        if ( isDuplicatedPair(brItem.nBrType) && brItem.nDupDir == DP_DETECT )
+        {
+            state->nRightBrPos = brItem.nBrPos;
+            state->nRightBrType = brItem.nBrType;
+            state->nRightDupDirection = brItem.nDupDir;
+        }
     }
 
     return (state->nRightBrType != tbtNone);
@@ -1042,8 +1068,9 @@ void CXBracketsLogic::PerformBracketsAction(eGetBracketsAction nBrAction)
     TBracketType nBrType = tbtNone;
     eDupPairDirection nDupDir = DP_NONE;
     bool isBrPairFound = false;
-    unsigned int nAtBr = isAtBracketCharacter(sciMsgr, nStartPos, &nBrType, &nDupDir);
+    bool isNearestBr = false;
 
+    unsigned int nAtBr = isAtBracketCharacter(sciMsgr, nStartPos, &nBrType, &nDupDir);
     if ( nBrType == tbtTag2 )
         nBrType = tbtTag;
 
@@ -1160,14 +1187,26 @@ void CXBracketsLogic::PerformBracketsAction(eGetBracketsAction nBrAction)
     else
     {
         // not at a bracket
+        if ( nBrAction == baGoToMatching || nBrAction == baSelToMatching )
+            return; // no matching bracket
 
-        // TODO
+        // finding nearest brackets...
+        if ( findLeftBracket(sciMsgr, nStartPos, &state) &&
+             findRightBracket(sciMsgr, nStartPos, &state) )
+        {
+            if ( state.nLeftBrType == state.nRightBrType )
+            {
+                isNearestBr = true;
+                isBrPairFound = true;
+            }
+        }
     }
 
     if ( isBrPairFound )
     {
         Sci_Position nTargetSelStart(-1), nTargetSelEnd(-1);
 
+        // TODO: adjust selection positions for isNearestBr
         if ( nBrAction == baGoToMatching || nBrAction == baGoToNearest )
         {
             if ( state.nSelStart == state.nLeftBrPos )

@@ -171,8 +171,8 @@ bool SettingsDlg_OnOK(HWND hDlg)
 void showPluginStatus(HWND hDlg, bool bActive)
 {
     DlgItem_SetText( hDlg, IDC_ST_PLUGINSTATE,
-      bActive ? _T("Status: the plugin is active") :
-        _T("Status: the plugin is NOT active") );
+      bActive ? _T("Status: Auto-completion is active") :
+        _T("Status: Auto-completion is NOT active") );
 }
 
 void SettingsDlg_OnChBracketsAutoCompleteClicked(HWND hDlg)

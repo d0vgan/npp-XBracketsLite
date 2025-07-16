@@ -92,6 +92,13 @@ private:
         eDupPairDirection nRightDupDirection{DP_NONE};
     };
 
+    struct tBracketItem
+    {
+        Sci_Position nBrPos{-1};
+        TBracketType nBrType{tbtNone};
+        eDupPairDirection nDupDir{DP_NONE};
+    };
+
     static const char* strBrackets[tbtCount];
 
     // internal vars
@@ -123,7 +130,7 @@ private:
     static int getDirectionIndex(const eDupPairDirection direction);
     static int getDirectionRank(const eDupPairDirection leftDirection, const eDupPairDirection rightDirection);
     static void getEscapedPrefixPos(const Sci_Position nOffset, Sci_Position* pnPos, int* pnLen);
-    static bool isInBracketsStack(const std::vector<std::pair<TBracketType, eDupPairDirection>>& bracketsStack, TBracketType nBrType);
+    static bool isInBracketsStack(const std::vector<tBracketItem>& bracketsStack, TBracketType nBrType);
 
     bool isEscapedPos(const CSciMessager& sciMsgr, const Sci_Position nCharPos) const;
     bool isDuplicatedPair(TBracketType nBracketType) const;
