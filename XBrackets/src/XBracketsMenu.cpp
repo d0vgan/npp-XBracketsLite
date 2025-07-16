@@ -1,11 +1,11 @@
 #include "XBracketsMenu.h"
-#include "XBrackets.h"
+#include "XBracketsPlugin.h"
 #include "XBracketsOptions.h"
 #include "SettingsDlg.h"
 #include "resource.h"
 
 
-extern CXBrackets        thePlugin;
+extern CXBracketsPlugin  thePlugin;
 extern CXBracketsOptions g_opt;
 
 

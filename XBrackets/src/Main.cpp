@@ -2,10 +2,10 @@
 //
 
 #include "core/base.h"
-#include "XBrackets.h"
+#include "XBracketsPlugin.h"
 
 
-CXBrackets thePlugin;
+CXBracketsPlugin thePlugin;
 
 
 extern "C" BOOL APIENTRY DllMain( 

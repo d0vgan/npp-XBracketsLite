@@ -1,10 +1,10 @@
 #include "SettingsDlg.h"
 #include "resource.h"
-#include "XBrackets.h"
+#include "XBracketsPlugin.h"
 #include "XBracketsOptions.h"
 
 
-extern CXBrackets thePlugin;
+extern CXBracketsPlugin thePlugin;
 extern CXBracketsOptions g_opt;
 
 

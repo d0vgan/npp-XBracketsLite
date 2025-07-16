@@ -158,7 +158,8 @@
     <ClCompile Include="src\core\SciMessager.cpp" />
     <ClCompile Include="src\Main.cpp" />
     <ClCompile Include="src\SettingsDlg.cpp" />
-    <ClCompile Include="src\XBrackets.cpp" />
+    <ClCompile Include="src\XBracketsLogic.cpp" />
+    <ClCompile Include="src\XBracketsPlugin.cpp" />
     <ClCompile Include="src\XBracketsMenu.cpp" />
     <ClCompile Include="src\XBracketsOptions.cpp" />
   </ItemGroup>
@@ -170,7 +171,8 @@
     <ClInclude Include="src\core\SciMessager.h" />
     <ClInclude Include="src\resource.h" />
     <ClInclude Include="src\SettingsDlg.h" />
-    <ClInclude Include="src\XBrackets.h" />
+    <ClInclude Include="src\XBracketsLogic.h" />
+    <ClInclude Include="src\XBracketsPlugin.h" />
     <ClInclude Include="src\XBracketsMenu.h" />
     <ClInclude Include="src\XBracketsOptions.h" />
   </ItemGroup>

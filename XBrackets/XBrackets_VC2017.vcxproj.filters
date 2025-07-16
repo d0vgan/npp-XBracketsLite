@@ -33,13 +33,16 @@
     <ClCompile Include="src\SettingsDlg.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\XBrackets.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\XBracketsMenu.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\XBracketsOptions.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\XBracketsPlugin.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\XBracketsLogic.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -65,13 +68,16 @@
     <ClInclude Include="src\SettingsDlg.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\XBrackets.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\XBracketsMenu.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\XBracketsOptions.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\XBracketsPlugin.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\XBracketsLogic.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

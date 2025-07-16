@@ -10,7 +10,7 @@ CNppPluginMenu::~CNppPluginMenu()
 {
 }
 
-void CNppPluginMenu::setNppData(const NppData& nppd)
+void CNppPluginMenu::SetNppData(const NppData& nppd)
 {
     m_nppMsgr.setNppData(nppd);
 }

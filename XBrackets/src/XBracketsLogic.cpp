@@ -1,19 +1,12 @@
-#include "XBrackets.h"
+#include "XBracketsLogic.h"
 #include "XBracketsOptions.h"
-#include "core/npp_files/resource.h"
 #include <vector>
 #include <algorithm>
-
 
 // can be _T(x), but _T(x) may be incompatible with ANSI mode
 #define _TCH(x)  (x)
 
-
-extern CXBrackets thePlugin;
-CXBracketsOptions g_opt;
-
-const TCHAR* CXBrackets::PLUGIN_NAME = _T("XBrackets Lite");
-const char* CXBrackets::strBrackets[tbtCount] = {
+const char* CXBracketsLogic::strBrackets[tbtCount] = {
     "",     // tbtNone
     "()",   // tbtBracket
     "[]",   // tbtSquare
@@ -24,28 +17,10 @@ const char* CXBrackets::strBrackets[tbtCount] = {
     "</>"   // tbtTag2
 };
 
-bool CXBrackets::isNppMacroStarted = false;
-bool CXBrackets::isNppWndUnicode = true;
-WNDPROC CXBrackets::nppOriginalWndProc = NULL;
-WNDPROC CXBrackets::sciOriginalWndProc1 = NULL;
-WNDPROC CXBrackets::sciOriginalWndProc2 = NULL;
+extern CXBracketsOptions g_opt;
 
 namespace
 {
-    void getEscapedPrefixPos(const Sci_Position nOffset, Sci_Position* pnPos, int* pnLen)
-    {
-        if ( nOffset > CXBrackets::MAX_ESCAPED_PREFIX )
-        {
-            *pnPos = nOffset - CXBrackets::MAX_ESCAPED_PREFIX;
-            *pnLen = CXBrackets::MAX_ESCAPED_PREFIX;
-        }
-        else
-        {
-            *pnPos = 0;
-            *pnLen = static_cast<int>(nOffset);
-        }
-    }
-
     bool isEscapedPrefix(const char* str, int len)
     {
         int k = 0;
@@ -89,311 +64,116 @@ namespace
     }
 }
 
-LRESULT CXBrackets::nppCallWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+CXBracketsLogic::CXBracketsLogic() :
+    m_nAutoRightBracketPos(-1),
+    m_nCachedLeftBrPos(-1),
+    m_nCachedRightBrPos(-1),
+    m_uFileType(tfmIsSupported)
 {
-    auto pCallWindowProc = isNppWndUnicode ? CallWindowProcW : CallWindowProcA;
-    return pCallWindowProc(nppOriginalWndProc, hWnd, uMsg, wParam, lParam);
 }
 
-LRESULT CXBrackets::sciCallWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+void CXBracketsLogic::SetNppData(const NppData& nppd)
 {
-    WNDPROC pSciWndProc = thePlugin.getNppMsgr().getSciMainWnd() == hWnd ? sciOriginalWndProc1 : sciOriginalWndProc2;
-    auto pCallWindowProc = isNppWndUnicode ? CallWindowProcW : CallWindowProcA;
-    return pCallWindowProc(pSciWndProc, hWnd, uMsg, wParam, lParam);
+    m_nppMsgr.setNppData(nppd);
 }
 
-LRESULT CALLBACK CXBrackets::nppNewWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+void CXBracketsLogic::InvalidateCachedBrPair()
 {
-    if ( uMsg == WM_COMMAND )
+    m_nCachedLeftBrPos = -1;
+    m_nCachedRightBrPos = -1;
+}
+
+void CXBracketsLogic::InvalidateCachedAutoRightBr()
+{
+    m_nAutoRightBracketPos = -1;
+}
+
+CXBracketsLogic::eCharProcessingResult CXBracketsLogic::OnChar(const int ch)
+{
+    InvalidateCachedBrPair();
+
+    if ( !g_opt.getBracketsAutoComplete() )
+        return cprNone;
+
+    if ( (m_uFileType & tfmIsSupported) == 0 )
+        return cprNone;
+
+    CSciMessager sciMsgr(m_nppMsgr.getCurrentScintillaWnd());
+
+    if ( sciMsgr.getSelections() > 1 )
+        return cprNone; // nothing to do with multiple selections
+
+    if ( m_nAutoRightBracketPos >= 0 )
     {
-        const WORD id = LOWORD(wParam);
-        switch ( id )
+        // the right bracket has been just added (automatically)
+        // but you may duplicate it manually
+        TBracketType nRightBracketType = getRightBracketType(ch);
+
+        if ( nRightBracketType != tbtNone )
         {
-            case IDM_FILE_RELOAD:
-                thePlugin.OnNppFileReload();
-                break;
+            Sci_Position pos = sciMsgr.getCurrentPos();
 
-            case IDM_MACRO_STARTRECORDINGMACRO:
-                thePlugin.OnNppMacro(MACRO_START);
-                break;
-
-            case IDM_MACRO_STOPRECORDINGMACRO:
-                thePlugin.OnNppMacro(MACRO_STOP);
-                break;
-
-            case IDC_EDIT_TOGGLEMACRORECORDING:
-                thePlugin.OnNppMacro(MACRO_TOGGLE);
-                break;
-
-            case IDM_MACRO_PLAYBACKRECORDEDMACRO:
+            if ( pos == m_nAutoRightBracketPos )
+            {
+                // previous character
+                char prev_ch = sciMsgr.getCharAt(pos - 1);
+                if ( prev_ch == strBrackets[nRightBracketType][0] )
                 {
-                    thePlugin.OnNppMacro(MACRO_START);
-                    LRESULT lResult = nppCallWndProc(hWnd, uMsg, wParam, lParam);
-                    thePlugin.OnNppMacro(MACRO_STOP);
-                    return lResult;
+                    char next_ch = sciMsgr.getCharAt(pos);
+                    if ( next_ch == strBrackets[nRightBracketType][1] )
+                    {
+                        ++pos;
+                        if ( nRightBracketType == tbtTag2 )
+                            ++pos;
+                        sciMsgr.setSel(pos, pos);
+
+                        m_nAutoRightBracketPos = -1;
+                        return cprBrAutoCompl;
+                    }
                 }
-                break;
-
-            default:
-                if ( (id >= ID_MACRO) && (id < ID_MACRO_LIMIT) )
-                {
-                    thePlugin.OnNppMacro(MACRO_START);
-                    LRESULT lResult = nppCallWndProc(hWnd, uMsg, wParam, lParam);
-                    thePlugin.OnNppMacro(MACRO_STOP);
-                    return lResult;
-                }
-                break;
-        }
-    }
-    else if ( uMsg == NPPM_RELOADFILE )
-    {
-        thePlugin.OnNppFileReload();
-    }
-    else if ( uMsg == NPPM_RELOADBUFFERID )
-    {
-        thePlugin.OnNppBufferReload();
-    }
-    else if ( uMsg == WM_MACRODLGRUNMACRO )
-    {
-        thePlugin.OnNppMacro(MACRO_START);
-        LRESULT lResult = nppCallWndProc(hWnd, uMsg, wParam, lParam);
-        thePlugin.OnNppMacro(MACRO_STOP);
-        return lResult;
-    }
-
-    return nppCallWndProc(hWnd, uMsg, wParam, lParam);
-}
-
-LRESULT CALLBACK CXBrackets::sciNewWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
-{
-    if ( uMsg == WM_CHAR )
-    {
-        // this happens _before_ the character is processed by Scintilla
-        if ( thePlugin.OnSciChar(static_cast<int>(wParam)) != cprNone )
-        {
-            return 0; // processed by XBrackets, don't forward to Scintilla
-        }
-    }
-    else if ( uMsg == WM_KEYDOWN )
-    {
-        if ( wParam == VK_DELETE || wParam == VK_BACK )
-        {
-            thePlugin.m_nAutoRightBracketPos = -1;
+            }
         }
     }
 
-    return sciCallWndProc(hWnd, uMsg, wParam, lParam);
+    m_nAutoRightBracketPos = -1;
+
+    TBracketType nLeftBracketType = getLeftBracketType(ch);
+    if ( nLeftBracketType == tbtNone )
+        return cprNone;
+
+    // a typed character is a bracket
+    return autoBracketsFunc(nLeftBracketType);
 }
 
-CXBrackets::CXBrackets() :
-  m_nAutoRightBracketPos(-1),
-  m_nCachedLeftBrPos(-1),
-  m_nCachedRightBrPos(-1),
-  m_uFileType(tfmIsSupported)
-{
-}
-
-CXBrackets::~CXBrackets()
-{
-}
-
-FuncItem* CXBrackets::nppGetFuncsArray(int* pnbFuncItems)
-{
-    *pnbFuncItems = CXBracketsMenu::N_NBFUNCITEMS;
-    return CXBracketsMenu::arrFuncItems;
-}
-
-const TCHAR* CXBrackets::nppGetName()
-{
-    return PLUGIN_NAME;
-}
-
-void CXBrackets::nppBeNotified(SCNotification* pscn)
-{
-    if ( pscn->nmhdr.hwndFrom == m_nppMsgr.getNppWnd() )
-    {
-        // >>> notifications from Notepad++
-        switch ( pscn->nmhdr.code )
-        {
-            case NPPN_BUFFERACTIVATED:
-                OnNppBufferActivated();
-                break;
-
-            case NPPN_FILEOPENED:
-                OnNppFileOpened();
-                break;
-
-            case NPPN_FILESAVED:
-                OnNppFileSaved();
-                break;
-
-            case NPPN_READY:
-                OnNppReady();
-                break;
-
-            case NPPN_SHUTDOWN:
-                OnNppShutdown();
-                break;
-
-            default:
-                break;
-        }
-        // <<< notifications from Notepad++
-    }
-    else
-    {
-        // >>> notifications from Scintilla
-        switch ( pscn->nmhdr.code )
-        {
-            case SCN_MODIFIED:
-                OnSciModified(pscn);
-                break;
-        }
-        // <<< notifications from Scintilla
-    }
-}
-
-void CXBrackets::OnNppSetInfo(const NppData& nppd)
-{
-    m_PluginMenu.setNppData(nppd);
-    isNppWndUnicode = ::IsWindowUnicode(nppd._nppHandle) ? true : false;
-}
-
-void CXBrackets::OnNppBufferActivated()
-{
-    UpdateFileType();
-    m_nCachedLeftBrPos = -1;
-    m_nCachedRightBrPos = -1;
-}
-
-void CXBrackets::OnNppBufferReload()
-{
-    m_nCachedLeftBrPos = -1;
-    m_nCachedRightBrPos = -1;
-}
-
-void CXBrackets::OnNppFileOpened()
-{
-    //this handler is not needed because file opening
-    //is handled by OnNppBufferActivated()
-}
-
-void CXBrackets::OnNppFileReload()
-{
-    m_nCachedLeftBrPos = -1;
-    m_nCachedRightBrPos = -1;
-}
-
-void CXBrackets::OnNppFileSaved()
-{
-    UpdateFileType();
-}
-
-void CXBrackets::OnNppReady()
-{
-    ReadOptions();
-    CXBracketsMenu::UpdateMenuState();
-    UpdateFileType();
-
-    m_nppMsgr.SendNppMsg(NPPM_ADDSCNMODIFIEDFLAGS, 0, SC_MOD_INSERTTEXT | SC_MOD_DELETETEXT);
-
-    auto pSetWindowLongPtr = isNppWndUnicode ? SetWindowLongPtrW : SetWindowLongPtrA;
-
-    nppOriginalWndProc = (WNDPROC) pSetWindowLongPtr(
-      m_nppMsgr.getNppWnd(), GWLP_WNDPROC, (LONG_PTR) nppNewWndProc );
-
-    sciOriginalWndProc1 = (WNDPROC) pSetWindowLongPtr(
-      m_nppMsgr.getSciMainWnd(), GWLP_WNDPROC, (LONG_PTR) sciNewWndProc );
-
-    sciOriginalWndProc2 = (WNDPROC) pSetWindowLongPtr(
-        m_nppMsgr.getSciSecondWnd(), GWLP_WNDPROC, (LONG_PTR) sciNewWndProc );
-}
-
-void CXBrackets::OnNppShutdown()
-{
-    auto pSetWindowLongPtr = isNppWndUnicode ? SetWindowLongPtrW : SetWindowLongPtrA;
-
-    if ( nppOriginalWndProc )
-    {
-        pSetWindowLongPtr( m_nppMsgr.getNppWnd(), GWLP_WNDPROC, (LONG_PTR) nppOriginalWndProc );
-    }
-
-    if ( sciOriginalWndProc1 )
-    {
-        pSetWindowLongPtr( m_nppMsgr.getSciMainWnd(), GWLP_WNDPROC, (LONG_PTR) sciOriginalWndProc1 );
-    }
-
-    if ( sciOriginalWndProc2 )
-    {
-        pSetWindowLongPtr( m_nppMsgr.getSciSecondWnd(), GWLP_WNDPROC, (LONG_PTR) sciOriginalWndProc2 );
-    }
-
-    SaveOptions();
-}
-
-void CXBrackets::OnNppMacro(int nMacroState)
-{
-    static int nPrevAutoComplete = -1; // uninitialized
-
-    switch ( nMacroState )
-    {
-        case MACRO_START:
-            isNppMacroStarted = true;
-            break;
-        case MACRO_STOP:
-            isNppMacroStarted = false;
-            break;
-        default:
-            isNppMacroStarted = !isNppMacroStarted;
-            break;
-    }
-
-    if ( isNppMacroStarted )
-    {
-        nPrevAutoComplete = g_opt.getBracketsAutoComplete() ? 1 : 0;
-        g_opt.setBracketsAutoComplete(false);
-    }
-    else
-    {
-        if ( nPrevAutoComplete < 0 ) // initialize now
-            nPrevAutoComplete = g_opt.getBracketsAutoComplete() ? 1 : 0;
-
-        g_opt.setBracketsAutoComplete(nPrevAutoComplete > 0);
-        UpdateFileType();
-    }
-
-    CXBracketsMenu::AllowAutocomplete(!isNppMacroStarted);
-}
-
-bool CXBrackets::isDoubleQuoteSupported() const
+bool CXBracketsLogic::isDoubleQuoteSupported() const
 {
     return g_opt.getBracketsDoDoubleQuote();
 }
 
-bool CXBrackets::isSingleQuoteSupported() const
+bool CXBracketsLogic::isSingleQuoteSupported() const
 {
     return ( g_opt.getBracketsDoSingleQuote() &&
              ((m_uFileType & tfmSingleQuote) != 0 || !g_opt.getBracketsDoSingleQuoteIf()) );
 }
 
-bool CXBrackets::isTagSupported() const
+bool CXBracketsLogic::isTagSupported() const
 {
     return ( g_opt.getBracketsDoTag() &&
              ((m_uFileType & tfmHtmlCompatible) != 0 || !g_opt.getBracketsDoTagIf()) );
 }
 
-bool CXBrackets::isTag2Supported() const
+bool CXBracketsLogic::isTag2Supported() const
 {
     return ( g_opt.getBracketsDoTag2() &&
              ((m_uFileType & tfmHtmlCompatible) != 0 || !g_opt.getBracketsDoTagIf()) );
 }
 
-bool CXBrackets::isSkipEscapedSupported() const
+bool CXBracketsLogic::isSkipEscapedSupported() const
 {
     return ( g_opt.getBracketsSkipEscaped() && (m_uFileType & tfmEscaped1) != 0 );
 }
 
-CXBrackets::TBracketType CXBrackets::getLeftBracketType(const int ch, unsigned int uOptions) const
+CXBracketsLogic::TBracketType CXBracketsLogic::getLeftBracketType(const int ch, unsigned int uOptions) const
 {
     TBracketType nLeftBracketType = tbtNone;
 
@@ -432,7 +212,7 @@ CXBrackets::TBracketType CXBrackets::getLeftBracketType(const int ch, unsigned i
     return nLeftBracketType;
 }
 
-CXBrackets::TBracketType CXBrackets::getRightBracketType(const int ch, unsigned int uOptions) const
+CXBracketsLogic::TBracketType CXBracketsLogic::getRightBracketType(const int ch, unsigned int uOptions) const
 {
     TBracketType nRightBracketType = tbtNone;
 
@@ -477,33 +257,33 @@ CXBrackets::TBracketType CXBrackets::getRightBracketType(const int ch, unsigned 
     return nRightBracketType;
 }
 
-int CXBrackets::getDirectionIndex(const eDupPairDirection direction)
+int CXBracketsLogic::getDirectionIndex(const eDupPairDirection direction)
 {
     int i = 0;
 
     switch (direction)
     {
-        case DP_BACKWARD:
-            i = 0;
-            break;
-        case DP_MAYBEBACKWARD:
-            i = 1;
-            break;
-        case DP_DETECT:
-            i = 2;
-            break;
-        case DP_MAYBEFORWARD:
-            i = 3;
-            break;
-        case DP_FORWARD:
-            i = 4;
-            break;
+    case DP_BACKWARD:
+        i = 0;
+        break;
+    case DP_MAYBEBACKWARD:
+        i = 1;
+        break;
+    case DP_DETECT:
+        i = 2;
+        break;
+    case DP_MAYBEFORWARD:
+        i = 3;
+        break;
+    case DP_FORWARD:
+        i = 4;
+        break;
     }
 
     return i;
 }
 
-int CXBrackets::getDirectionRank(const eDupPairDirection leftDirection, const eDupPairDirection rightDirection)
+int CXBracketsLogic::getDirectionRank(const eDupPairDirection leftDirection, const eDupPairDirection rightDirection)
 {
     //  The *exact* numbers in the table below have no special meaning.
     //  The only important thing is relative comparison of the numbers:
@@ -518,10 +298,10 @@ int CXBrackets::getDirectionRank(const eDupPairDirection leftDirection, const eD
     // ^ rightDirection ^
     static const int Ranking[5][5] = {
         { 4, 17, 30, 43, 56 }, // DP_BACKWARD
-        { 3, 13, 23, 33, 43 }, // DP_MAYBEBACKWARD
-        { 2,  9, 16, 23, 30 }, // DP_DETECT
-        { 1,  5,  9, 13, 17 }, // DP_MAYBEFORWARD
-        { 0,  1,  2,  3,  4 }  // DP_FORWARD
+    { 3, 13, 23, 33, 43 }, // DP_MAYBEBACKWARD
+    { 2,  9, 16, 23, 30 }, // DP_DETECT
+    { 1,  5,  9, 13, 17 }, // DP_MAYBEFORWARD
+    { 0,  1,  2,  3,  4 }  // DP_FORWARD
     };
 
     int leftIndex = getDirectionIndex(leftDirection);
@@ -530,7 +310,21 @@ int CXBrackets::getDirectionRank(const eDupPairDirection leftDirection, const eD
     return Ranking[rightIndex][leftIndex];
 }
 
-bool CXBrackets::isEscapedPos(const CSciMessager& sciMsgr, const Sci_Position nCharPos) const
+void CXBracketsLogic::getEscapedPrefixPos(const Sci_Position nOffset, Sci_Position* pnPos, int* pnLen)
+{
+    if ( nOffset > MAX_ESCAPED_PREFIX )
+    {
+        *pnPos = nOffset - MAX_ESCAPED_PREFIX;
+        *pnLen = MAX_ESCAPED_PREFIX;
+    }
+    else
+    {
+        *pnPos = 0;
+        *pnLen = static_cast<int>(nOffset);
+    }
+}
+
+bool CXBracketsLogic::isEscapedPos(const CSciMessager& sciMsgr, const Sci_Position nCharPos) const
 {
     if ( !isSkipEscapedSupported() )
         return false;
@@ -544,12 +338,12 @@ bool CXBrackets::isEscapedPos(const CSciMessager& sciMsgr, const Sci_Position nC
     return isEscapedPrefix(szPrefix, len);
 }
 
-bool CXBrackets::isDuplicatedPair(TBracketType nBracketType) const
+bool CXBracketsLogic::isDuplicatedPair(TBracketType nBracketType) const
 {
     return (nBracketType == tbtDblQuote || nBracketType == tbtSglQuote);
 }
 
-CXBrackets::eDupPairDirection CXBrackets::getDuplicatedPairDirection(const CSciMessager& sciMsgr, const Sci_Position nCharPos, const char curr_ch) const
+CXBracketsLogic::eDupPairDirection CXBracketsLogic::getDuplicatedPairDirection(const CSciMessager& sciMsgr, const Sci_Position nCharPos, const char curr_ch) const
 {
     static HWND hLocalEditWnd = NULL;
     static char szWordDelimiters[] = " \t\n'`\"\\|[](){}<>,.;:+-=~!@#$%^&*/?";
@@ -644,7 +438,7 @@ CXBrackets::eDupPairDirection CXBrackets::getDuplicatedPairDirection(const CSciM
     return DP_DETECT;
 }
 
-unsigned int CXBrackets::isAtBracketCharacter(const CSciMessager& sciMsgr, const Sci_Position nCharPos, TBracketType* out_nBrType, eDupPairDirection* out_nDupDirection) const
+unsigned int CXBracketsLogic::isAtBracketCharacter(const CSciMessager& sciMsgr, const Sci_Position nCharPos, TBracketType* out_nBrType, eDupPairDirection* out_nDupDirection) const
 {
     TBracketType nBrType = tbtNone;
     eDupPairDirection nDupDirCurr = DP_NONE;
@@ -780,31 +574,31 @@ unsigned int CXBrackets::isAtBracketCharacter(const CSciMessager& sciMsgr, const
     return (abcNone);
 }
 
-bool CXBrackets::isInBracketsStack(const std::vector<std::pair<TBracketType, eDupPairDirection>>& bracketsStack, TBracketType nBrType)
+bool CXBracketsLogic::isInBracketsStack(const std::vector<std::pair<TBracketType, eDupPairDirection>>& bracketsStack, TBracketType nBrType)
 {
     const auto itrEnd = bracketsStack.end();
     return (std::find_if(bracketsStack.begin(), itrEnd, [nBrType](const auto& item){ return item.first == nBrType; }) != itrEnd);
 }
 
-bool CXBrackets::findLeftBracket(const CSciMessager& sciMsgr, const Sci_Position nStartPos, tGetBracketsState* state)
+bool CXBracketsLogic::findLeftBracket(const CSciMessager& sciMsgr, const Sci_Position nStartPos, tGetBracketsState* state)
 {
     switch ( state->nRightBrType )
     {
-        case tbtBracket:
-        case tbtSquare:
-        case tbtBrace:
-        case tbtTag:
+    case tbtBracket:
+    case tbtSquare:
+    case tbtBrace:
+    case tbtTag:
+    {
+        Sci_Position nMatchBrPos = static_cast<Sci_Position>(sciMsgr.SendSciMsg(SCI_BRACEMATCH, nStartPos));
+        if ( nMatchBrPos != -1 )
         {
-            Sci_Position nMatchBrPos = static_cast<Sci_Position>(sciMsgr.SendSciMsg(SCI_BRACEMATCH, nStartPos));
-            if ( nMatchBrPos != -1 )
-            {
-                state->nLeftBrType = state->nRightBrType;
-                state->nLeftBrPos = nMatchBrPos + 1;
-                state->nLeftDupDirection = DP_NONE;
-                return true; // rely on Scintilla
-            }
+            state->nLeftBrType = state->nRightBrType;
+            state->nLeftBrPos = nMatchBrPos + 1;
+            state->nLeftDupDirection = DP_NONE;
+            return true; // rely on Scintilla
         }
-        break;
+    }
+    break;
     }
 
     std::vector<std::pair<TBracketType, eDupPairDirection>> bracketsStack;
@@ -994,25 +788,25 @@ bool CXBrackets::findLeftBracket(const CSciMessager& sciMsgr, const Sci_Position
     return (state->nLeftBrType != tbtNone);
 }
 
-bool CXBrackets::findRightBracket(const CSciMessager& sciMsgr, const Sci_Position nStartPos, tGetBracketsState* state)
+bool CXBracketsLogic::findRightBracket(const CSciMessager& sciMsgr, const Sci_Position nStartPos, tGetBracketsState* state)
 {
     switch ( state->nLeftBrType )
     {
-        case tbtBracket:
-        case tbtSquare:
-        case tbtBrace:
-        case tbtTag:
+    case tbtBracket:
+    case tbtSquare:
+    case tbtBrace:
+    case tbtTag:
+    {
+        Sci_Position nMatchBrPos = static_cast<Sci_Position>(sciMsgr.SendSciMsg(SCI_BRACEMATCH, nStartPos - 1));
+        if ( nMatchBrPos != -1 )
         {
-            Sci_Position nMatchBrPos = static_cast<Sci_Position>(sciMsgr.SendSciMsg(SCI_BRACEMATCH, nStartPos - 1));
-            if ( nMatchBrPos != -1 )
-            {
-                state->nRightBrType = state->nLeftBrType;
-                state->nRightBrPos = nMatchBrPos;
-                state->nRightDupDirection = DP_NONE;
-                return true; // rely on Scintilla
-            }
+            state->nRightBrType = state->nLeftBrType;
+            state->nRightBrPos = nMatchBrPos;
+            state->nRightDupDirection = DP_NONE;
+            return true; // rely on Scintilla
         }
-        break;
+    }
+    break;
     }
 
     std::vector<std::pair<TBracketType, eDupPairDirection>> bracketsStack;
@@ -1196,72 +990,7 @@ bool CXBrackets::findRightBracket(const CSciMessager& sciMsgr, const Sci_Positio
     return (state->nRightBrType != tbtNone);
 }
 
-CXBrackets::eCharProcessingResult CXBrackets::OnSciChar(const int ch)
-{
-    if ( !g_opt.getBracketsAutoComplete() )
-        return cprNone;
-
-    if ( (m_uFileType & tfmIsSupported) == 0 )
-        return cprNone;
-
-    CSciMessager sciMsgr(m_nppMsgr.getCurrentScintillaWnd());
-
-    if ( sciMsgr.getSelections() > 1 )
-        return cprNone; // nothing to do with multiple selections
-
-    if ( m_nAutoRightBracketPos >= 0 )
-    {
-        // the right bracket has been just added (automatically)
-        // but you may duplicate it manually
-        TBracketType nRightBracketType = getRightBracketType(ch);
-
-        if ( nRightBracketType != tbtNone )
-        {
-            Sci_Position pos = sciMsgr.getCurrentPos();
-
-            if ( pos == m_nAutoRightBracketPos )
-            {
-                // previous character
-                char prev_ch = sciMsgr.getCharAt(pos - 1);
-                if ( prev_ch == strBrackets[nRightBracketType][0] )
-                {
-                    char next_ch = sciMsgr.getCharAt(pos);
-                    if ( next_ch == strBrackets[nRightBracketType][1] )
-                    {
-                        ++pos;
-                        if ( nRightBracketType == tbtTag2 )
-                            ++pos;
-                        sciMsgr.setSel(pos, pos);
-
-                        m_nAutoRightBracketPos = -1;
-                        return cprBrAutoCompl;
-                    }
-                }
-            }
-        }
-    }
-
-    m_nAutoRightBracketPos = -1;
-
-    TBracketType nLeftBracketType = getLeftBracketType(ch);
-    if ( nLeftBracketType == tbtNone )
-        return cprNone;
-
-    // a typed character is a bracket
-    return AutoBracketsFunc(nLeftBracketType);
-}
-
-void CXBrackets::OnSciModified(SCNotification* pscn)
-{
-    if ( pscn->modificationType & (SC_MOD_INSERTTEXT | SC_MOD_DELETETEXT) )
-    {
-        // text has been changed
-        m_nCachedLeftBrPos = -1;
-        m_nCachedRightBrPos = -1;
-    }
-}
-
-void CXBrackets::performBracketsAction(eGetBracketsAction nBrAction)
+void CXBracketsLogic::PerformBracketsAction(eGetBracketsAction nBrAction)
 {
     CSciMessager sciMsgr(m_nppMsgr.getCurrentScintillaWnd());
 
@@ -1470,60 +1199,14 @@ void CXBrackets::performBracketsAction(eGetBracketsAction nBrAction)
     }
 }
 
-void CXBrackets::GoToMatchingBracket()
+void CXBracketsLogic::UpdateFileType()
 {
-    performBracketsAction(baGoToMatching);
-}
-
-void CXBrackets::GoToNearestBracket()
-{
-    performBracketsAction(baGoToNearest);
-}
-
-void CXBrackets::SelToMatchingBracket()
-{
-    performBracketsAction(baSelToMatching);
-}
-
-void CXBrackets::SelToNearestBrackets()
-{
-    performBracketsAction(baSelToNearest);
-}
-
-void CXBrackets::ReadOptions()
-{
-    TCHAR szPath[2*MAX_PATH + 1];
-
-    m_nppMsgr.getPluginsConfigDir(2*MAX_PATH, szPath);
-    lstrcat(szPath, _T("\\"));
-    lstrcat(szPath, m_szIniFileName);
-
-    g_opt.ReadOptions(szPath);
-}
-
-void CXBrackets::SaveOptions()
-{
-    if ( g_opt.MustBeSaved() )
-    {
-        TCHAR szPath[2*MAX_PATH + 1];
-
-        m_nppMsgr.getPluginsConfigDir(2*MAX_PATH, szPath);
-        lstrcat(szPath, _T("\\"));
-        lstrcat(szPath, m_szIniFileName);
-
-        g_opt.SaveOptions(szPath);
-    }
-}
-
-void CXBrackets::UpdateFileType() // <-- call it when the plugin becomes active!!!
-{
-    m_nAutoRightBracketPos = -1;
     m_uFileType = getFileType();
 }
 
-CXBrackets::eCharProcessingResult CXBrackets::AutoBracketsFunc(TBracketType nBracketType)
+CXBracketsLogic::eCharProcessingResult CXBracketsLogic::autoBracketsFunc(TBracketType nBracketType)
 {
-    if ( SelAutoBrFunc(nBracketType) )
+    if ( selAutoBrFunc(nBracketType) )
         return cprSelAutoCompl;
 
     CSciMessager sciMsgr(m_nppMsgr.getCurrentScintillaWnd());
@@ -1614,7 +1297,7 @@ CXBrackets::eCharProcessingResult CXBrackets::AutoBracketsFunc(TBracketType nBra
     return cprNone;
 }
 
-bool CXBrackets::isEnclosedInBrackets(const char* pszTextLeft, const char* pszTextRight, TBracketType* pnBracketType, bool bInSelection)
+bool CXBracketsLogic::isEnclosedInBrackets(const char* pszTextLeft, const char* pszTextRight, TBracketType* pnBracketType, bool bInSelection)
 {
     if ( pszTextLeft == pszTextRight )
         return false;
@@ -1661,7 +1344,7 @@ bool CXBrackets::isEnclosedInBrackets(const char* pszTextLeft, const char* pszTe
     return bRet;
 }
 
-bool CXBrackets::SelAutoBrFunc(TBracketType nBracketType)
+bool CXBracketsLogic::selAutoBrFunc(TBracketType nBracketType)
 {
     const UINT uSelAutoBr = g_opt.getBracketsSelAutoBr();
     if ( uSelAutoBr == CXBracketsOptions::sabNone )
@@ -1683,7 +1366,7 @@ bool CXBrackets::SelAutoBrFunc(TBracketType nBracketType)
 
     const Sci_Position nSelPos = nEditPos < nEditEndPos ? nEditPos : nEditEndPos;
 
-    if (nBracketType == tbtTag && g_opt.getBracketsDoTag2())
+    if ( nBracketType == tbtTag && g_opt.getBracketsDoTag2() )
         nBracketType = tbtTag2;
 
     TBracketType nBrAltType = nBracketType;
@@ -1782,7 +1465,7 @@ bool CXBrackets::SelAutoBrFunc(TBracketType nBracketType)
     return true; // processed
 }
 
-unsigned int CXBrackets::getFileType()
+unsigned int CXBracketsLogic::getFileType()
 {
     TCHAR szExt[CXBracketsOptions::MAX_EXT];
     unsigned int uType = tfmIsSupported;
