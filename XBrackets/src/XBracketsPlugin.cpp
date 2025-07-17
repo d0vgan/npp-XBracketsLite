@@ -175,14 +175,12 @@ void CXBracketsPlugin::OnNppSetInfo(const NppData& nppd)
 void CXBracketsPlugin::OnNppBufferActivated()
 {
     m_BracketsLogic.UpdateFileType();
-    m_BracketsLogic.InvalidateCachedAutoRightBr();
-    m_BracketsLogic.InvalidateCachedBrPair();
+    m_BracketsLogic.InvalidateCachedBrackets();
 }
 
 void CXBracketsPlugin::OnNppBufferReload()
 {
-    m_BracketsLogic.InvalidateCachedAutoRightBr();
-    m_BracketsLogic.InvalidateCachedBrPair();
+    m_BracketsLogic.InvalidateCachedBrackets();
 }
 
 void CXBracketsPlugin::OnNppFileOpened()
@@ -193,15 +191,14 @@ void CXBracketsPlugin::OnNppFileOpened()
 
 void CXBracketsPlugin::OnNppFileReload()
 {
-    m_BracketsLogic.InvalidateCachedAutoRightBr();
-    m_BracketsLogic.InvalidateCachedBrPair();
+    m_BracketsLogic.InvalidateCachedBrackets();
 }
 
 void CXBracketsPlugin::OnNppFileSaved()
 {
     m_BracketsLogic.UpdateFileType();
-    // CachedAutoRightBr is still valid
-    m_BracketsLogic.InvalidateCachedBrPair(); // file type may be changed
+    // AutoRightBr is still valid, but file type may be changed:
+    m_BracketsLogic.InvalidateCachedBrackets(CXBracketsLogic::icbfBrPair);
 }
 
 void CXBracketsPlugin::OnNppReady()
@@ -209,8 +206,7 @@ void CXBracketsPlugin::OnNppReady()
     ReadOptions();
     CXBracketsMenu::UpdateMenuState();
     m_BracketsLogic.UpdateFileType();
-    m_BracketsLogic.InvalidateCachedAutoRightBr();
-    m_BracketsLogic.InvalidateCachedBrPair();
+    m_BracketsLogic.InvalidateCachedBrackets();
 
     m_nppMsgr.SendNppMsg(NPPM_ADDSCNMODIFIEDFLAGS, 0, SC_MOD_INSERTTEXT | SC_MOD_DELETETEXT);
 
@@ -277,8 +273,7 @@ void CXBracketsPlugin::OnNppMacro(int nMacroState)
 
         g_opt.setBracketsAutoComplete(nPrevAutoComplete > 0);
         m_BracketsLogic.UpdateFileType();
-        m_BracketsLogic.InvalidateCachedAutoRightBr();
-        m_BracketsLogic.InvalidateCachedBrPair();
+        m_BracketsLogic.InvalidateCachedBrackets();
     }
 
     CXBracketsMenu::AllowAutocomplete(!isNppMacroStarted);
@@ -299,8 +294,7 @@ void CXBracketsPlugin::OnSciModified(SCNotification* pscn)
 
 void CXBracketsPlugin::OnSciTextChanged()
 {
-    m_BracketsLogic.InvalidateCachedAutoRightBr();
-    m_BracketsLogic.InvalidateCachedBrPair();
+    m_BracketsLogic.InvalidateCachedBrackets();
 }
 
 void CXBracketsPlugin::GoToMatchingBracket()

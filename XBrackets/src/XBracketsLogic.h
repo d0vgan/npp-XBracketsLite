@@ -22,14 +22,20 @@ public:
         baSelToNearest
     };
 
+    enum eInvalidateCachedBracketsFlags{
+        icbfBrPair      = 0x01,
+        icbfAutoRightBr = 0x02,
+
+        icbfAll = (icbfBrPair | icbfAutoRightBr)
+    };
+
 public:
     CXBracketsLogic();
 
     // interaction with the plugin
     void SetNppData(const NppData& nppd);
     void UpdateFileType();
-    void InvalidateCachedBrPair();
-    void InvalidateCachedAutoRightBr();
+    void InvalidateCachedBrackets(unsigned int uInvalidateFlags = icbfAll);
     eCharProcessingResult OnChar(const int ch);
     void PerformBracketsAction(eGetBracketsAction nBrAction);
 
@@ -88,8 +94,8 @@ private:
         Sci_Position nRightBrPos{-1};
         TBracketType nLeftBrType{tbtNone};
         TBracketType nRightBrType{tbtNone};
-        eDupPairDirection nLeftDupDirection{DP_NONE};
-        eDupPairDirection nRightDupDirection{DP_NONE};
+        eDupPairDirection nLeftDupDir{DP_NONE};
+        eDupPairDirection nRightDupDir{DP_NONE};
     };
 
     struct tBracketItem
@@ -111,7 +117,7 @@ private:
 private:
     // custom functions
     eCharProcessingResult autoBracketsFunc(TBracketType nBracketType);
-    bool selAutoBrFunc(TBracketType nBracketType);
+    bool autoBracketsOverSelectionFunc(TBracketType nBracketType);
     bool isEnclosedInBrackets(const char* pszTextLeft, const char* pszTextRight, TBracketType* pnBracketType, bool bInSelection);
     unsigned int getFileType();
 
