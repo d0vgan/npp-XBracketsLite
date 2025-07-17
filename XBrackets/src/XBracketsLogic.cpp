@@ -6,29 +6,19 @@
 // can be _T(x), but _T(x) may be incompatible with ANSI mode
 #define _TCH(x)  (x)
 
-const char* CXBracketsLogic::strBrackets[tbtCount] = {
-    "",     // tbtNone
-    "()",   // tbtBracket
-    "[]",   // tbtSquare
-    "{}",   // tbtBrace
-    "\"\"", // tbtDblQuote
-    "\'\'", // tbtSglQuote
-    "<>",   // tbtTag
-    "</>"   // tbtTag2
-};
-
 extern CXBracketsOptions g_opt;
 
 namespace
 {
-    bool isEscapedPrefix(const char* str, int len)
+    bool isEscapedPrefix(const char* str, const int len)
     {
-        int k = 0;
-        while ( (len > 0) && (str[--len] == '\\') )
+        bool isEscaped = false;
+        const char* p = str + len;
+        while ( (p != str) && (*(--p) == '\\') )
         {
-            ++k;
+            isEscaped = !isEscaped;
         }
-        return (k % 2) ? true : false;
+        return isEscaped;
     }
 
     bool isWhiteSpaceOrNulChar(const char ch)
@@ -64,11 +54,429 @@ namespace
     }
 }
 
+const char* CBracketsCommon::strBrackets[tbtCount] = {
+    "",     // tbtNone
+    "()",   // tbtBracket
+    "[]",   // tbtSquare
+    "{}",   // tbtBrace
+    "\"\"", // tbtDblQuote
+    "\'\'", // tbtSglQuote
+    "<>",   // tbtTag
+    "</>"   // tbtTag2
+};
+
+CBracketsCommon::CBracketsCommon() : m_uFileType(tfmIsSupported)
+{
+}
+
+CBracketsCommon::~CBracketsCommon()
+{
+}
+
+unsigned int CBracketsCommon::getFileType() const
+{
+    return m_uFileType;
+}
+
+void CBracketsCommon::setFileType(unsigned int uFileType)
+{
+    m_uFileType = uFileType;
+}
+
+bool CBracketsCommon::isDoubleQuoteSupported() const
+{
+    return g_opt.getBracketsDoDoubleQuote();
+}
+
+bool CBracketsCommon::isSingleQuoteSupported() const
+{
+    return ( g_opt.getBracketsDoSingleQuote() &&
+             ((m_uFileType & tfmSingleQuote) != 0 || !g_opt.getBracketsDoSingleQuoteIf()) );
+}
+
+bool CBracketsCommon::isTagSupported() const
+{
+    return ( g_opt.getBracketsDoTag() &&
+             ((m_uFileType & tfmHtmlCompatible) != 0 || !g_opt.getBracketsDoTagIf()) );
+}
+
+bool CBracketsCommon::isTag2Supported() const
+{
+    return ( g_opt.getBracketsDoTag2() &&
+             ((m_uFileType & tfmHtmlCompatible) != 0 || !g_opt.getBracketsDoTagIf()) );
+}
+
+bool CBracketsCommon::isSkipEscapedSupported() const
+{
+    return ( g_opt.getBracketsSkipEscaped() && (m_uFileType & tfmEscaped1) != 0 );
+}
+
+bool CBracketsCommon::isDuplicatedPair(TBracketType nBracketType) const
+{
+    // left bracket == right bracket
+    return (nBracketType == tbtDblQuote || nBracketType == tbtSglQuote);
+}
+
+bool CBracketsCommon::isEnquotingPair(TBracketType nBracketType) const
+{
+    // can enquote text
+    return (nBracketType == tbtDblQuote || nBracketType == tbtSglQuote);
+}
+
+CBracketsCommon::TBracketType CBracketsCommon::getLeftBracketType(const int ch, unsigned int uOptions) const
+{
+    TBracketType nLeftBracketType = tbtNone;
+
+    // OK for both ANSI and Unicode (ch can be wide character)
+    switch ( ch )
+    {
+    case _TCH('(') :
+        nLeftBracketType = tbtBracket;
+        break;
+    case _TCH('[') :
+        nLeftBracketType = tbtSquare;
+        break;
+    case _TCH('{') :
+        nLeftBracketType = tbtBrace;
+        break;
+    case _TCH('\"') :
+        if ( (uOptions & bofIgnoreMode) != 0 || isDoubleQuoteSupported() )
+        {
+            nLeftBracketType = tbtDblQuote;
+        }
+        break;
+    case _TCH('\'') :
+        if ( (uOptions & bofIgnoreMode) != 0 || isSingleQuoteSupported() )
+        {
+            nLeftBracketType = tbtSglQuote;
+        }
+        break;
+    case _TCH('<') :
+        if ( (uOptions & bofIgnoreMode) != 0 || isTagSupported() )
+        {
+            nLeftBracketType = tbtTag;
+        }
+        break;
+    }
+
+    return nLeftBracketType;
+}
+
+CBracketsCommon::TBracketType CBracketsCommon::getRightBracketType(const int ch, unsigned int uOptions) const
+{
+    TBracketType nRightBracketType = tbtNone;
+
+    // OK for both ANSI and Unicode (ch can be wide character)
+    switch ( ch )
+    {
+    case _TCH(')') :
+        nRightBracketType = tbtBracket;
+        break;
+    case _TCH(']') :
+        nRightBracketType = tbtSquare;
+        break;
+    case _TCH('}') :
+        nRightBracketType = tbtBrace;
+        break;
+    case _TCH('\"') :
+        if ( (uOptions & bofIgnoreMode) != 0 || isDoubleQuoteSupported() )
+        {
+            nRightBracketType = tbtDblQuote;
+        }
+        break;
+    case _TCH('\'') :
+        if ( (uOptions & bofIgnoreMode) != 0 || isSingleQuoteSupported() )
+        {
+            nRightBracketType = tbtSglQuote;
+        }
+        break;
+    case _TCH('>') :
+        if ( (uOptions & bofIgnoreMode) != 0 || isTagSupported() )
+        {
+            nRightBracketType = tbtTag;
+        }
+        // no break here
+    case _TCH('/') :
+        if ( (uOptions & bofIgnoreMode) != 0 || isTag2Supported() )
+        {
+            nRightBracketType = tbtTag2;
+        }
+        break;
+    }
+
+    return nRightBracketType;
+}
+
+int CBracketsCommon::getDirectionIndex(const eDupPairDirection direction)
+{
+    int i = 0;
+
+    switch (direction)
+    {
+    case DP_BACKWARD:
+        i = 0;
+        break;
+    case DP_MAYBEBACKWARD:
+        i = 1;
+        break;
+    case DP_DETECT:
+        i = 2;
+        break;
+    case DP_MAYBEFORWARD:
+        i = 3;
+        break;
+    case DP_FORWARD:
+        i = 4;
+        break;
+    }
+
+    return i;
+}
+
+int CBracketsCommon::getDirectionRank(const eDupPairDirection leftDirection, const eDupPairDirection rightDirection)
+{
+    //  The *exact* numbers in the table below have no special meaning.
+    //  The only important thing is relative comparison of the numbers:
+    //  which of them are greater than others, and which of them are equal.
+    //
+    // --> leftDirection --> DP_BACKWARD  DP_MAYBEBACKWARD   DP_DETECT      DP_MAYBEFORWARD   DP_FORWARD
+    //    DP_FORWARD         <<( )>>  0   <?( )>>   1        ?(? )>>   2    (?> )>>   3       (>> )>>   4
+    //    DP_MAYBEFORWARD    <<( )?>  1   <?( )?>   5        ?(? )?>   9    (?> )?>  13       (>> )?>  17
+    //    DP_DETECT          <<( ?)?  2   <?( ?)?   9        ?(? ?)?  16    (?> ?)?  23       (>> ?)?  30
+    //    DP_MAYBEBACKWARD   <<( <?)  3   <?( <?)  13        ?(? <?)  23    (?> <?)  33       (>> <?)  43
+    //    DP_BACWARD         <<( <<)  4   <?( <<)  17        ?(? <<)  30    (?> <<)  43       (>> <<)  56
+    // ^ rightDirection ^
+    static const int Ranking[5][5] = {
+        { 4, 17, 30, 43, 56 }, // DP_BACKWARD
+        { 3, 13, 23, 33, 43 }, // DP_MAYBEBACKWARD
+        { 2,  9, 16, 23, 30 }, // DP_DETECT
+        { 1,  5,  9, 13, 17 }, // DP_MAYBEFORWARD
+        { 0,  1,  2,  3,  4 }  // DP_FORWARD
+    };
+
+    int leftIndex = getDirectionIndex(leftDirection);
+    int rightIndex = getDirectionIndex(rightDirection);
+
+    return Ranking[rightIndex][leftIndex];
+}
+
+void CBracketsCommon::getEscapedPrefixPos(const Sci_Position nOffset, Sci_Position* pnPos, int* pnLen)
+{
+    if ( nOffset > MAX_ESCAPED_PREFIX )
+    {
+        *pnPos = nOffset - MAX_ESCAPED_PREFIX;
+        *pnLen = MAX_ESCAPED_PREFIX;
+    }
+    else
+    {
+        *pnPos = 0;
+        *pnLen = static_cast<int>(nOffset);
+    }
+}
+
+//-----------------------------------------------------------------------------
+
+#if XBR_USE_BRACKETSTREE
+void CBracketsTree::buildTree(CSciMessager& sciMsgr)
+{
+    std::vector<tBracketPairItem> bracketsTree;
+
+    Sci_Position nTextLen = sciMsgr.getTextLength();
+    std::vector<char> vText(nTextLen + 1);
+    sciMsgr.getText(nTextLen, vText.data());
+    vText[nTextLen] = 0;
+
+    Sci_Position nPos = 0;
+    for ( const char* p = vText.data(); p < vText.data() + nTextLen; ++p )
+    {
+        TBracketType nBrType = getLeftBracketType(*p);
+        if ( nBrType != tbtNone && !isEscapedPos(vText.data(), nPos) )
+        {
+            if ( isDuplicatedPair(nBrType) )
+            {
+                // either left or right bracket/quote
+                if ( isEnquotingPair(nBrType) )
+                {
+                    // enquoting brackets pair
+                    const auto itrBegin = bracketsTree.rbegin();
+                    const auto itrEnd = bracketsTree.rend();
+                    const auto itrItem = std::find_if(itrBegin, itrEnd, [nBrType](const tBracketPairItem& item) { return item.nBrType == nBrType && item.nRightBrPos == -1; });
+                    if ( itrItem != itrEnd )
+                    {
+                        // itrItem points to an unmatched left bracket, nPos is its right bracket
+                        itrItem->nRightBrPos = nPos; // |)
+
+                        // searching for and removing enquoted unmatched brackets:
+                        size_t i = bracketsTree.size() - 1;
+                        size_t n = i - std::distance(itrBegin, itrItem);
+                        for ( ; i > n; --i )
+                        {
+                            if ( bracketsTree[i].nRightBrPos == -1 )
+                            {
+                                bracketsTree.erase(bracketsTree.begin() + i);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        // left bracket
+                        bracketsTree.push_back({nPos + 1, -1, nBrType}); // (|
+                    }
+                }
+                else
+                {
+                    // non-enquoting brackets pair
+                    if ( !bracketsTree.empty() )
+                    {
+                        auto& item = bracketsTree.back();
+                        if ( item.nBrType == nBrType && item.nRightBrPos == -1 )
+                        {
+                            // item is an unmatched left bracket, nPos is its right bracket
+                            item.nRightBrPos = nPos; // |)
+                        }
+                        else
+                        {
+                            // left bracket
+                            bracketsTree.push_back({nPos + 1, -1, nBrType}); // (|
+                        }
+                    }
+                    else
+                    {
+                        // left bracket
+                        bracketsTree.push_back({nPos + 1, -1, nBrType}); // (|
+                    }
+                }
+            }
+            else
+            {
+                // left bracket
+                bracketsTree.push_back({nPos + 1, -1, nBrType}); // (|
+            }
+        }
+        else
+        {
+            nBrType = getRightBracketType(*p);
+            if ( nBrType != tbtNone && !isEscapedPos(vText.data(), nPos) )
+            {
+                // right bracket
+                if ( !bracketsTree.empty() )
+                {
+                    const auto itrBegin = bracketsTree.rbegin();
+                    const auto itrEnd = bracketsTree.rend();
+                    auto itrItem = std::find_if(itrBegin, itrEnd, [this, nBrType](const tBracketPairItem& item) { return isEnquotingPair(item.nBrType) && item.nRightBrPos == -1; });
+                    if ( itrItem == itrEnd )
+                    {
+                        // there's no unmatched enquoting bracket
+                        auto itrItem = std::find_if(itrBegin, itrEnd, [nBrType](const tBracketPairItem& item) { return item.nBrType == nBrType && item.nRightBrPos == -1; });
+                        if ( itrItem != itrEnd )
+                        {
+                            // itrItem points to an unmatched left bracket, nPos is its right bracket
+                            itrItem->nRightBrPos = nPos; // |)
+
+                            // searching for and removing unmatched brackets:
+                            size_t i = bracketsTree.size() - 1;
+                            size_t n = i - std::distance(itrBegin, itrItem);
+                            for ( ; i > n; --i )
+                            {
+                                if ( bracketsTree[i].nRightBrPos == -1 )
+                                {
+                                    bracketsTree.erase(bracketsTree.begin() + i);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        ++nPos;
+    }
+
+    std::vector<const tBracketPairItem*> bracketsByRightBr;
+
+    size_t n = bracketsTree.size();
+    bracketsByRightBr.reserve(n);
+    for ( const auto& item : bracketsTree )
+    {
+        auto itr = std::lower_bound(bracketsByRightBr.begin(), bracketsByRightBr.end(), item.nRightBrPos,
+            [](const tBracketPairItem* pItem, Sci_Position nRightBrPos) { return pItem->nRightBrPos < nRightBrPos; });
+        bracketsByRightBr.insert(itr, &item);
+    }
+
+    m_bracketsTree.swap(bracketsTree);
+    m_bracketsByRightBr.swap(bracketsByRightBr);
+}
+
+void CBracketsTree::invalidateTree()
+{
+    m_bracketsTree.clear();
+    m_bracketsByRightBr.clear();
+}
+
+const CBracketsTree::tBracketPairItem* CBracketsTree::findPairByLeftBrPos(const Sci_Position nLeftBrPos, bool isExact) const
+{
+    if ( m_bracketsTree.empty() )
+        return nullptr;
+
+    const auto itrBegin = m_bracketsTree.begin();
+    const auto itrEnd = m_bracketsTree.end();
+    auto itr = std::lower_bound(itrBegin, itrEnd, nLeftBrPos,
+        [](const tBracketPairItem& item, Sci_Position nLeftBrPos) { return item.nLeftBrPos < nLeftBrPos; });
+
+    if ( itr == itrEnd )
+        return &m_bracketsTree.back();
+
+    if ( isExact )
+        return &(*itr);
+
+    for ( ; itr != itrBegin; )
+    {
+        --itr;
+        if ( itr->nLeftBrPos < nLeftBrPos && itr->nRightBrPos > nLeftBrPos )
+            return &(*itr);
+    }
+
+    return nullptr;
+}
+
+const CBracketsTree::tBracketPairItem* CBracketsTree::findPairByRightBrPos(const Sci_Position nRightBrPos, bool isExact) const
+{
+    if ( !isExact )
+        return findPairByLeftBrPos(nRightBrPos, false);
+
+    if ( m_bracketsByRightBr.empty() )
+        return nullptr;
+
+    const auto itrBegin = m_bracketsByRightBr.begin();
+    const auto itrEnd = m_bracketsByRightBr.end();
+    auto itr = std::lower_bound(itrBegin, itrEnd, nRightBrPos,
+        [](const tBracketPairItem* pItem, Sci_Position nRightBrPos) { return pItem->nRightBrPos < nRightBrPos; });
+
+    if ( itr == itrEnd )
+        return m_bracketsByRightBr.back();
+
+    return (*itr);
+}
+
+bool CBracketsTree::isEscapedPos(const char* pEntireText, const Sci_Position nPos) const
+{
+    if ( !isSkipEscapedSupported() )
+        return false;
+
+    Sci_Position nPrefixPos{};
+    int nPrefixLen{}; // len <= MAX_ESCAPED_PREFIX, so 'int' is always enough
+
+    getEscapedPrefixPos(nPos, &nPrefixPos, &nPrefixLen);
+    return isEscapedPrefix(pEntireText + nPrefixPos, nPrefixLen);
+}
+#endif
+
+//-----------------------------------------------------------------------------
+
 CXBracketsLogic::CXBracketsLogic() :
     m_nAutoRightBracketPos(-1),
     m_nCachedLeftBrPos(-1),
-    m_nCachedRightBrPos(-1),
-    m_uFileType(tfmIsSupported)
+    m_nCachedRightBrPos(-1)
 {
 }
 
@@ -99,7 +507,7 @@ CXBracketsLogic::eCharProcessingResult CXBracketsLogic::OnChar(const int ch)
     if ( !g_opt.getBracketsAutoComplete() )
         return cprNone;
 
-    if ( (m_uFileType & tfmIsSupported) == 0 )
+    if ( (getFileType() & tfmIsSupported) == 0 )
         return cprNone;
 
     CSciMessager sciMsgr(m_nppMsgr.getCurrentScintillaWnd());
@@ -146,202 +554,18 @@ CXBracketsLogic::eCharProcessingResult CXBracketsLogic::OnChar(const int ch)
     return autoBracketsFunc(nLeftBracketType);
 }
 
-bool CXBracketsLogic::isDoubleQuoteSupported() const
-{
-    return g_opt.getBracketsDoDoubleQuote();
-}
-
-bool CXBracketsLogic::isSingleQuoteSupported() const
-{
-    return ( g_opt.getBracketsDoSingleQuote() &&
-             ((m_uFileType & tfmSingleQuote) != 0 || !g_opt.getBracketsDoSingleQuoteIf()) );
-}
-
-bool CXBracketsLogic::isTagSupported() const
-{
-    return ( g_opt.getBracketsDoTag() &&
-             ((m_uFileType & tfmHtmlCompatible) != 0 || !g_opt.getBracketsDoTagIf()) );
-}
-
-bool CXBracketsLogic::isTag2Supported() const
-{
-    return ( g_opt.getBracketsDoTag2() &&
-             ((m_uFileType & tfmHtmlCompatible) != 0 || !g_opt.getBracketsDoTagIf()) );
-}
-
-bool CXBracketsLogic::isSkipEscapedSupported() const
-{
-    return ( g_opt.getBracketsSkipEscaped() && (m_uFileType & tfmEscaped1) != 0 );
-}
-
-CXBracketsLogic::TBracketType CXBracketsLogic::getLeftBracketType(const int ch, unsigned int uOptions) const
-{
-    TBracketType nLeftBracketType = tbtNone;
-
-    // OK for both ANSI and Unicode (ch can be wide character)
-    switch ( ch )
-    {
-    case _TCH('(') :
-        nLeftBracketType = tbtBracket;
-        break;
-    case _TCH('[') :
-        nLeftBracketType = tbtSquare;
-        break;
-    case _TCH('{') :
-        nLeftBracketType = tbtBrace;
-        break;
-    case _TCH('\"') :
-        if ( (uOptions & bofIgnoreMode) != 0 || isDoubleQuoteSupported() )
-        {
-            nLeftBracketType = tbtDblQuote;
-        }
-        break;
-    case _TCH('\'') :
-        if ( (uOptions & bofIgnoreMode) != 0 || isSingleQuoteSupported() )
-        {
-            nLeftBracketType = tbtSglQuote;
-        }
-        break;
-    case _TCH('<') :
-        if ( (uOptions & bofIgnoreMode) != 0 || isTagSupported() )
-        {
-            nLeftBracketType = tbtTag;
-        }
-        break;
-    }
-
-    return nLeftBracketType;
-}
-
-CXBracketsLogic::TBracketType CXBracketsLogic::getRightBracketType(const int ch, unsigned int uOptions) const
-{
-    TBracketType nRightBracketType = tbtNone;
-
-    // OK for both ANSI and Unicode (ch can be wide character)
-    switch ( ch )
-    {
-    case _TCH(')') :
-        nRightBracketType = tbtBracket;
-        break;
-    case _TCH(']') :
-        nRightBracketType = tbtSquare;
-        break;
-    case _TCH('}') :
-        nRightBracketType = tbtBrace;
-        break;
-    case _TCH('\"') :
-        if ( (uOptions & bofIgnoreMode) != 0 || isDoubleQuoteSupported() )
-        {
-            nRightBracketType = tbtDblQuote;
-        }
-        break;
-    case _TCH('\'') :
-        if ( (uOptions & bofIgnoreMode) != 0 || isSingleQuoteSupported() )
-        {
-            nRightBracketType = tbtSglQuote;
-        }
-        break;
-    case _TCH('>') :
-        if ( (uOptions & bofIgnoreMode) != 0 || isTagSupported() )
-        {
-            nRightBracketType = tbtTag;
-        }
-        // no break here
-    case _TCH('/') :
-        if ( (uOptions & bofIgnoreMode) != 0 || isTag2Supported() )
-        {
-            nRightBracketType = tbtTag2;
-        }
-        break;
-    }
-
-    return nRightBracketType;
-}
-
-int CXBracketsLogic::getDirectionIndex(const eDupPairDirection direction)
-{
-    int i = 0;
-
-    switch (direction)
-    {
-    case DP_BACKWARD:
-        i = 0;
-        break;
-    case DP_MAYBEBACKWARD:
-        i = 1;
-        break;
-    case DP_DETECT:
-        i = 2;
-        break;
-    case DP_MAYBEFORWARD:
-        i = 3;
-        break;
-    case DP_FORWARD:
-        i = 4;
-        break;
-    }
-
-    return i;
-}
-
-int CXBracketsLogic::getDirectionRank(const eDupPairDirection leftDirection, const eDupPairDirection rightDirection)
-{
-    //  The *exact* numbers in the table below have no special meaning.
-    //  The only important thing is relative comparison of the numbers:
-    //  which of them are greater than others, and which of them are equal.
-    //
-    // --> leftDirection --> DP_BACKWARD  DP_MAYBEBACKWARD   DP_DETECT      DP_MAYBEFORWARD   DP_FORWARD
-    //    DP_FORWARD         <<( )>>  0   <?( )>>   1        ?(? )>>   2    (?> )>>   3       (>> )>>   4
-    //    DP_MAYBEFORWARD    <<( )?>  1   <?( )?>   5        ?(? )?>   9    (?> )?>  13       (>> )?>  17
-    //    DP_DETECT          <<( ?)?  2   <?( ?)?   9        ?(? ?)?  16    (?> ?)?  23       (>> ?)?  30
-    //    DP_MAYBEBACKWARD   <<( <?)  3   <?( <?)  13        ?(? <?)  23    (?> <?)  33       (>> <?)  43
-    //    DP_BACWARD         <<( <<)  4   <?( <<)  17        ?(? <<)  30    (?> <<)  43       (>> <<)  56
-    // ^ rightDirection ^
-    static const int Ranking[5][5] = {
-        { 4, 17, 30, 43, 56 }, // DP_BACKWARD
-        { 3, 13, 23, 33, 43 }, // DP_MAYBEBACKWARD
-        { 2,  9, 16, 23, 30 }, // DP_DETECT
-        { 1,  5,  9, 13, 17 }, // DP_MAYBEFORWARD
-        { 0,  1,  2,  3,  4 }  // DP_FORWARD
-    };
-
-    int leftIndex = getDirectionIndex(leftDirection);
-    int rightIndex = getDirectionIndex(rightDirection);
-
-    return Ranking[rightIndex][leftIndex];
-}
-
-void CXBracketsLogic::getEscapedPrefixPos(const Sci_Position nOffset, Sci_Position* pnPos, int* pnLen)
-{
-    if ( nOffset > MAX_ESCAPED_PREFIX )
-    {
-        *pnPos = nOffset - MAX_ESCAPED_PREFIX;
-        *pnLen = MAX_ESCAPED_PREFIX;
-    }
-    else
-    {
-        *pnPos = 0;
-        *pnLen = static_cast<int>(nOffset);
-    }
-}
-
 bool CXBracketsLogic::isEscapedPos(const CSciMessager& sciMsgr, const Sci_Position nCharPos) const
 {
     if ( !isSkipEscapedSupported() )
         return false;
 
     char szPrefix[MAX_ESCAPED_PREFIX + 2];
-    Sci_Position pos;
-    int len; // len <= MAX_ESCAPED_PREFIX, so 'int' is always enough
+    Sci_Position nPrefixPos{};
+    int nPrefixLen{}; // len <= MAX_ESCAPED_PREFIX, so 'int' is always enough
 
-    getEscapedPrefixPos(nCharPos, &pos, &len);
-    len = static_cast<int>(sciMsgr.getTextRange(pos, pos + len, szPrefix));
-    return isEscapedPrefix(szPrefix, len);
-}
-
-bool CXBracketsLogic::isDuplicatedPair(TBracketType nBracketType) const
-{
-    return (nBracketType == tbtDblQuote || nBracketType == tbtSglQuote);
+    getEscapedPrefixPos(nCharPos, &nPrefixPos, &nPrefixLen);
+    nPrefixLen = static_cast<int>(sciMsgr.getTextRange(nPrefixPos, nPrefixPos + nPrefixLen, szPrefix));
+    return isEscapedPrefix(szPrefix, nPrefixLen);
 }
 
 CXBracketsLogic::eDupPairDirection CXBracketsLogic::getDuplicatedPairDirection(const CSciMessager& sciMsgr, const Sci_Position nCharPos, const char curr_ch) const
@@ -1039,6 +1263,9 @@ void CXBracketsLogic::PerformBracketsAction(eGetBracketsAction nBrAction)
 
     state.nCharPos = state.nSelStart;
 
+#if XBR_USE_BRACKETSTREE
+    m_bracketsTree.buildTree(sciMsgr);
+#else
     if ( m_nCachedLeftBrPos != -1 && m_nCachedRightBrPos != -1 )
     {
         Sci_Position nTargetSelEnd(-1);
@@ -1064,6 +1291,7 @@ void CXBracketsLogic::PerformBracketsAction(eGetBracketsAction nBrAction)
             return;
         }
     }
+#endif
 
     Sci_Position nStartPos = state.nCharPos;
     TBracketType nBrType = tbtNone;
@@ -1075,6 +1303,104 @@ void CXBracketsLogic::PerformBracketsAction(eGetBracketsAction nBrAction)
     if ( nBrType == tbtTag2 )
         nBrType = tbtTag;
 
+#if XBR_USE_BRACKETSTREE
+    if ( isDuplicatedPair(nBrType) )
+    {
+        // try as a left bracket...
+        if ( nAtBr & abcBrIsOnRight )
+            ++nStartPos; //  |(  ->  (|
+
+        const auto pBrPairLeft = m_bracketsTree.findPairByLeftBrPos(nStartPos, nAtBr != abcNone);
+        if ( pBrPairLeft && (pBrPairLeft->nLeftBrPos == nStartPos || (nAtBr == abcNone && pBrPairLeft->nLeftBrPos < nStartPos && pBrPairLeft->nRightBrPos > nStartPos)) )
+        {
+            state.nLeftBrPos = pBrPairLeft->nLeftBrPos;
+            state.nLeftBrType = pBrPairLeft->nBrType;
+            state.nRightBrPos = pBrPairLeft->nRightBrPos;
+            state.nRightBrType = state.nLeftBrType;
+
+            if ( nAtBr & abcBrIsOnRight )
+            {
+                ++state.nRightBrPos; //  |)  ->  )|
+                --state.nLeftBrPos;  //  (|  ->  |(
+            }
+
+            isBrPairFound = true;
+        }
+        else
+        {
+            // try as a right bracket...
+            nStartPos = state.nCharPos;
+            if ( nAtBr & abcBrIsOnLeft )
+                --nStartPos; //  )|  ->  |)
+
+            const auto pBrPairRight = m_bracketsTree.findPairByRightBrPos(nStartPos, nAtBr != abcNone);
+            if ( pBrPairRight && (pBrPairRight->nRightBrPos == nStartPos || (nAtBr == abcNone && pBrPairRight->nRightBrPos > nStartPos && pBrPairRight->nLeftBrPos < nStartPos)) )
+            {
+                state.nLeftBrPos = pBrPairRight->nLeftBrPos;
+                state.nRightBrPos = pBrPairRight->nBrType;
+                state.nRightBrType = pBrPairRight->nBrType;
+                state.nLeftBrType = state.nRightBrType;
+
+                if ( nAtBr & abcBrIsOnLeft )
+                {
+                    ++state.nRightBrPos; //  |)  ->  )|
+                    --state.nLeftBrPos;  //  (|  ->  |(
+                }
+
+                isBrPairFound = true;
+            }
+        }
+    }
+    else
+    {
+        if ( nAtBr & abcRightBr )
+        {
+            // at right bracket...
+            if ( nAtBr & abcBrIsOnLeft )
+                --nStartPos; //  )|  ->  |)
+
+            const auto pBrPair = m_bracketsTree.findPairByRightBrPos(nStartPos);
+            if ( pBrPair && pBrPair->nRightBrPos == nStartPos )
+            {
+                state.nLeftBrPos = pBrPair->nLeftBrPos;
+                state.nRightBrPos = pBrPair->nBrType;
+                state.nRightBrType = pBrPair->nBrType;
+                state.nLeftBrType = state.nRightBrType;
+
+                if ( nAtBr & abcBrIsOnLeft )
+                {
+                    ++state.nRightBrPos; //  |)  ->  )|
+                    --state.nLeftBrPos;  //  (|  ->  |(
+                }
+
+                isBrPairFound = true;
+            }
+        }
+        else if ( (nAtBr & abcLeftBr) || nBrAction == baGoToNearest || nBrAction == baSelToNearest )
+        {
+            // at left bracket...
+            if ( nAtBr & abcBrIsOnRight )
+                ++nStartPos; //  |(  ->  (|
+
+            const auto pBrPair = m_bracketsTree.findPairByLeftBrPos(nStartPos, nAtBr != abcNone);
+            if ( pBrPair && (pBrPair->nLeftBrPos == nStartPos || (nAtBr == abcNone && pBrPair->nLeftBrPos < nStartPos && pBrPair->nRightBrPos > nStartPos)) )
+            {
+                state.nLeftBrPos = pBrPair->nLeftBrPos;
+                state.nLeftBrType = pBrPair->nBrType;
+                state.nRightBrPos = pBrPair->nRightBrPos;
+                state.nRightBrType = state.nLeftBrType;
+
+                if ( nAtBr & abcBrIsOnRight )
+                {
+                    ++state.nRightBrPos; //  |)  ->  )|
+                    --state.nLeftBrPos;  //  (|  ->  |(
+                }
+
+                isBrPairFound = true;
+            }
+        }
+    }
+#else
     if ( nAtBr & abcLeftBr )
     {
         // at left bracket...
@@ -1206,6 +1532,7 @@ void CXBracketsLogic::PerformBracketsAction(eGetBracketsAction nBrAction)
             }
         }
     }
+#endif
 
     if ( isBrPairFound )
     {
@@ -1245,7 +1572,11 @@ void CXBracketsLogic::PerformBracketsAction(eGetBracketsAction nBrAction)
 
 void CXBracketsLogic::UpdateFileType()
 {
-    m_uFileType = getFileType();
+    unsigned int uFileType = detectFileType();
+    setFileType(uFileType);
+#if XBR_USE_BRACKETSTREE
+    m_bracketsTree.setFileType(uFileType);
+#endif
 }
 
 CXBracketsLogic::eCharProcessingResult CXBracketsLogic::autoBracketsFunc(TBracketType nBracketType)
@@ -1509,7 +1840,7 @@ bool CXBracketsLogic::autoBracketsOverSelectionFunc(TBracketType nBracketType)
     return true; // processed
 }
 
-unsigned int CXBracketsLogic::getFileType()
+unsigned int CXBracketsLogic::detectFileType()
 {
     TCHAR szExt[CXBracketsOptions::MAX_EXT];
     unsigned int uType = tfmIsSupported;
