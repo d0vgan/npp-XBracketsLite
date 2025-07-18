@@ -277,9 +277,24 @@ void CBracketsCommon::getEscapedPrefixPos(const Sci_Position nOffset, Sci_Positi
 //-----------------------------------------------------------------------------
 
 #if XBR_USE_BRACKETSTREE
+CBracketsTree::CBracketsTree()
+{
+    // C++ syntax
+    m_fileSyntax.pairs.push_back({"{", "}", bpBrackets});
+    m_fileSyntax.pairs.push_back({"(", ")", bpBrackets});
+    m_fileSyntax.pairs.push_back({"[", "]", bpBrackets});
+    m_fileSyntax.pairs.push_back({"\"", "\"", bpSgLnQuotes});
+    m_fileSyntax.pairs.push_back({"'", "'", bpSgLnQuotes});
+    m_fileSyntax.pairs.push_back({"/*", "*/", bpMlLnComm});
+    m_fileSyntax.sgLnComm.push_back({"//"});
+    m_fileSyntax.qtEsc.push_back({"\\"});
+    
+}
+
 void CBracketsTree::buildTree(CSciMessager& sciMsgr)
 {
-    std::vector<tBracketPairItem> bracketsTree;
+    std::vector<tBrPairItem> bracketsTree;
+    std::vector<tBrPairItem> unmatchedBrackets;
 
     Sci_Position nTextLen = sciMsgr.getTextLength();
     std::vector<char> vText(nTextLen + 1);
@@ -287,104 +302,233 @@ void CBracketsTree::buildTree(CSciMessager& sciMsgr)
     vText[nTextLen] = 0;
 
     Sci_Position nPos = 0;
+    Sci_Position nLine = 0;
     for ( const char* p = vText.data(); p < vText.data() + nTextLen; ++p )
     {
-        TBracketType nBrType = getLeftBracketType(*p);
-        if ( nBrType != tbtNone && !isEscapedPos(vText.data(), nPos) )
+        // checking for a single-line comment:
+        // TODO: preserve matched pairs under single-line comments
+        for ( const auto& sgLnComm : m_fileSyntax.sgLnComm )
         {
-            if ( isDuplicatedPair(nBrType) )
+            if ( sgLnComm.length() <= static_cast<size_t>(nTextLen - nPos) )
+            {
+                if ( memcmp(p, sgLnComm.c_str(), sgLnComm.length()) == 0 )
+                {
+                    const auto itrBegin = unmatchedBrackets.rbegin();
+                    const auto itrEnd = unmatchedBrackets.rend();
+                    const auto itrItem = std::find_if(itrBegin, itrEnd, [](const tBrPairItem& item) { return item.pBrPair->kind == bpSgLnQuotes || item.pBrPair->kind == bpMlLnQuotes; });
+                    if ( itrItem == itrEnd )
+                    {
+                        p += (sgLnComm.length() - 1);
+                        nPos += (sgLnComm.length() - 1);
+
+                        // skipping till the EOL or EOF
+                        for ( ; ; )
+                        {
+                            if ( nPos == nTextLen || *p == '\n' || *p == '\r' )
+                                break;
+
+                            ++p;
+                            ++nPos;
+                        }
+                    }
+                }
+            }
+        }
+
+        bool isNewLine = false;
+        if ( *p == '\r' )
+        {
+            if ( nPos < nTextLen && *(p + 1) == '\n' )
+            {
+                ++p;
+                ++nPos;
+            }
+            isNewLine = true;
+        }
+        else if ( *p == '\n' )
+        {
+            isNewLine = true;
+        }
+
+        if ( isNewLine )
+        {
+            const size_t n = unmatchedBrackets.size();
+            if ( n != 0 )
+            {
+                size_t i = n - 1;
+                size_t k = n;
+                for ( ; ; )
+                {
+                    if ( unmatchedBrackets[i].nLine != nLine )
+                    {
+                        ++i; // last index where .nLine == nLine
+                        break;
+                    }
+
+                    if ( unmatchedBrackets[i].pBrPair->kind == bpSgLnQuotes )
+                        k = i;
+
+                    if ( i == 0 )
+                        break;
+
+                    --i;
+                }
+
+                if ( k != n )
+                {
+                    // removing unmatched single-line quoted text
+                    // TODO: preserve brackets?
+                    unmatchedBrackets.erase(unmatchedBrackets.begin() + k, unmatchedBrackets.end());
+                }
+            }
+
+            ++nLine;
+            ++nPos;
+            continue;
+        }
+
+        const tBrPair* pBrPair = getLeftBrPair(p, nTextLen - nPos);
+        if ( pBrPair != nullptr )
+        {
+            if ( pBrPair->leftBr == pBrPair->rightBr )
             {
                 // either left or right bracket/quote
-                if ( isEnquotingPair(nBrType) )
+                if ( pBrPair->kind == bpSgLnQuotes || pBrPair->kind == bpMlLnQuotes || pBrPair->kind == bpMlLnComm )
                 {
                     // enquoting brackets pair
-                    const auto itrBegin = bracketsTree.rbegin();
-                    const auto itrEnd = bracketsTree.rend();
-                    const auto itrItem = std::find_if(itrBegin, itrEnd, [nBrType](const tBracketPairItem& item) { return item.nBrType == nBrType && item.nRightBrPos == -1; });
+                    const auto itrBegin = unmatchedBrackets.rbegin();
+                    const auto itrEnd = unmatchedBrackets.rend();
+                    auto itrItem = itrEnd;
+                    auto itrDel = itrEnd;
+                    for ( auto itr = itrBegin; itr != itrEnd; ++itr )
+                    {
+                        if ( itr->pBrPair->leftBr == pBrPair->leftBr )
+                        {
+                            itrItem = itr;
+                            break;
+                        }
+                        if ( itr->pBrPair->kind == bpMlLnComm )
+                        {
+                            itrDel = itr;
+                        }
+                    }
                     if ( itrItem != itrEnd )
                     {
-                        // itrItem points to an unmatched left bracket, nPos is its right bracket
-                        itrItem->nRightBrPos = nPos; // |)
-
-                        // searching for and removing enquoted unmatched brackets:
-                        size_t i = bracketsTree.size() - 1;
-                        size_t n = i - std::distance(itrBegin, itrItem);
-                        for ( ; i > n; --i )
+                        if ( itrDel == itrEnd )
                         {
-                            if ( bracketsTree[i].nRightBrPos == -1 )
+                            if ( (itrItem->pBrPair->kind != bpSgLnQuotes && itrItem->pBrPair->kind != bpMlLnQuotes) || !isEscapedPos(vText.data(), nPos) )
                             {
-                                bracketsTree.erase(bracketsTree.begin() + i);
+                                // itrItem points to an unmatched left bracket, nPos is its right bracket
+                                itrItem->nRightBrPos = nPos; // |)
+                                auto itr = std::lower_bound(bracketsTree.begin(), bracketsTree.end(), itrItem->nLeftBrPos,
+                                    [](const tBrPairItem& item, Sci_Position nLeftBrPos){ return item.nLeftBrPos < nLeftBrPos; });
+                                bracketsTree.insert(itr, *itrItem);
+                                // removing the enquoted unmatched brackets:
+                                unmatchedBrackets.erase(std::next(itrItem).base(), unmatchedBrackets.end());
                             }
                         }
                     }
                     else
                     {
                         // left bracket
-                        bracketsTree.push_back({nPos + 1, -1, nBrType}); // (|
+                        unmatchedBrackets.push_back({nPos + 1, -1, nLine, pBrPair}); // (|
                     }
                 }
                 else
                 {
                     // non-enquoting brackets pair
-                    if ( !bracketsTree.empty() )
+                    if ( !unmatchedBrackets.empty() )
                     {
-                        auto& item = bracketsTree.back();
-                        if ( item.nBrType == nBrType && item.nRightBrPos == -1 )
+                        auto& item = unmatchedBrackets.back();
+                        if ( item.pBrPair->leftBr == pBrPair->leftBr )
                         {
                             // item is an unmatched left bracket, nPos is its right bracket
                             item.nRightBrPos = nPos; // |)
+                            auto itr = std::lower_bound(bracketsTree.begin(), bracketsTree.end(), item.nLeftBrPos,
+                                [](const tBrPairItem& item, Sci_Position nLeftBrPos){ return item.nLeftBrPos < nLeftBrPos; });
+                            bracketsTree.insert(itr, item);
+
+                            // removing the enquoted unmatched brackets:
+                            unmatchedBrackets.pop_back();
                         }
                         else
                         {
                             // left bracket
-                            bracketsTree.push_back({nPos + 1, -1, nBrType}); // (|
+                            unmatchedBrackets.push_back({nPos + 1, -1, nLine, pBrPair}); // (|
                         }
                     }
                     else
                     {
                         // left bracket
-                        bracketsTree.push_back({nPos + 1, -1, nBrType}); // (|
+                        unmatchedBrackets.push_back({nPos + 1, -1, nLine, pBrPair}); // (|
                     }
                 }
             }
             else
             {
                 // left bracket
-                bracketsTree.push_back({nPos + 1, -1, nBrType}); // (|
+                const auto itrEnd = unmatchedBrackets.rend();
+                auto itr = itrEnd;
+                if ( pBrPair->kind == bpMlLnComm )
+                {
+                    const auto itrBegin = unmatchedBrackets.rbegin();
+                    itr = std::find_if(itrBegin, itrEnd, [pBrPair](const tBrPairItem& item){ return item.pBrPair->kind == bpSgLnQuotes || item.pBrPair->kind == bpMlLnQuotes || (item.pBrPair->kind == bpMlLnComm && item.pBrPair->leftBr == pBrPair->leftBr); });
+                }
+                if ( itr == itrEnd )
+                {
+                    unmatchedBrackets.push_back({nPos + 1, -1, nLine, pBrPair}); // (|
+                }
+            }
+
+            if ( pBrPair->leftBr.length() > 1 )
+            {
+                p += (pBrPair->leftBr.length() - 1);
+                nPos += (pBrPair->leftBr.length() - 1);
             }
         }
         else
         {
-            nBrType = getRightBracketType(*p);
-            if ( nBrType != tbtNone && !isEscapedPos(vText.data(), nPos) )
+            pBrPair = getRightBrPair(p, nTextLen - nPos);
+            if ( pBrPair != nullptr )
             {
                 // right bracket
-                if ( !bracketsTree.empty() )
+                if ( !unmatchedBrackets.empty() )
                 {
-                    const auto itrBegin = bracketsTree.rbegin();
-                    const auto itrEnd = bracketsTree.rend();
-                    auto itrItem = std::find_if(itrBegin, itrEnd, [this, nBrType](const tBracketPairItem& item) { return isEnquotingPair(item.nBrType) && item.nRightBrPos == -1; });
-                    if ( itrItem == itrEnd )
+                    const auto itrBegin = unmatchedBrackets.rbegin();
+                    const auto itrEnd = unmatchedBrackets.rend();
+                    auto itrItem = itrEnd;
+                    auto itrDel = itrEnd;
+                    for ( auto itr = itrBegin; itr != itrEnd; ++itr )
                     {
-                        // there's no unmatched enquoting bracket
-                        auto itrItem = std::find_if(itrBegin, itrEnd, [nBrType](const tBracketPairItem& item) { return item.nBrType == nBrType && item.nRightBrPos == -1; });
-                        if ( itrItem != itrEnd )
+                        if ( itr->pBrPair->leftBr == pBrPair->leftBr )
+                        {
+                            itrItem = itr;
+                            break;
+                        }
+                        if ( itr->pBrPair->kind == bpMlLnComm || ((itr->pBrPair->kind == bpSgLnQuotes || itr->pBrPair->kind == bpMlLnQuotes) && pBrPair->kind == bpBrackets) )
+                        {
+                            itrDel = itr;
+                        }
+                    }
+                    if ( itrItem != itrEnd )
+                    {
+                        if ( itrDel == itrEnd )
                         {
                             // itrItem points to an unmatched left bracket, nPos is its right bracket
                             itrItem->nRightBrPos = nPos; // |)
-
-                            // searching for and removing unmatched brackets:
-                            size_t i = bracketsTree.size() - 1;
-                            size_t n = i - std::distance(itrBegin, itrItem);
-                            for ( ; i > n; --i )
-                            {
-                                if ( bracketsTree[i].nRightBrPos == -1 )
-                                {
-                                    bracketsTree.erase(bracketsTree.begin() + i);
-                                }
-                            }
+                            auto itr = std::lower_bound(bracketsTree.begin(), bracketsTree.end(), itrItem->nLeftBrPos,
+                                [](const tBrPairItem& item, Sci_Position nLeftBrPos){ return item.nLeftBrPos < nLeftBrPos; });
+                            bracketsTree.insert(itr, *itrItem);
+                            // removing the enquoted unmatched brackets:
+                            unmatchedBrackets.erase(std::next(itrItem).base(), unmatchedBrackets.end());
                         }
                     }
+                }
+
+                if ( pBrPair->rightBr.length() > 1 )
+                {
+                    p += (pBrPair->rightBr.length() - 1);
+                    nPos += (pBrPair->leftBr.length() - 1);
                 }
             }
         }
@@ -392,14 +536,14 @@ void CBracketsTree::buildTree(CSciMessager& sciMsgr)
         ++nPos;
     }
 
-    std::vector<const tBracketPairItem*> bracketsByRightBr;
+    std::vector<const tBrPairItem*> bracketsByRightBr;
 
     size_t n = bracketsTree.size();
     bracketsByRightBr.reserve(n);
     for ( const auto& item : bracketsTree )
     {
         auto itr = std::lower_bound(bracketsByRightBr.begin(), bracketsByRightBr.end(), item.nRightBrPos,
-            [](const tBracketPairItem* pItem, Sci_Position nRightBrPos) { return pItem->nRightBrPos < nRightBrPos; });
+            [](const tBrPairItem* pItem, Sci_Position nRightBrPos) { return pItem->nRightBrPos < nRightBrPos; });
         bracketsByRightBr.insert(itr, &item);
     }
 
@@ -413,7 +557,7 @@ void CBracketsTree::invalidateTree()
     m_bracketsByRightBr.clear();
 }
 
-const CBracketsTree::tBracketPairItem* CBracketsTree::findPairByLeftBrPos(const Sci_Position nLeftBrPos, bool isExact) const
+const CBracketsTree::tBrPairItem* CBracketsTree::findPairByLeftBrPos(const Sci_Position nLeftBrPos, bool isExact) const
 {
     if ( m_bracketsTree.empty() )
         return nullptr;
@@ -421,7 +565,7 @@ const CBracketsTree::tBracketPairItem* CBracketsTree::findPairByLeftBrPos(const 
     const auto itrBegin = m_bracketsTree.begin();
     const auto itrEnd = m_bracketsTree.end();
     auto itr = std::lower_bound(itrBegin, itrEnd, nLeftBrPos,
-        [](const tBracketPairItem& item, Sci_Position nLeftBrPos) { return item.nLeftBrPos < nLeftBrPos; });
+        [](const tBrPairItem& item, Sci_Position nLeftBrPos) { return item.nLeftBrPos < nLeftBrPos; });
 
     if ( itr == itrEnd )
         return &m_bracketsTree.back();
@@ -439,7 +583,7 @@ const CBracketsTree::tBracketPairItem* CBracketsTree::findPairByLeftBrPos(const 
     return nullptr;
 }
 
-const CBracketsTree::tBracketPairItem* CBracketsTree::findPairByRightBrPos(const Sci_Position nRightBrPos, bool isExact) const
+const CBracketsTree::tBrPairItem* CBracketsTree::findPairByRightBrPos(const Sci_Position nRightBrPos, bool isExact) const
 {
     if ( !isExact )
         return findPairByLeftBrPos(nRightBrPos, false);
@@ -450,7 +594,7 @@ const CBracketsTree::tBracketPairItem* CBracketsTree::findPairByRightBrPos(const
     const auto itrBegin = m_bracketsByRightBr.begin();
     const auto itrEnd = m_bracketsByRightBr.end();
     auto itr = std::lower_bound(itrBegin, itrEnd, nRightBrPos,
-        [](const tBracketPairItem* pItem, Sci_Position nRightBrPos) { return pItem->nRightBrPos < nRightBrPos; });
+        [](const tBrPairItem* pItem, Sci_Position nRightBrPos) { return pItem->nRightBrPos < nRightBrPos; });
 
     if ( itr == itrEnd )
         return m_bracketsByRightBr.back();
@@ -458,16 +602,60 @@ const CBracketsTree::tBracketPairItem* CBracketsTree::findPairByRightBrPos(const
     return (*itr);
 }
 
+const CBracketsTree::tBrPair* CBracketsTree::getLeftBrPair(const char* p, size_t nLen) const
+{
+    for ( const auto& brPair : m_fileSyntax.pairs )
+    {
+        if ( brPair.leftBr.length() <= nLen )
+        {
+            if ( memcmp(p, brPair.leftBr.c_str(), brPair.leftBr.length()) == 0 )
+                return &brPair;
+        }
+    }
+    return nullptr;
+}
+
+const CBracketsTree::tBrPair* CBracketsTree::getRightBrPair(const char* p, size_t nLen) const
+{
+    for ( const auto& brPair : m_fileSyntax.pairs )
+    {
+        if ( brPair.rightBr.length() <= nLen )
+        {
+            if ( memcmp(p, brPair.rightBr.c_str(), brPair.rightBr.length()) == 0 )
+                return &brPair;
+        }
+    }
+    return nullptr;
+}
+
 bool CBracketsTree::isEscapedPos(const char* pEntireText, const Sci_Position nPos) const
 {
-    if ( !isSkipEscapedSupported() )
+    if ( m_fileSyntax.qtEsc.empty() )
         return false;
 
     Sci_Position nPrefixPos{};
     int nPrefixLen{}; // len <= MAX_ESCAPED_PREFIX, so 'int' is always enough
 
     getEscapedPrefixPos(nPos, &nPrefixPos, &nPrefixLen);
-    return isEscapedPrefix(pEntireText + nPrefixPos, nPrefixLen);
+    
+    const char* prefix = pEntireText + nPrefixPos;
+    bool isEscaped = false;
+
+    for ( const auto& esqStr : m_fileSyntax.qtEsc )
+    {
+        isEscaped = false;
+
+        for ( const char* p = prefix + nPrefixLen; ; )
+        {
+            p -= esqStr.length();
+            if ( p < prefix || memcmp(p, esqStr.c_str(), esqStr.length()) != 0 )
+                break;
+
+            isEscaped = !isEscaped;
+        }
+    }
+
+    return isEscaped;
 }
 #endif
 
@@ -589,9 +777,9 @@ CXBracketsLogic::eDupPairDirection CXBracketsLogic::getDuplicatedPairDirection(c
 
     if ( nCharPos > 0 )
     {
-        nStyles[0] = sciMsgr.SendSciMsg(SCI_GETSTYLEINDEXAT, nCharPos - 1);
-        nStyles[1] = sciMsgr.SendSciMsg(SCI_GETSTYLEINDEXAT, nCharPos);
-        nStyles[2] = sciMsgr.SendSciMsg(SCI_GETSTYLEINDEXAT, nCharPos + 1);
+        nStyles[0] = sciMsgr.getStyleIndexAt(nCharPos - 1);
+        nStyles[1] = sciMsgr.getStyleIndexAt(nCharPos);
+        nStyles[2] = sciMsgr.getStyleIndexAt(nCharPos + 1);
 
         if ( nStyles[2] == nStyles[1] && nStyles[1] != nStyles[0] )
             return DP_FORWARD;
@@ -611,10 +799,10 @@ CXBracketsLogic::eDupPairDirection CXBracketsLogic::getDuplicatedPairDirection(c
     if ( nTextLen > nCharPos + 2 )
     {
         if ( nStyles[1] == -1 )
-            nStyles[1] = sciMsgr.SendSciMsg(SCI_GETSTYLEINDEXAT, nCharPos);
+            nStyles[1] = sciMsgr.getStyleIndexAt(nCharPos);
         if ( nStyles[2] == -1 )
-            nStyles[2] = sciMsgr.SendSciMsg(SCI_GETSTYLEINDEXAT, nCharPos + 1);
-        nStyles[3] = sciMsgr.SendSciMsg(SCI_GETSTYLEINDEXAT, nCharPos + 2);
+            nStyles[2] = sciMsgr.getStyleIndexAt(nCharPos + 1);
+        nStyles[3] = sciMsgr.getStyleIndexAt(nCharPos + 2);
 
         if ( nStyles[3] == nStyles[2] && nStyles[2] != nStyles[1] )
             return DP_FORWARD;
@@ -1314,9 +1502,7 @@ void CXBracketsLogic::PerformBracketsAction(eGetBracketsAction nBrAction)
         if ( pBrPairLeft && (pBrPairLeft->nLeftBrPos == nStartPos || (nAtBr == abcNone && pBrPairLeft->nLeftBrPos < nStartPos && pBrPairLeft->nRightBrPos > nStartPos)) )
         {
             state.nLeftBrPos = pBrPairLeft->nLeftBrPos;
-            state.nLeftBrType = pBrPairLeft->nBrType;
             state.nRightBrPos = pBrPairLeft->nRightBrPos;
-            state.nRightBrType = state.nLeftBrType;
 
             if ( nAtBr & abcBrIsOnRight )
             {
@@ -1337,9 +1523,7 @@ void CXBracketsLogic::PerformBracketsAction(eGetBracketsAction nBrAction)
             if ( pBrPairRight && (pBrPairRight->nRightBrPos == nStartPos || (nAtBr == abcNone && pBrPairRight->nRightBrPos > nStartPos && pBrPairRight->nLeftBrPos < nStartPos)) )
             {
                 state.nLeftBrPos = pBrPairRight->nLeftBrPos;
-                state.nRightBrPos = pBrPairRight->nBrType;
-                state.nRightBrType = pBrPairRight->nBrType;
-                state.nLeftBrType = state.nRightBrType;
+                state.nRightBrPos = pBrPairRight->nRightBrPos;
 
                 if ( nAtBr & abcBrIsOnLeft )
                 {
@@ -1363,9 +1547,7 @@ void CXBracketsLogic::PerformBracketsAction(eGetBracketsAction nBrAction)
             if ( pBrPair && pBrPair->nRightBrPos == nStartPos )
             {
                 state.nLeftBrPos = pBrPair->nLeftBrPos;
-                state.nRightBrPos = pBrPair->nBrType;
-                state.nRightBrType = pBrPair->nBrType;
-                state.nLeftBrType = state.nRightBrType;
+                state.nRightBrPos = pBrPair->nRightBrPos;
 
                 if ( nAtBr & abcBrIsOnLeft )
                 {
@@ -1386,9 +1568,7 @@ void CXBracketsLogic::PerformBracketsAction(eGetBracketsAction nBrAction)
             if ( pBrPair && (pBrPair->nLeftBrPos == nStartPos || (nAtBr == abcNone && pBrPair->nLeftBrPos < nStartPos && pBrPair->nRightBrPos > nStartPos)) )
             {
                 state.nLeftBrPos = pBrPair->nLeftBrPos;
-                state.nLeftBrType = pBrPair->nBrType;
                 state.nRightBrPos = pBrPair->nRightBrPos;
-                state.nRightBrType = state.nLeftBrType;
 
                 if ( nAtBr & abcBrIsOnRight )
                 {

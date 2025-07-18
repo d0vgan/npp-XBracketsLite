@@ -100,7 +100,7 @@ private:
 //---------------------------------------------------------------------------
 
 #if XBR_USE_BRACKETSTREE
-// This is a VERY romising approach, BUT...
+// This is a VERY promising approach, BUT...
 // For example, in C and C++ source files, the Brackets Tree
 // becomes broken by additional quotes and brackets inside
 // the comments: within /* */ and after // ...
@@ -109,18 +109,53 @@ private:
 class CBracketsTree : public CBracketsCommon
 {
 public:
+    enum eBrPairKind {
+        bpNone = 0,
+        bpBrackets,   // brackets pair
+        bpSgLnQuotes, // sinle-line quotes pair
+        bpMlLnQuotes, // multi-line quotes pair
+        bpMlLnComm    // multi-line comment
+    };
+
+    struct tBrPair { // brackets, quotes or multi-line comments pair
+        std::string leftBr;
+        std::string rightBr;
+        eBrPairKind kind{bpNone};
+    };
+
+    struct tBrPairItem
+    {
+        Sci_Position nLeftBrPos{-1};  // (| 
+        Sci_Position nRightBrPos{-1}; // |)
+        Sci_Position nLine{-1}; // only for internal comparison
+        const tBrPair* pBrPair{};
+    };
+
+    struct tFileSyntax {
+        std::vector<tBrPair> pairs;        // pairs
+        std::vector<std::string> sgLnComm; // single-line comments
+        std::vector<std::string> qtEsc;    // escape characters in quotes
+    };
+
+public:
+    CBracketsTree();
+
     void buildTree(CSciMessager& sciMsgr);
     void invalidateTree();
 
-    const tBracketPairItem* findPairByLeftBrPos(const Sci_Position nLeftBrPos, bool isExact = true) const;
-    const tBracketPairItem* findPairByRightBrPos(const Sci_Position nRightBrPos, bool isExact = true) const;
+    const tBrPairItem* findPairByLeftBrPos(const Sci_Position nLeftBrPos, bool isExact = true) const;
+    const tBrPairItem* findPairByRightBrPos(const Sci_Position nRightBrPos, bool isExact = true) const;
 
 private:
+    const tBrPair* getLeftBrPair(const char* p, size_t nLen) const;
+    const tBrPair* getRightBrPair(const char* p, size_t nLen) const;
+    
     bool isEscapedPos(const char* pEntireText, const Sci_Position nPos) const;
 
 private:
-    std::vector<tBracketPairItem> m_bracketsTree;
-    std::vector<const tBracketPairItem*> m_bracketsByRightBr;
+    std::vector<tBrPairItem> m_bracketsTree;
+    std::vector<const tBrPairItem*> m_bracketsByRightBr;
+    tFileSyntax m_fileSyntax;
 };
 #endif
 

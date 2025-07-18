@@ -34,6 +34,7 @@ class CSciMessager
         Sci_Position  getSelectionStart() const;
         int           getSelections() const; // number of selections, there's always at least 1
         Sci_Position  getSelText(char* pText) const;
+        int           getStyleIndexAt(Sci_Position pos) const;
         Sci_Position  getText(Sci_Position len, char* pText) const;
         Sci_Position  getTextLength() const;
         Sci_Position  getTextRange(Sci_Position pos1, Sci_Position pos2, char* pText) const;

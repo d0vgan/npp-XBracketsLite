@@ -108,6 +108,11 @@ Sci_Position CSciMessager::getSelText(char* pText) const
     return (Sci_Position) SendSciMsg( SCI_GETSELTEXT, 0, (LPARAM) pText );
 }
 
+int CSciMessager::getStyleIndexAt(Sci_Position pos) const
+{
+    return (int) SendSciMsg(SCI_GETSTYLEINDEXAT, pos);
+}
+
 Sci_Position CSciMessager::getText(Sci_Position len, char* pText) const
 {
     return (Sci_Position) SendSciMsg( SCI_GETTEXT, (WPARAM) len, (LPARAM) pText );
