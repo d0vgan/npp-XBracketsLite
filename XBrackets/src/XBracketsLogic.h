@@ -151,8 +151,10 @@ public:
 
     void setFileType(unsigned int uFileType, const tstr& fileExtension);
 
+    bool isTreeEmpty() const;
     void buildTree(CSciMessager& sciMsgr);
     void invalidateTree();
+    void updateTree(SCNotification* pscn);
 
     const tBrPairItem* findPairByLeftBrPos(const Sci_Position nLeftBrPos, bool isExact = true) const;
     const tBrPairItem* findPairByRightBrPos(const Sci_Position nRightBrPos, bool isExact = true) const;
@@ -194,8 +196,9 @@ public:
     enum eInvalidateCachedBracketsFlags{
         icbfBrPair      = 0x01,
         icbfAutoRightBr = 0x02,
+        icbfTree        = 0x04,
 
-        icbfAll = (icbfBrPair | icbfAutoRightBr)
+        icbfAll = (icbfBrPair | icbfAutoRightBr | icbfTree)
     };
 
 public:
@@ -204,7 +207,7 @@ public:
     // interaction with the plugin
     void SetNppData(const NppData& nppd);
     void UpdateFileType();
-    void InvalidateCachedBrackets(unsigned int uInvalidateFlags = icbfAll);
+    void InvalidateCachedBrackets(unsigned int uInvalidateFlags = icbfAll, SCNotification* pscn = nullptr);
     eCharProcessingResult OnChar(const int ch);
     void PerformBracketsAction(eGetBracketsAction nBrAction);
 

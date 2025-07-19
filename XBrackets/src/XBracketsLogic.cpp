@@ -329,8 +329,16 @@ void CBracketsTree::setFileType(unsigned int uFileType, const tstr& fileExtensio
     }
 }
 
+bool CBracketsTree::isTreeEmpty() const
+{
+    return m_bracketsTree.empty();
+}
+
 void CBracketsTree::buildTree(CSciMessager& sciMsgr)
 {
+    if ( m_pFileSyntax == nullptr )
+        return; // nothing to do
+
     std::vector<tBrPairItem> bracketsTree;
     std::vector<tBrPairItem> unmatchedBrackets;
 
@@ -590,6 +598,70 @@ void CBracketsTree::invalidateTree()
     m_bracketsByRightBr.clear();
 }
 
+void CBracketsTree::updateTree(SCNotification* pscn)
+{
+    if ( m_pFileSyntax == nullptr || m_bracketsTree.empty() )
+        return; // nothing to do
+
+    if ( (pscn->modificationType & (SC_MOD_INSERTTEXT | SC_MOD_DELETETEXT)) == 0 )
+        return; // unsupported modification type
+
+    const std::string text(pscn->text, pscn->length);
+
+    bool needsInvalidate = (text.find_first_of("\n\r") != std::string::npos); // potentially a new line within quotes
+    if ( !needsInvalidate )
+    {
+        for ( auto& item : m_pFileSyntax->pairs )
+        {
+            if ( (item.leftBr.length() != 0 && text.find(item.leftBr) != std::string::npos) ||
+                 (item.rightBr.length() != 0 && text.find(item.rightBr) != std::string::npos) )
+            {
+                needsInvalidate = true;
+                break;
+            }
+        }
+    }
+
+    if ( needsInvalidate )
+    {
+        invalidateTree();
+        return; // tree needs to be recreated
+    }
+
+    const Sci_Position len = pscn->length;
+    const Sci_Position pos = pscn->position;
+    if ( pscn->modificationType & SC_MOD_INSERTTEXT )
+    {
+        for ( auto& item : m_bracketsTree )
+        {
+            if ( item.nLeftBrPos >= pos )
+            {
+                item.nLeftBrPos += len;
+                item.nRightBrPos += len;
+            }
+            else if ( item.nRightBrPos >= pos )
+            {
+                item.nRightBrPos += len;
+            }
+        }
+    }
+    else if ( pscn->modificationType & SC_MOD_DELETETEXT )
+    {
+        for ( auto& item : m_bracketsTree )
+        {
+            if ( item.nLeftBrPos >= pos )
+            {
+                item.nLeftBrPos -= len;
+                item.nRightBrPos -= len;
+            }
+            else if ( item.nRightBrPos >= pos )
+            {
+                item.nRightBrPos -= len;
+            }
+        }
+    }
+}
+
 const CBracketsTree::tBrPairItem* CBracketsTree::findPairByLeftBrPos(const Sci_Position nLeftBrPos, bool isExact) const
 {
     if ( m_bracketsTree.empty() )
@@ -738,7 +810,7 @@ void CXBracketsLogic::SetNppData(const NppData& nppd)
     m_nppMsgr.setNppData(nppd);
 }
 
-void CXBracketsLogic::InvalidateCachedBrackets(unsigned int uInvalidateFlags)
+void CXBracketsLogic::InvalidateCachedBrackets(unsigned int uInvalidateFlags, SCNotification* pscn)
 {
     if ( uInvalidateFlags & icbfBrPair )
     {
@@ -749,13 +821,22 @@ void CXBracketsLogic::InvalidateCachedBrackets(unsigned int uInvalidateFlags)
     {
         m_nAutoRightBracketPos = -1;
     }
+#if XBR_USE_BRACKETSTREE
+    if ( uInvalidateFlags & icbfTree )
+    {
+        if ( pscn == nullptr || (pscn->modificationType & (SC_MOD_INSERTTEXT | SC_MOD_DELETETEXT)) == 0 )
+            m_bracketsTree.invalidateTree();
+        else
+            m_bracketsTree.updateTree(pscn);
+    }
+#endif
 }
 
 CXBracketsLogic::eCharProcessingResult CXBracketsLogic::OnChar(const int ch)
 {
     const Sci_Position nAutoRightBrPos = m_nAutoRightBracketPos; // will be used below
 
-    InvalidateCachedBrackets(); // invalidates m_nAutoRightBracketPos as well
+    InvalidateCachedBrackets(icbfBrPair | icbfAutoRightBr);
 
     if ( !g_opt.getBracketsAutoComplete() )
         return cprNone;
@@ -1517,7 +1598,10 @@ void CXBracketsLogic::PerformBracketsAction(eGetBracketsAction nBrAction)
     state.nCharPos = state.nSelStart;
 
 #if XBR_USE_BRACKETSTREE
-    m_bracketsTree.buildTree(sciMsgr);
+    if ( m_bracketsTree.isTreeEmpty() )
+    {
+        m_bracketsTree.buildTree(sciMsgr);
+    }
 #else
     if ( m_nCachedLeftBrPos != -1 && m_nCachedRightBrPos != -1 )
     {

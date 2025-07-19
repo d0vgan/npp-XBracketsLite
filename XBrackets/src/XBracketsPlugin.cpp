@@ -102,7 +102,7 @@ LRESULT CALLBACK CXBracketsPlugin::sciNewWndProc(HWND hWnd, UINT uMsg, WPARAM wP
     {
         if ( wParam == VK_DELETE || wParam == VK_BACK )
         {
-            thePlugin.OnSciTextChanged();
+            thePlugin.OnSciTextChanged(nullptr);
         }
     }
 
@@ -288,13 +288,18 @@ void CXBracketsPlugin::OnSciModified(SCNotification* pscn)
 {
     if ( pscn->modificationType & (SC_MOD_INSERTTEXT | SC_MOD_DELETETEXT) )
     {
-        OnSciTextChanged();
+        OnSciTextChanged(pscn);
     }
 }
 
-void CXBracketsPlugin::OnSciTextChanged()
+void CXBracketsPlugin::OnSciTextChanged(SCNotification* pscn)
 {
-    m_BracketsLogic.InvalidateCachedBrackets();
+    unsigned int uInvalidateFlags = CXBracketsLogic::icbfBrPair | CXBracketsLogic::icbfAutoRightBr;
+    if ( pscn != nullptr )
+    {
+        uInvalidateFlags |= CXBracketsLogic::icbfAll;
+    }
+    m_BracketsLogic.InvalidateCachedBrackets(uInvalidateFlags, pscn);
 }
 
 void CXBracketsPlugin::GoToMatchingBracket()
