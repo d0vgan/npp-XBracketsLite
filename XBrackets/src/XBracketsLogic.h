@@ -4,9 +4,17 @@
 #include "core/base.h"
 #include "core/NppMessager.h"
 #include "core/SciMessager.h"
+#include <string>
 #include <vector>
 
+typedef std::basic_string<TCHAR> tstr;
+
 #define XBR_USE_BRACKETSTREE 0
+
+#if XBR_USE_BRACKETSTREE
+#include <set>
+#include <list>
+#endif
 
 //---------------------------------------------------------------------------
 
@@ -114,7 +122,8 @@ public:
         bpBrackets,   // brackets pair
         bpSgLnQuotes, // sinle-line quotes pair
         bpMlLnQuotes, // multi-line quotes pair
-        bpMlLnComm    // multi-line comment
+        bpSgLnComm,   // single-line comment
+        bpMlLnComm    // multi-line comment pair
     };
 
     struct tBrPair { // brackets, quotes or multi-line comments pair
@@ -132,30 +141,35 @@ public:
     };
 
     struct tFileSyntax {
+        std::set<tstr> fileExtensions;
         std::vector<tBrPair> pairs;        // pairs
-        std::vector<std::string> sgLnComm; // single-line comments
         std::vector<std::string> qtEsc;    // escape characters in quotes
     };
 
 public:
     CBracketsTree();
 
+    void setFileType(unsigned int uFileType, const tstr& fileExtension);
+
     void buildTree(CSciMessager& sciMsgr);
     void invalidateTree();
 
     const tBrPairItem* findPairByLeftBrPos(const Sci_Position nLeftBrPos, bool isExact = true) const;
     const tBrPairItem* findPairByRightBrPos(const Sci_Position nRightBrPos, bool isExact = true) const;
+    const tBrPairItem* findParentByPos(const Sci_Position nPos) const;
+    const tBrPairItem* findParent(const tBrPairItem* pItem) const;
 
 private:
     const tBrPair* getLeftBrPair(const char* p, size_t nLen) const;
     const tBrPair* getRightBrPair(const char* p, size_t nLen) const;
     
-    bool isEscapedPos(const char* pEntireText, const Sci_Position nPos) const;
+    bool isEscapedPos(const char* pTextBegin, const Sci_Position nPos) const;
 
 private:
     std::vector<tBrPairItem> m_bracketsTree;
     std::vector<const tBrPairItem*> m_bracketsByRightBr;
-    tFileSyntax m_fileSyntax;
+    std::list<tFileSyntax> m_fileSyntaxes;
+    const tFileSyntax* m_pFileSyntax{nullptr};
 };
 #endif
 
@@ -231,7 +245,7 @@ private:
     eCharProcessingResult autoBracketsFunc(TBracketType nBracketType);
     bool autoBracketsOverSelectionFunc(TBracketType nBracketType);
     bool isEnclosedInBrackets(const char* pszTextLeft, const char* pszTextRight, TBracketType* pnBracketType, bool bInSelection);
-    unsigned int detectFileType();
+    unsigned int detectFileType(tstr* pFileExt = nullptr);
 
     static bool isInBracketsStack(const std::vector<tBracketItem>& bracketsStack, TBracketType nBrType);
 
