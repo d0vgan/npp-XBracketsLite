@@ -126,6 +126,16 @@ public:
         bpMlLnComm    // multi-line comment pair
     };
 
+    enum eBrPairPosFlags
+    {
+        bpfNone     = 0x00,
+        bpfLeftBr   = 0x01, // ((
+        bpfRightBr  = 0x02, // ))
+        bpfBeforeBr = 0x10, // |((
+        bpfAfterBr  = 0x20, // ((|
+        bpfInsideBr = 0x40  // (|(
+    };
+
     struct tBrPair { // brackets, quotes or multi-line comments pair
         std::string leftBr;
         std::string rightBr;
@@ -158,6 +168,7 @@ public:
 
     const tBrPairItem* findPairByLeftBrPos(const Sci_Position nLeftBrPos, bool isExact = true) const;
     const tBrPairItem* findPairByRightBrPos(const Sci_Position nRightBrPos, bool isExact = true) const;
+    const tBrPairItem* findPairByPos(const Sci_Position nPos, bool isExact, unsigned int* puBrPosFlags) const;
     const tBrPairItem* findParentByPos(const Sci_Position nPos) const;
     const tBrPairItem* findParent(const tBrPairItem* pItem) const;
 

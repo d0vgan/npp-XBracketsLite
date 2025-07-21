@@ -454,9 +454,7 @@ void CBracketsTree::buildTree(CSciMessager& sciMsgr)
                             {
                                 // itrItem points to an unmatched left bracket, nPos is its right bracket
                                 itrItem->nRightBrPos = nPos; // |)
-                                auto itr = std::lower_bound(bracketsTree.begin(), bracketsTree.end(), itrItem->nLeftBrPos,
-                                    [](const tBrPairItem& item, Sci_Position nLeftBrPos){ return item.nLeftBrPos < nLeftBrPos; });
-                                bracketsTree.insert(itr, *itrItem);
+                                bracketsTree.push_back(*itrItem);
                                 // removing the enquoted unmatched brackets:
                                 unmatchedBrackets.erase(std::next(itrItem).base(), unmatchedBrackets.end());
                             }
@@ -479,9 +477,7 @@ void CBracketsTree::buildTree(CSciMessager& sciMsgr)
                         {
                             // item is an unmatched left bracket, nPos is its right bracket
                             item.nRightBrPos = nPos; // |)
-                            auto itr = std::lower_bound(bracketsTree.begin(), bracketsTree.end(), item.nLeftBrPos,
-                                [](const tBrPairItem& item, Sci_Position nLeftBrPos){ return item.nLeftBrPos < nLeftBrPos; });
-                            bracketsTree.insert(itr, item);
+                            bracketsTree.push_back(item);
 
                             // removing the enquoted unmatched brackets:
                             unmatchedBrackets.pop_back();
@@ -559,9 +555,7 @@ void CBracketsTree::buildTree(CSciMessager& sciMsgr)
                         {
                             // itrItem points to an unmatched left bracket, nPos is its right bracket
                             itrItem->nRightBrPos = nPos; // |)
-                            auto itr = std::lower_bound(bracketsTree.begin(), bracketsTree.end(), itrItem->nLeftBrPos,
-                                [](const tBrPairItem& item, Sci_Position nLeftBrPos){ return item.nLeftBrPos < nLeftBrPos; });
-                            bracketsTree.insert(itr, *itrItem);
+                            bracketsTree.push_back(*itrItem);
                             // removing the enquoted unmatched brackets:
                             unmatchedBrackets.erase(std::next(itrItem).base(), unmatchedBrackets.end());
                         }
@@ -576,6 +570,11 @@ void CBracketsTree::buildTree(CSciMessager& sciMsgr)
             }
         }
     }
+
+    std::sort(bracketsTree.begin(), bracketsTree.end(), 
+        [](const tBrPairItem& item1, const tBrPairItem& item2){
+            return item1.nLeftBrPos < item2.nLeftBrPos;
+    });
 
     std::vector<const tBrPairItem*> bracketsByRightBr;
 
@@ -712,6 +711,119 @@ const CBracketsTree::tBrPairItem* CBracketsTree::findPairByRightBrPos(const Sci_
     return nullptr;
 }
 
+const CBracketsTree::tBrPairItem* CBracketsTree::findPairByPos(const Sci_Position nPos, bool isExact, unsigned int* puBrPosFlags) const
+{
+    *puBrPosFlags = bpfNone;
+
+    if ( m_bracketsTree.empty() )
+        return nullptr;
+
+    const auto itrRightBegin = m_bracketsByRightBr.begin();
+    const auto itrRightEnd = m_bracketsByRightBr.end();
+    auto itrRightLocalEnd = itrRightEnd;
+    auto itrRightWithin = itrRightEnd;
+    auto itrRight = std::lower_bound(itrRightBegin, itrRightEnd, nPos,
+        [](const tBrPairItem* pItem, Sci_Position nPos) { return pItem->nRightBrPos < nPos; });
+
+    if ( itrRight == itrRightEnd )
+    {
+        --itrRight; // try the very last item, in case of ))| or )|)
+    }
+    else
+    {
+        itrRightLocalEnd = itrRight + 1; // stop right after the itrRight
+        if ( itrRight != itrRightBegin )
+            --itrRight; // in case of ))| or )|)
+    }
+
+    for ( ; itrRight != itrRightLocalEnd; ++itrRight )
+    {
+        unsigned int uBrPosFlags = bpfNone;
+        const Sci_Position nBeforeRightBrPos = (*itrRight)->nRightBrPos;
+        const Sci_Position nAfterRightBrPos = nBeforeRightBrPos + static_cast<Sci_Position>((*itrRight)->pBrPair->rightBr.length());
+
+        if ( nPos == nBeforeRightBrPos )
+            uBrPosFlags = (bpfRightBr | bpfBeforeBr); // |))
+        else if ( nPos == nAfterRightBrPos )
+            uBrPosFlags = (bpfRightBr | bpfAfterBr); // ))|
+        else if ( nPos > nBeforeRightBrPos && nPos < nAfterRightBrPos )
+            uBrPosFlags = (bpfRightBr | bpfInsideBr); // )|)
+
+        if ( uBrPosFlags != bpfNone )
+        {
+            *puBrPosFlags = uBrPosFlags;
+            return (*itrRight);
+        }
+
+        if ( !isExact && nPos > (*itrRight)->nLeftBrPos && nPos < (*itrRight)->nRightBrPos )
+        {
+            if ( itrRightWithin == itrRightEnd ||
+                 ((*itrRightWithin)->nRightBrPos - (*itrRightWithin)->nLeftBrPos > (*itrRight)->nRightBrPos - (*itrRight)->nLeftBrPos) )
+            {
+                itrRightWithin = itrRight;
+            }
+        }
+    }
+
+    const auto itrLeftBegin = m_bracketsTree.begin();
+    const auto itrLeftEnd = m_bracketsTree.end();
+    auto itrLeftWithin = itrLeftEnd;
+    auto itrLeft = std::lower_bound(itrLeftBegin, itrLeftEnd, nPos,
+        [](const tBrPairItem& item, Sci_Position nPos) { return item.nLeftBrPos < nPos; });
+
+    if ( itrLeft == itrLeftEnd && isExact )
+        return nullptr;
+
+    if ( !isExact && itrLeft != itrLeftBegin )
+        --itrLeft;
+
+    for ( ; itrLeft != itrLeftEnd; ++itrLeft )
+    {
+        unsigned int uBrPosFlags = bpfNone;
+        const Sci_Position nAfterLeftBrPos = itrLeft->nLeftBrPos;
+        const Sci_Position nBeforeLeftBrPos = nAfterLeftBrPos - static_cast<Sci_Position>(itrLeft->pBrPair->leftBr.length());
+        if ( nBeforeLeftBrPos > nPos )
+            break;
+
+        if ( nPos == nAfterLeftBrPos )
+            uBrPosFlags = (bpfLeftBr | bpfAfterBr); // ((|
+        else if ( nPos == nBeforeLeftBrPos )
+            uBrPosFlags = (bpfLeftBr | bpfBeforeBr); // |((
+        else if ( nPos > nBeforeLeftBrPos && nPos < nAfterLeftBrPos )
+            uBrPosFlags = (bpfLeftBr | bpfInsideBr); // (|(
+
+        if ( uBrPosFlags != bpfNone )
+        {
+            *puBrPosFlags = uBrPosFlags;
+            return &(*itrLeft);
+        }
+
+        if ( !isExact && nPos > itrLeft->nLeftBrPos && nPos < itrLeft->nRightBrPos )
+        {
+            if ( itrLeftWithin == itrLeftEnd ||
+                 (itrLeftWithin->nRightBrPos - itrLeftWithin->nLeftBrPos > itrLeft->nRightBrPos - itrLeft->nLeftBrPos) )
+            {
+                itrLeftWithin = itrLeft;
+            }
+        }
+    }
+
+    if ( !isExact )
+    {
+        if ( itrLeftWithin != itrLeftEnd )
+        {
+            if ( itrRightWithin == itrRightEnd ||
+                 ((*itrRightWithin)->nRightBrPos - (*itrRightWithin)->nLeftBrPos > itrLeftWithin->nRightBrPos - itrLeftWithin->nLeftBrPos) )
+                return &(*itrLeftWithin);
+        }
+
+        if ( itrRightWithin != itrRightEnd )
+            return (*itrRightWithin);
+    }
+
+    return nullptr;
+}
+
 const CBracketsTree::tBrPairItem* CBracketsTree::findParentByPos(const Sci_Position nPos) const
 {
     if ( nPos < 0 )
@@ -725,7 +837,7 @@ const CBracketsTree::tBrPairItem* CBracketsTree::findParent(const tBrPairItem* p
     if ( pItem == nullptr )
         return nullptr;
 
-    return findParentByPos(pItem->nLeftBrPos - 1);
+    return findParentByPos(pItem->nLeftBrPos - pItem->pBrPair->leftBr.length());
 }
 
 const CBracketsTree::tBrPair* CBracketsTree::getLeftBrPair(const char* p, size_t nLen) const
@@ -1641,93 +1753,21 @@ void CXBracketsLogic::PerformBracketsAction(eGetBracketsAction nBrAction)
         nBrType = tbtTag;
 
 #if XBR_USE_BRACKETSTREE
-    if ( isDuplicatedPair(nBrType) )
+    unsigned int uBrPosFlags = 0;
+    const auto pBrItem = m_bracketsTree.findPairByPos(nStartPos, false, &uBrPosFlags);
+    if ( pBrItem != nullptr )
     {
-        // try as a left bracket...
-        if ( nAtBr & abcBrIsOnRight )
-            ++nStartPos; //  |(  ->  (|
+        state.nLeftBrPos = pBrItem->nLeftBrPos;
+        state.nRightBrPos = pBrItem->nRightBrPos;
 
-        const auto pBrPairLeft = m_bracketsTree.findPairByLeftBrPos(nStartPos, nAtBr != abcNone);
-        if ( pBrPairLeft && (pBrPairLeft->nLeftBrPos == nStartPos || (nAtBr == abcNone && pBrPairLeft->nLeftBrPos < nStartPos && pBrPairLeft->nRightBrPos > nStartPos)) )
+        if ( uBrPosFlags == (CBracketsTree::bpfLeftBr | CBracketsTree::bpfBeforeBr) ||
+             uBrPosFlags == (CBracketsTree::bpfRightBr | CBracketsTree::bpfAfterBr) )
         {
-            state.nLeftBrPos = pBrPairLeft->nLeftBrPos;
-            state.nRightBrPos = pBrPairLeft->nRightBrPos;
-
-            if ( nAtBr & abcBrIsOnRight )
-            {
-                ++state.nRightBrPos; //  |)  ->  )|
-                --state.nLeftBrPos;  //  (|  ->  |(
-            }
-
-            isBrPairFound = true;
+            state.nRightBrPos += static_cast<Sci_Position>(pBrItem->pBrPair->rightBr.length()); //  |)  ->  )|
+            state.nLeftBrPos -= static_cast<Sci_Position>(pBrItem->pBrPair->leftBr.length());  //  (|  ->  |(
         }
-        else
-        {
-            // try as a right bracket...
-            nStartPos = state.nCharPos;
-            if ( nAtBr & abcBrIsOnLeft )
-                --nStartPos; //  )|  ->  |)
 
-            const auto pBrPairRight = m_bracketsTree.findPairByRightBrPos(nStartPos, nAtBr != abcNone);
-            if ( pBrPairRight && (pBrPairRight->nRightBrPos == nStartPos || (nAtBr == abcNone && pBrPairRight->nRightBrPos > nStartPos && pBrPairRight->nLeftBrPos < nStartPos)) )
-            {
-                state.nLeftBrPos = pBrPairRight->nLeftBrPos;
-                state.nRightBrPos = pBrPairRight->nRightBrPos;
-
-                if ( nAtBr & abcBrIsOnLeft )
-                {
-                    ++state.nRightBrPos; //  |)  ->  )|
-                    --state.nLeftBrPos;  //  (|  ->  |(
-                }
-
-                isBrPairFound = true;
-            }
-        }
-    }
-    else
-    {
-        if ( nAtBr & abcRightBr )
-        {
-            // at right bracket...
-            if ( nAtBr & abcBrIsOnLeft )
-                --nStartPos; //  )|  ->  |)
-
-            const auto pBrPair = m_bracketsTree.findPairByRightBrPos(nStartPos);
-            if ( pBrPair && pBrPair->nRightBrPos == nStartPos )
-            {
-                state.nLeftBrPos = pBrPair->nLeftBrPos;
-                state.nRightBrPos = pBrPair->nRightBrPos;
-
-                if ( nAtBr & abcBrIsOnLeft )
-                {
-                    ++state.nRightBrPos; //  |)  ->  )|
-                    --state.nLeftBrPos;  //  (|  ->  |(
-                }
-
-                isBrPairFound = true;
-            }
-        }
-        else if ( (nAtBr & abcLeftBr) || nBrAction == baGoToNearest || nBrAction == baSelToNearest )
-        {
-            // at left bracket...
-            if ( nAtBr & abcBrIsOnRight )
-                ++nStartPos; //  |(  ->  (|
-
-            const auto pBrPair = m_bracketsTree.findPairByLeftBrPos(nStartPos, nAtBr != abcNone);
-            if ( pBrPair && (pBrPair->nLeftBrPos == nStartPos || (nAtBr == abcNone && pBrPair->nLeftBrPos < nStartPos && pBrPair->nRightBrPos > nStartPos)) )
-            {
-                state.nLeftBrPos = pBrPair->nLeftBrPos;
-                state.nRightBrPos = pBrPair->nRightBrPos;
-
-                if ( nAtBr & abcBrIsOnRight )
-                {
-                    ++state.nRightBrPos; //  |)  ->  )|
-                    --state.nLeftBrPos;  //  (|  ->  |(
-                }
-
-                isBrPairFound = true;
-            }
-        }
+        isBrPairFound = true;
     }
 #else
     if ( nAtBr & abcLeftBr )
