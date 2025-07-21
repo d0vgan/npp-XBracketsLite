@@ -602,24 +602,52 @@ void CBracketsTree::updateTree(const SCNotification* pscn)
     if ( m_pFileSyntax == nullptr || m_bracketsTree.empty() )
         return; // nothing to do
 
-    if ( (pscn->modificationType & (SC_MOD_INSERTTEXT | SC_MOD_DELETETEXT)) == 0 )
+    if ( (pscn->modificationType & (SC_MOD_INSERTTEXT | SC_MOD_DELETETEXT | SC_MOD_BEFOREINSERT | SC_MOD_BEFOREDELETE)) == 0 )
         return; // unsupported modification type
 
     bool needsInvalidate = false;
-    unsigned int uBrPosFlags = 0;
-    const tBrPairItem* pBrItem = findPairByPos(pscn->position, false, &uBrPosFlags);
 
-    // TODO: handle  /|/  -->  / |/  on typing ' '
-    // TODO: handle  / |/  -->  /|/  on Undo
+    // 1. checking the document's text around pscn->position
+    CSciMessager sciMsgr(reinterpret_cast<HWND>(pscn->nmhdr.hwndFrom));
 
-    if ( pBrItem != nullptr )
+    const Sci_Position nTextLen = sciMsgr.getTextLength();
+    Sci_Position nPos1 = pscn->position >= 8 ? pscn->position - 8 : 0;
+    Sci_Position nPos2 = pscn->position + 8 < nTextLen ? pscn->position + 8 : nTextLen;
+    size_t nOffset = pscn->position >= 8 ? 0 : 8 - pscn->position;
+
+    char szText[18]{};
+    sciMsgr.getTextRange(nPos1, nPos2, szText + nOffset);
+
+    for ( auto& item : m_pFileSyntax->pairs )
     {
-        if ( uBrPosFlags & bpfInsideBr )
+        size_t nBrLen = item.leftBr.length();
+        if ( nBrLen > 1 )
         {
-            needsInvalidate = true;
+            const char* p = strstr(szText + 9 - nBrLen, item.leftBr.c_str());
+            if ( p != nullptr && p < szText + 8 ) // inside the left bracket
+            {
+                needsInvalidate = true;
+                break;
+            }
         }
-        else
+
+        nBrLen = item.rightBr.length();
+        if ( nBrLen > 1 )
         {
+            const char* p = strstr(szText + 9 - nBrLen, item.rightBr.c_str());
+            if ( p != nullptr && p < szText + 8 ) // inside the right bracket
+            {
+                needsInvalidate = true;
+                break;
+            }
+        }
+    }
+
+    if ( pscn->modificationType & (SC_MOD_INSERTTEXT | SC_MOD_DELETETEXT) )
+    {
+        if ( !needsInvalidate )
+        {
+            // 2. checking for inserted/deleted new line
             const char* p = pscn->text;
             const char* const pEnd = p + pscn->length;
 
@@ -633,29 +661,30 @@ void CBracketsTree::updateTree(const SCNotification* pscn)
                 }
             }
         }
-    }
 
-    if ( !needsInvalidate )
-    {
-        const char* p = pscn->text;
-        const char* const pEnd = p + pscn->length;
-
-        for ( ; p != pEnd && !needsInvalidate; ++p )
+        if ( !needsInvalidate )
         {
-            for ( auto& item : m_pFileSyntax->pairs )
-            {
-                size_t nBrLen = item.leftBr.length();
-                if ( nBrLen != 0 && p + nBrLen < pEnd && strstr(p, item.leftBr.c_str()) != nullptr )
-                {
-                    needsInvalidate = true;
-                    break;
-                }
+            // 3. checking for inserted/deleted brackets or quotes
+            const char* p = pscn->text;
+            const char* const pEnd = p + pscn->length;
 
-                nBrLen = item.rightBr.length();
-                if ( nBrLen != 0 && p + nBrLen < pEnd && strstr(p, item.rightBr.c_str()) != nullptr )
+            for ( ; p != pEnd && !needsInvalidate; ++p )
+            {
+                for ( auto& item : m_pFileSyntax->pairs )
                 {
-                    needsInvalidate = true;
-                    break;
+                    size_t nBrLen = item.leftBr.length();
+                    if ( nBrLen != 0 && p + nBrLen <= pEnd && strstr(p, item.leftBr.c_str()) != nullptr )
+                    {
+                        needsInvalidate = true;
+                        break;
+                    }
+
+                    nBrLen = item.rightBr.length();
+                    if ( nBrLen != 0 && p + nBrLen <= pEnd && strstr(p, item.rightBr.c_str()) != nullptr )
+                    {
+                        needsInvalidate = true;
+                        break;
+                    }
                 }
             }
         }
@@ -977,7 +1006,7 @@ void CXBracketsLogic::InvalidateCachedBrackets(unsigned int uInvalidateFlags, SC
 #if XBR_USE_BRACKETSTREE
     if ( uInvalidateFlags & icbfTree )
     {
-        if ( pscn == nullptr || (pscn->modificationType & (SC_MOD_INSERTTEXT | SC_MOD_DELETETEXT)) == 0 )
+        if ( pscn == nullptr || (pscn->modificationType & (SC_MOD_INSERTTEXT | SC_MOD_DELETETEXT | SC_MOD_BEFOREINSERT | SC_MOD_BEFOREDELETE)) == 0 )
             m_bracketsTree.invalidateTree();
         else
             m_bracketsTree.updateTree(pscn);
@@ -1796,7 +1825,7 @@ void CXBracketsLogic::PerformBracketsAction(eGetBracketsAction nBrAction)
 #if XBR_USE_BRACKETSTREE
     unsigned int uBrPosFlags = 0;
     const auto pBrItem = m_bracketsTree.findPairByPos(nStartPos, false, &uBrPosFlags);
-    if ( pBrItem != nullptr )
+    if ( pBrItem != nullptr && pBrItem->nRightBrPos != -1 )
     {
         state.nLeftBrPos = pBrItem->nLeftBrPos;
         state.nRightBrPos = pBrItem->nRightBrPos;

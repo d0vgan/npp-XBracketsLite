@@ -208,7 +208,7 @@ void CXBracketsPlugin::OnNppReady()
     m_BracketsLogic.UpdateFileType();
     m_BracketsLogic.InvalidateCachedBrackets();
 
-    m_nppMsgr.SendNppMsg(NPPM_ADDSCNMODIFIEDFLAGS, 0, SC_MOD_INSERTTEXT | SC_MOD_DELETETEXT);
+    m_nppMsgr.SendNppMsg(NPPM_ADDSCNMODIFIEDFLAGS, 0, SC_MOD_INSERTTEXT | SC_MOD_DELETETEXT | SC_MOD_BEFOREINSERT | SC_MOD_BEFOREDELETE);
 
     auto pSetWindowLongPtr = isNppWndUnicode ? SetWindowLongPtrW : SetWindowLongPtrA;
 
@@ -286,7 +286,7 @@ CXBracketsLogic::eCharProcessingResult CXBracketsPlugin::OnSciChar(const int ch)
 
 void CXBracketsPlugin::OnSciModified(SCNotification* pscn)
 {
-    if ( pscn->modificationType & (SC_MOD_INSERTTEXT | SC_MOD_DELETETEXT) )
+    if ( pscn->modificationType & (SC_MOD_INSERTTEXT | SC_MOD_DELETETEXT | SC_MOD_BEFOREINSERT | SC_MOD_BEFOREDELETE) )
     {
         OnSciTextChanged(pscn);
     }
