@@ -597,7 +597,7 @@ void CBracketsTree::invalidateTree()
     m_bracketsByRightBr.clear();
 }
 
-void CBracketsTree::updateTree(SCNotification* pscn)
+void CBracketsTree::updateTree(const SCNotification* pscn)
 {
     if ( m_pFileSyntax == nullptr || m_bracketsTree.empty() )
         return; // nothing to do
@@ -605,18 +605,58 @@ void CBracketsTree::updateTree(SCNotification* pscn)
     if ( (pscn->modificationType & (SC_MOD_INSERTTEXT | SC_MOD_DELETETEXT)) == 0 )
         return; // unsupported modification type
 
-    const std::string text(pscn->text, pscn->length);
+    bool needsInvalidate = false;
+    unsigned int uBrPosFlags = 0;
+    const tBrPairItem* pBrItem = findPairByPos(pscn->position, false, &uBrPosFlags);
 
-    bool needsInvalidate = (text.find_first_of("\n\r") != std::string::npos); // potentially a new line within quotes
+    // TODO: handle  /|/  -->  / |/  on typing ' '
+    // TODO: handle  / |/  -->  /|/  on Undo
+
+    if ( pBrItem != nullptr )
+    {
+        if ( uBrPosFlags & bpfInsideBr )
+        {
+            needsInvalidate = true;
+        }
+        else
+        {
+            const char* p = pscn->text;
+            const char* const pEnd = p + pscn->length;
+
+            for ( ; p != pEnd; ++p )
+            {
+                const char ch = *p;
+                if ( ch == '\n' || ch == '\r' )
+                {
+                    needsInvalidate = true;
+                    break;
+                }
+            }
+        }
+    }
+
     if ( !needsInvalidate )
     {
-        for ( auto& item : m_pFileSyntax->pairs )
+        const char* p = pscn->text;
+        const char* const pEnd = p + pscn->length;
+
+        for ( ; p != pEnd && !needsInvalidate; ++p )
         {
-            if ( (item.leftBr.length() != 0 && text.find(item.leftBr) != std::string::npos) ||
-                 (item.rightBr.length() != 0 && text.find(item.rightBr) != std::string::npos) )
+            for ( auto& item : m_pFileSyntax->pairs )
             {
-                needsInvalidate = true;
-                break;
+                size_t nBrLen = item.leftBr.length();
+                if ( nBrLen != 0 && p + nBrLen < pEnd && strstr(p, item.leftBr.c_str()) != nullptr )
+                {
+                    needsInvalidate = true;
+                    break;
+                }
+
+                nBrLen = item.rightBr.length();
+                if ( nBrLen != 0 && p + nBrLen < pEnd && strstr(p, item.rightBr.c_str()) != nullptr )
+                {
+                    needsInvalidate = true;
+                    break;
+                }
             }
         }
     }
@@ -627,8 +667,9 @@ void CBracketsTree::updateTree(SCNotification* pscn)
         return; // tree needs to be recreated
     }
 
-    const Sci_Position len = pscn->length;
     const Sci_Position pos = pscn->position;
+    const Sci_Position len = pscn->length;
+
     if ( pscn->modificationType & SC_MOD_INSERTTEXT )
     {
         for ( auto& item : m_bracketsTree )

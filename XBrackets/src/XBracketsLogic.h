@@ -164,7 +164,7 @@ public:
     bool isTreeEmpty() const;
     void buildTree(CSciMessager& sciMsgr);
     void invalidateTree();
-    void updateTree(SCNotification* pscn);
+    void updateTree(const SCNotification* pscn);
 
     const tBrPairItem* findPairByLeftBrPos(const Sci_Position nLeftBrPos, bool isExact = true) const;
     const tBrPairItem* findPairByRightBrPos(const Sci_Position nRightBrPos, bool isExact = true) const;
