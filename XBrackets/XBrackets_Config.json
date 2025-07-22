@@ -1,0 +1,35 @@
+{
+  "fileSyntax": [
+    {
+      "name": "C/C++",
+      "fileExtensions": [
+        "c", "cc", "cpp", "cxx", "h", "hh", "hpp", "hxx"
+      ],
+      "elements": [
+        [ "{", "}", "brackets" ],
+        [ "(", ")", "brackets" ],
+        [ "[", "]", "brackets" ],
+        [ "\"", "\"", "single-line-quotes" ],
+        [ "'", "'", "single-line-quotes" ],
+        [ "//", "", "single-line-comment" ],
+        [ "/*", "*/", "multi-line-comment" ],
+        [ "\\", "escape-char" ]
+      ]
+    },
+    {
+      "name": "HTML/XML",
+      "fileExtensions": [
+        "htm", "html", "xml"
+      ],
+      "elements": [
+        [ "<!--", "-->", "multi-line-comment" ],
+        [ "<", ">", "brackets" ],
+        [ "\"", "\"", "single-line-quotes" ],
+        [ "'", "'", "single-line-quotes" ],
+        [ "{", "}", "brackets" ],
+        [ "(", ")", "brackets" ],
+        [ "[", "]", "brackets" ]
+      ]
+    }
+  ]
+}

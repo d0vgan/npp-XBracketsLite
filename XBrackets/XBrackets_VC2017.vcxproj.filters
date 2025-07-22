@@ -13,6 +13,12 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav</Extensions>
     </Filter>
+    <Filter Include="Header Files\json11">
+      <UniqueIdentifier>{d53ac409-977f-4468-b529-c3ca424d48c0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\json11">
+      <UniqueIdentifier>{002f14a6-3cb3-4103-b997-efac32c2b4b0}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Main.cpp">
@@ -44,6 +50,9 @@
     </ClCompile>
     <ClCompile Include="src\XBracketsLogic.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\json11\json11.cpp">
+      <Filter>Source Files\json11</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -79,6 +88,9 @@
     </ClInclude>
     <ClInclude Include="src\XBracketsLogic.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\json11\json11.hpp">
+      <Filter>Header Files\json11</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
