@@ -14,6 +14,9 @@
         [ "//", "", "single-line-comment" ],
         [ "/*", "*/", "multi-line-comment" ],
         [ "\\", "escape-char" ]
+      ],
+      "autocomplete": [
+        [ "/*", "*/" ]
       ]
     },
     {
@@ -44,6 +47,9 @@
         [ "%", "%", "single-line-quotes" ],
         [ "REM", "", "single-line-comment" ],
         [ "::", "", "single-line-comment" ]
+      ],
+      "autocomplete": [
+        [ "%", "%" ]
       ]
     }
   ]

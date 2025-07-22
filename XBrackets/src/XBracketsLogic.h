@@ -155,7 +155,8 @@ public:
     struct tFileSyntax {
         std::string name;
         std::set<tstr> fileExtensions;
-        std::vector<tBrPair> pairs;        // pairs
+        std::vector<tBrPair> pairs;        // pairs (syntax)
+        std::vector<tBrPair> autocomplete; // user-defined pairs for auto-completion
         std::vector<std::string> qtEsc;    // escape characters in quotes
     };
 
@@ -164,6 +165,9 @@ public:
 
     void readConfig(const tstr& cfgFilePath);
     void setFileType(unsigned int uFileType, const tstr& fileExtension);
+
+    unsigned int getAutocompleteLeftBracketType(CSciMessager& sciMsgr, const char ch) const;
+    const tBrPair* getAutoCompleteBrPair(unsigned int nBracketType) const;
 
     bool isTreeEmpty() const;
     void buildTree(CSciMessager& sciMsgr);
@@ -258,9 +262,9 @@ private:
 
 private:
     // custom functions
-    eCharProcessingResult autoBracketsFunc(TBracketType nBracketType);
-    bool autoBracketsOverSelectionFunc(TBracketType nBracketType);
-    bool isEnclosedInBrackets(const char* pszTextLeft, const char* pszTextRight, TBracketType* pnBracketType, bool bInSelection);
+    eCharProcessingResult autoBracketsFunc(unsigned int nBracketType);
+    bool autoBracketsOverSelectionFunc(unsigned int nBracketType);
+    bool isEnclosedInBrackets(const char* pszTextLeft, const char* pszTextRight, unsigned int* pnBracketType, bool bInSelection);
     unsigned int detectFileType(tstr* pFileExt = nullptr);
 
     static bool isInBracketsStack(const std::vector<tBracketItem>& bracketsStack, TBracketType nBrType);

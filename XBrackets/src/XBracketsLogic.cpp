@@ -327,7 +327,7 @@ CBracketsTree::CBracketsTree()
 {
 }
 
-static CBracketsTree::tBrPair readBrPairItem(const json11::Json& pairItem)
+static CBracketsTree::tBrPair readBrPairItem(const json11::Json& pairItem, bool isKindRequired)
 {
     CBracketsTree::tBrPair brPair;
 
@@ -338,20 +338,23 @@ static CBracketsTree::tBrPair readBrPairItem(const json11::Json& pairItem)
             const std::string& val = elem.string_value();
 
             CBracketsTree::eBrPairKind kind = CBracketsTree::bpkNone;
-            if ( brPair.kind == CBracketsTree::bpkNone )
+            if ( isKindRequired )
             {
-                if ( val == "brackets" )
-                    kind = CBracketsTree::bpkBrackets;
-                else if ( val == "single-line-quotes" )
-                    kind = CBracketsTree::bpkSgLnQuotes;
-                else if ( val == "multi-line-quotes" )
-                    kind = CBracketsTree::bpkMlLnQuotes;
-                else if ( val == "single-line-comment" )
-                    kind = CBracketsTree::bpkSgLnComm;
-                else if ( val == "multi-line-comment" )
-                    kind = CBracketsTree::bpkMlLnComm;
-                else if ( val == "escape-char" )
-                    kind = CBracketsTree::bpkEsqChar;
+                if ( brPair.kind == CBracketsTree::bpkNone )
+                {
+                    if ( val == "brackets" )
+                        kind = CBracketsTree::bpkBrackets;
+                    else if ( val == "single-line-quotes" )
+                        kind = CBracketsTree::bpkSgLnQuotes;
+                    else if ( val == "multi-line-quotes" )
+                        kind = CBracketsTree::bpkMlLnQuotes;
+                    else if ( val == "single-line-comment" )
+                        kind = CBracketsTree::bpkSgLnComm;
+                    else if ( val == "multi-line-comment" )
+                        kind = CBracketsTree::bpkMlLnComm;
+                    else if ( val == "escape-char" )
+                        kind = CBracketsTree::bpkEsqChar;
+                }
             }
 
             if ( kind != CBracketsTree::bpkNone )
@@ -400,7 +403,7 @@ static CBracketsTree::tFileSyntax readFileSyntaxItem(const json11::Json& syntaxI
                 {
                     if ( elementItem.is_array() )
                     {
-                        CBracketsTree::tBrPair brPair = readBrPairItem(elementItem);
+                        CBracketsTree::tBrPair brPair = readBrPairItem(elementItem, true);
 
                         if ( brPair.kind != CBracketsTree::bpkNone )
                         {
@@ -408,6 +411,24 @@ static CBracketsTree::tFileSyntax readFileSyntaxItem(const json11::Json& syntaxI
                                 fileSyntax.pairs.push_back(std::move(brPair));
                             else
                                 fileSyntax.qtEsc.push_back(std::move(brPair.leftBr));
+                        }
+                    }
+                }
+            }
+        }
+        else if ( propItem.first == "autocomplete" )
+        {
+            if ( propItem.second.is_array() )
+            {
+                for ( const auto& autocomplItem : propItem.second.array_items() )
+                {
+                    if ( autocomplItem.is_array() )
+                    {
+                        CBracketsTree::tBrPair brPair = readBrPairItem(autocomplItem, false);
+
+                        if ( !brPair.leftBr.empty() && !brPair.rightBr.empty() )
+                        {
+                            fileSyntax.autocomplete.push_back(std::move(brPair));
                         }
                     }
                 }
@@ -463,6 +484,50 @@ void CBracketsTree::setFileType(unsigned int uFileType, const tstr& fileExtensio
             break;
         }
     }
+}
+
+unsigned int CBracketsTree::getAutocompleteLeftBracketType(CSciMessager& sciMsgr, const char ch) const
+{
+    if ( m_pFileSyntax == nullptr )
+        return tbtNone;
+
+    char text[8]{};
+    Sci_Position nLen = 6;
+    Sci_Position nEditPos = sciMsgr.getSelectionStart();
+    if ( nEditPos < 6 )
+    {
+        nLen = nEditPos;
+        nEditPos = 0;
+    }
+    else
+    {
+        nEditPos -= 6;
+    }
+    sciMsgr.getTextRange(nEditPos, nEditPos + nLen, text);
+    text[nLen] = ch;
+    text[nLen + 1] = 0;
+
+    unsigned int idx = 0;
+    for ( const auto& brPair : m_pFileSyntax->autocomplete )
+    {
+        if ( brPair.leftBr.length() > static_cast<size_t>(nLen) + 1 )
+            continue;
+        
+        if ( strcmp(text + nLen + 1 - brPair.leftBr.length(), brPair.leftBr.c_str()) == 0 )
+            return (tbtCount + idx);
+
+        ++idx;
+    }
+
+    return tbtNone;
+}
+
+const CBracketsTree::tBrPair* CBracketsTree::getAutoCompleteBrPair(unsigned int nBracketType) const
+{
+    if ( m_pFileSyntax == nullptr || m_pFileSyntax->autocomplete.size() <= nBracketType - tbtCount )
+        return nullptr;
+
+    return &m_pFileSyntax->autocomplete[nBracketType - tbtCount];
 }
 
 bool CBracketsTree::isTreeEmpty() const
@@ -1174,9 +1239,17 @@ CXBracketsLogic::eCharProcessingResult CXBracketsLogic::OnChar(const int ch)
         }
     }
 
-    TBracketType nLeftBracketType = getLeftBracketType(ch);
+    unsigned int nLeftBracketType = getLeftBracketType(ch);
     if ( nLeftBracketType == tbtNone )
+    {
+#if XBR_USE_BRACKETSTREE
+        nLeftBracketType = m_bracketsTree.getAutocompleteLeftBracketType(sciMsgr, static_cast<char>(ch));
+        if ( nLeftBracketType == tbtNone )
+            return cprNone;
+#else
         return cprNone;
+#endif
+    }
 
     // a typed character is a bracket
     return autoBracketsFunc(nLeftBracketType);
@@ -2131,7 +2204,7 @@ void CXBracketsLogic::UpdateFileType()
 #endif
 }
 
-CXBracketsLogic::eCharProcessingResult CXBracketsLogic::autoBracketsFunc(TBracketType nBracketType)
+CXBracketsLogic::eCharProcessingResult CXBracketsLogic::autoBracketsFunc(unsigned int nBracketType)
 {
     if ( autoBracketsOverSelectionFunc(nBracketType) )
         return cprSelAutoCompl;
@@ -2172,6 +2245,7 @@ CXBracketsLogic::eCharProcessingResult CXBracketsLogic::autoBracketsFunc(TBracke
         bNextCharOK = true;
     }
 
+    // TODO: update for m_bracketsTree.getAutoCompleteBrPair as well
     TBracketType nRightBracketType = getRightBracketType(next_ch, bofIgnoreMode);
     if ( nRightBracketType != tbtNone )
     {
@@ -2211,7 +2285,23 @@ CXBracketsLogic::eCharProcessingResult CXBracketsLogic::autoBracketsFunc(TBracke
 
         sciMsgr.beginUndoAction();
         // inserting the brackets pair
+#if XBR_USE_BRACKETSTREE
+        if ( nBracketType < tbtCount )
+        {
+            sciMsgr.replaceSelText(strBrackets[nBracketType]);
+        }
+        else
+        {
+            const CBracketsTree::tBrPair* pBrPair = m_bracketsTree.getAutoCompleteBrPair(nBracketType);
+            std::string brPair;
+            brPair.reserve(1 + pBrPair->rightBr.length());
+            brPair += pBrPair->leftBr.back();
+            brPair += pBrPair->rightBr;
+            sciMsgr.replaceSelText(brPair.c_str());
+        }
+#else
         sciMsgr.replaceSelText(strBrackets[nBracketType]);
+#endif
         // placing the caret between brackets
         ++nEditPos;
         sciMsgr.setSel(nEditPos, nEditPos);
@@ -2224,12 +2314,12 @@ CXBracketsLogic::eCharProcessingResult CXBracketsLogic::autoBracketsFunc(TBracke
     return cprNone;
 }
 
-bool CXBracketsLogic::isEnclosedInBrackets(const char* pszTextLeft, const char* pszTextRight, TBracketType* pnBracketType, bool bInSelection)
+bool CXBracketsLogic::isEnclosedInBrackets(const char* pszTextLeft, const char* pszTextRight, unsigned int* pnBracketType, bool bInSelection)
 {
     if ( pszTextLeft == pszTextRight )
         return false;
 
-    TBracketType nBrType = *pnBracketType;
+    unsigned int nBrType = *pnBracketType;
     const char* cszBrPair = strBrackets[nBrType];
 
     if ( pszTextLeft[0] != cszBrPair[0] )
@@ -2271,7 +2361,7 @@ bool CXBracketsLogic::isEnclosedInBrackets(const char* pszTextLeft, const char* 
     return bRet;
 }
 
-bool CXBracketsLogic::autoBracketsOverSelectionFunc(TBracketType nBracketType)
+bool CXBracketsLogic::autoBracketsOverSelectionFunc(unsigned int nBracketType)
 {
     const UINT uSelAutoBr = g_opt.getBracketsSelAutoBr();
     if ( uSelAutoBr == CXBracketsOptions::sabNone )
@@ -2296,8 +2386,23 @@ bool CXBracketsLogic::autoBracketsOverSelectionFunc(TBracketType nBracketType)
     if ( nBracketType == tbtTag && g_opt.getBracketsDoTag2() )
         nBracketType = tbtTag2;
 
-    TBracketType nBrAltType = nBracketType;
+    unsigned int nBrAltType = nBracketType;
+#if XBR_USE_BRACKETSTREE
+    int nBrPairLen = 0;
+    if ( nBracketType < tbtCount )
+    {
+        nBrPairLen = lstrlenA(strBrackets[nBracketType]);
+    }
+    else
+    {
+        const CBracketsTree::tBrPair* pBrPair = m_bracketsTree.getAutoCompleteBrPair(nBracketType);
+        nBrPairLen = static_cast<int>(pBrPair->leftBr.length()) + static_cast<int>(pBrPair->rightBr.length());
+        // TODO: implement this
+        return false;
+    }
+#else
     int nBrPairLen = lstrlenA(strBrackets[nBracketType]);
+#endif
 
     // getting the selected text
     const Sci_Position nSelLen = sciMsgr.getSelText(nullptr);
