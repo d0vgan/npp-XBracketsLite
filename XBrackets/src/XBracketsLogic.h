@@ -9,7 +9,7 @@
 
 typedef std::basic_string<TCHAR> tstr;
 
-#define XBR_USE_BRACKETSTREE 0
+#define XBR_USE_BRACKETSTREE 1
 
 #if XBR_USE_BRACKETSTREE
 #include <set>
@@ -118,12 +118,13 @@ class CBracketsTree : public CBracketsCommon
 {
 public:
     enum eBrPairKind {
-        bpNone = 0,
-        bpBrackets,   // brackets pair
-        bpSgLnQuotes, // sinle-line quotes pair
-        bpMlLnQuotes, // multi-line quotes pair
-        bpSgLnComm,   // single-line comment
-        bpMlLnComm    // multi-line comment pair
+        bpkNone = 0,
+        bpkBrackets,   // brackets pair
+        bpkSgLnQuotes, // sinle-line quotes pair
+        bpkMlLnQuotes, // multi-line quotes pair
+        bpkSgLnComm,   // single-line comment
+        bpkMlLnComm,   // multi-line comment pair
+        bpkEsqChar
     };
 
     enum eBrPairPosFlags
@@ -139,7 +140,7 @@ public:
     struct tBrPair { // brackets, quotes or multi-line comments pair
         std::string leftBr;
         std::string rightBr;
-        eBrPairKind kind{bpNone};
+        eBrPairKind kind{bpkNone};
     };
 
     struct tBrPairItem
@@ -147,10 +148,12 @@ public:
         Sci_Position nLeftBrPos{-1};  // (| 
         Sci_Position nRightBrPos{-1}; // |)
         Sci_Position nLine{-1}; // only for internal comparison
+        Sci_Position nParentLeftBrPos{-1};
         const tBrPair* pBrPair{};
     };
 
     struct tFileSyntax {
+        std::string name;
         std::set<tstr> fileExtensions;
         std::vector<tBrPair> pairs;        // pairs
         std::vector<std::string> qtEsc;    // escape characters in quotes
@@ -159,6 +162,7 @@ public:
 public:
     CBracketsTree();
 
+    void readConfig(const tstr& cfgFilePath);
     void setFileType(unsigned int uFileType, const tstr& fileExtension);
 
     bool isTreeEmpty() const;
@@ -166,16 +170,13 @@ public:
     void invalidateTree();
     void updateTree(const SCNotification* pscn);
 
-    const tBrPairItem* findPairByLeftBrPos(const Sci_Position nLeftBrPos, bool isExact = true) const;
-    const tBrPairItem* findPairByRightBrPos(const Sci_Position nRightBrPos, bool isExact = true) const;
     const tBrPairItem* findPairByPos(const Sci_Position nPos, bool isExact, unsigned int* puBrPosFlags) const;
-    const tBrPairItem* findParentByPos(const Sci_Position nPos) const;
-    const tBrPairItem* findParent(const tBrPairItem* pItem) const;
+    const tBrPairItem* findParent(const tBrPairItem* pBrPair) const;
 
 private:
     const tBrPair* getLeftBrPair(const char* p, size_t nLen) const;
     const tBrPair* getRightBrPair(const char* p, size_t nLen) const;
-    
+
     bool isEscapedPos(const char* pTextBegin, const Sci_Position nPos) const;
 
 private:
@@ -217,6 +218,7 @@ public:
 
     // interaction with the plugin
     void SetNppData(const NppData& nppd);
+    void ReadConfig(const tstr& cfgFilePath);
     void UpdateFileType();
     void InvalidateCachedBrackets(unsigned int uInvalidateFlags = icbfAll, SCNotification* pscn = nullptr);
     eCharProcessingResult OnChar(const int ch);

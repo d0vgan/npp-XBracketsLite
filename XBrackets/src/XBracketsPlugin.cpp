@@ -170,6 +170,10 @@ void CXBracketsPlugin::OnNppSetInfo(const NppData& nppd)
     m_PluginMenu.SetNppData(nppd);
     m_BracketsLogic.SetNppData(nppd);
     isNppWndUnicode = ::IsWindowUnicode(nppd._nppHandle) ? true : false;
+
+    tstr cfgFilePath(getDllDir());
+    cfgFilePath.append(_T("\\XBrackets_Config.json"));
+    m_BracketsLogic.ReadConfig(cfgFilePath);
 }
 
 void CXBracketsPlugin::OnNppBufferActivated()
@@ -328,7 +332,7 @@ void CXBracketsPlugin::ReadOptions()
 
     m_nppMsgr.getPluginsConfigDir(2*MAX_PATH, szPath);
     lstrcat(szPath, _T("\\"));
-    lstrcat(szPath, m_szIniFileName);
+    lstrcat(szPath, m_sIniFileName.c_str());
 
     g_opt.ReadOptions(szPath);
 }
@@ -341,7 +345,7 @@ void CXBracketsPlugin::SaveOptions()
 
         m_nppMsgr.getPluginsConfigDir(2*MAX_PATH, szPath);
         lstrcat(szPath, _T("\\"));
-        lstrcat(szPath, m_szIniFileName);
+        lstrcat(szPath, m_sIniFileName.c_str());
 
         g_opt.SaveOptions(szPath);
     }
