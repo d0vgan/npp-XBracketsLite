@@ -19,7 +19,7 @@
     {
       "name": "HTML/XML",
       "fileExtensions": [
-        "htm", "html", "xml"
+        "htm", "html", "xml", "vcxproj", "csproj"
       ],
       "elements": [
         [ "<!--", "-->", "multi-line-comment" ],
@@ -29,6 +29,21 @@
         [ "{", "}", "brackets" ],
         [ "(", ")", "brackets" ],
         [ "[", "]", "brackets" ]
+      ]
+    },
+    {
+      "name": "bat/cmd",
+      "fileExtensions": [
+        "bat", "cmd"
+      ],
+      "elements": [
+        [ "(", ")", "brackets" ],
+        [ "[", "]", "brackets" ],
+        [ "\"", "\"", "single-line-quotes" ],
+        [ "'", "'", "single-line-quotes" ],
+        [ "%", "%", "single-line-quotes" ],
+        [ "REM", "", "single-line-comment" ],
+        [ "::", "", "single-line-comment" ]
       ]
     }
   ]

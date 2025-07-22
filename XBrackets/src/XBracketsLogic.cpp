@@ -994,7 +994,8 @@ const CBracketsTree::tBrPairItem* CBracketsTree::findPairByPos(const Sci_Positio
         if ( itrRightWithin != itrRightEnd )
             return (*itrRightWithin);
 
-        return findParent(&(*itrLeftFound));
+        if ( itrLeftFound != itrLeftEnd )
+            return findParent(&(*itrLeftFound));
     }
 
     return nullptr;
