@@ -370,41 +370,47 @@ static void postprocessSyntaxes(std::list<tFileSyntax>& fileSyntaxes, const tFil
 
 void CXBracketsOptions::ReadConfig(const tstr& cfgFilePath)
 {
-    m_fileSyntaxes.clear();
-    m_pDefaultFileSyntax = nullptr;
+    std::list<tFileSyntax> fileSyntaxes;
+    const tFileSyntax* pDefaultFileSyntax = nullptr;
 
     const auto jsonBuf = readFile(cfgFilePath.c_str());
+    if ( jsonBuf.empty() )
+        return; // TODO: show an error "Could not open the file"
 
     std::string err;
     const auto jsonObj = json11::Json::parse(jsonBuf.data(), err);
     if ( jsonObj.is_null() )
-        return;
+        return; // TODO: show an error "Failed to parse JSON, the error is: ..."
 
-    if ( jsonObj.is_object() )
+    if ( !jsonObj.is_object() )
+        return; // TODO: show an error "JSON config is not a valid JSON object"
+
+    for ( const auto& item : jsonObj.object_items() )
     {
-        for ( const auto& item : jsonObj.object_items() )
+        if ( item.first == "fileSyntax" )
         {
-            if ( item.first == "fileSyntax" )
+            if ( item.second.is_array() )
             {
-                if ( item.second.is_array() )
+                for ( const auto& syntaxItem : item.second.array_items() )
                 {
-                    for ( const auto& syntaxItem : item.second.array_items() )
+                    if ( syntaxItem.is_object() )
                     {
-                        if ( syntaxItem.is_object() )
-                        {
-                            m_fileSyntaxes.push_back(readFileSyntaxItem(syntaxItem));
-                        }
+                        fileSyntaxes.push_back(readFileSyntaxItem(syntaxItem));
                     }
                 }
             }
-            else if ( item.first == "settings" )
-            {
-                // TODO: read the settings here
-            }
         }
-
-        postprocessSyntaxes(m_fileSyntaxes, &m_pDefaultFileSyntax);
+        else if ( item.first == "settings" )
+        {
+            // TODO: read the settings here
+        }
     }
+
+    postprocessSyntaxes(fileSyntaxes, &pDefaultFileSyntax);
+
+    // OK, finally:
+    std::swap(m_fileSyntaxes, fileSyntaxes);
+    std::swap(m_pDefaultFileSyntax, pDefaultFileSyntax);
 }
 
 void CXBracketsOptions::ReadOptions(const TCHAR* szIniFilePath)
