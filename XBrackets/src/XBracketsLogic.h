@@ -9,7 +9,7 @@
 
 typedef std::basic_string<TCHAR> tstr;
 
-#define XBR_USE_BRACKETSTREE 1
+#define XBR_USE_BRACKETSTREE 0
 
 #if XBR_USE_BRACKETSTREE
 #include <set>
