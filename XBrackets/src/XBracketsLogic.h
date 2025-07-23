@@ -119,12 +119,13 @@ class CBracketsTree : public CBracketsCommon
 public:
     enum eBrPairKind {
         bpkNone = 0,
-        bpkBrackets,   // brackets pair
-        bpkSgLnQuotes, // sinle-line quotes pair
-        bpkMlLnQuotes, // multi-line quotes pair
-        bpkSgLnComm,   // single-line comment
-        bpkMlLnComm,   // multi-line comment pair
-        bpkEsqChar
+        bpkSgLnBrackets, // single-line brackets pair
+        bpkMlLnBrackets, // multi-line brackets pair
+        bpkSgLnQuotes,   // sinle-line quotes pair
+        bpkMlLnQuotes,   // multi-line quotes pair
+        bpkSgLnComm,     // single-line comment
+        bpkMlLnComm,     // multi-line comment pair
+        bpkQtEsqChar     // escape character in quotes
     };
 
     enum eBrPairPosFlags
@@ -154,6 +155,7 @@ public:
 
     struct tFileSyntax {
         std::string name;
+        std::string parent;
         std::set<tstr> fileExtensions;
         std::vector<tBrPair> pairs;        // pairs (syntax)
         std::vector<tBrPair> autocomplete; // user-defined pairs for auto-completion
@@ -188,6 +190,7 @@ private:
     std::vector<const tBrPairItem*> m_bracketsByRightBr;
     std::list<tFileSyntax> m_fileSyntaxes;
     const tFileSyntax* m_pFileSyntax{nullptr};
+    const tFileSyntax* m_pDefaultFileSyntax{nullptr};
 };
 #endif
 

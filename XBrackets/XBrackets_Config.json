@@ -1,37 +1,92 @@
 {
+  "settings": {
+    "Sel_AutoBr": 4,
+    "Next_Char_OK": ".,!?:;</",
+    "Prev_Char_OK": "([{<="
+  },
   "fileSyntax": [
     {
-      "name": "C/C++",
-      "fileExtensions": [
-        "c", "cc", "cpp", "cxx", "h", "hh", "hpp", "hxx"
+      "name": "Text",
+      "fileExtensions": [],
+      "syntax": [
+        [ "{", "}", "multi-line-brackets" ],
+        [ "(", ")", "multi-line-brackets" ],
+        [ "[", "]", "multi-line-brackets" ],
+        [ "\"", "\"", "single-line-quotes" ]
       ],
-      "elements": [
-        [ "{", "}", "brackets" ],
-        [ "(", ")", "brackets" ],
-        [ "[", "]", "brackets" ],
+      "autocomplete": [
+        [ "{", "}" ],
+        [ "(", ")" ],
+        [ "[", "]" ],
+        [ "\"", "\"" ]
+      ]
+    },
+    {
+      "name": "C",
+      "fileExtensions": [
+        "c", "h"
+      ],
+      "syntax": [
+        [ "{", "}", "multi-line-brackets" ],
+        [ "(", ")", "multi-line-brackets" ],
+        [ "[", "]", "multi-line-brackets" ],
         [ "\"", "\"", "single-line-quotes" ],
         [ "'", "'", "single-line-quotes" ],
         [ "//", "", "single-line-comment" ],
         [ "/*", "*/", "multi-line-comment" ],
-        [ "\\", "escape-char" ]
+        [ "\\", "quote-escape-char" ]
       ],
       "autocomplete": [
+        [ "{", "}" ],
+        [ "(", ")" ],
+        [ "[", "]" ],
+        [ "\"", "\"" ],
+        [ "'", "'" ],
         [ "/*", "*/" ]
       ]
     },
     {
-      "name": "HTML/XML",
+      "name": "C++",
+      "parent": "C",
       "fileExtensions": [
-        "htm", "html", "xml", "vcxproj", "csproj"
+        "cc", "cpp", "cxx", "hh", "hpp", "hxx"
       ],
-      "elements": [
+      "syntax": [
+        [ "<", ">", "single-line-brackets" ]
+      ]
+    },
+    {
+      "name": "XML",
+      "fileExtensions": [
+        "xml", "vcxproj", "csproj"
+      ],
+      "syntax": [
         [ "<!--", "-->", "multi-line-comment" ],
-        [ "<", ">", "brackets" ],
+        [ "<", ">", "multi-line-brackets" ],
         [ "\"", "\"", "single-line-quotes" ],
         [ "'", "'", "single-line-quotes" ],
-        [ "{", "}", "brackets" ],
-        [ "(", ")", "brackets" ],
-        [ "[", "]", "brackets" ]
+        [ "{", "}", "multi-line-brackets" ],
+        [ "(", ")", "multi-line-brackets" ],
+        [ "[", "]", "multi-line-brackets" ]
+      ],
+      "autocomplete": [
+        [ "<!--", "-->" ],
+        [ "<", ">" ],
+        [ "\"", "\"" ],
+        [ "'", "'" ],
+        [ "(", ")" ],
+        [ "{", "}" ],
+        [ "[", "]" ]
+      ]
+    },
+    {
+      "name": "HTML",
+      "parent": "XML",
+      "fileExtensions": [
+        "htm", "html"
+      ],
+      "syntax": [
+        [ "\\", "quote-escape-char" ]
       ]
     },
     {
@@ -39,9 +94,9 @@
       "fileExtensions": [
         "bat", "cmd"
       ],
-      "elements": [
-        [ "(", ")", "brackets" ],
-        [ "[", "]", "brackets" ],
+      "syntax": [
+        [ "(", ")", "multi-line-brackets" ],
+        [ "[", "]", "single-line-brackets" ],
         [ "\"", "\"", "single-line-quotes" ],
         [ "'", "'", "single-line-quotes" ],
         [ "%", "%", "single-line-quotes" ],
@@ -49,6 +104,10 @@
         [ "::", "", "single-line-comment" ]
       ],
       "autocomplete": [
+        [ "(", ")" ],
+        [ "[", "]" ],
+        [ "\"", "\"" ],
+        [ "'", "'" ],
         [ "%", "%" ]
       ]
     }
