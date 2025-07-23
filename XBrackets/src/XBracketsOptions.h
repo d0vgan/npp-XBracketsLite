@@ -2,12 +2,15 @@
 #define _xbrackets_npp_options_h_
 //---------------------------------------------------------------------------
 #include "core/base.h"
-#include <string>
-
-typedef std::basic_string<TCHAR> tstr;
+#include "XBracketsCommon.h"
+#include <list>
 
 class CXBracketsOptions
 {
+    public:
+        using tstr = XBrackets::tstr;
+        using tFileSyntax = XBrackets::tFileSyntax;
+
     public:
         CXBracketsOptions();
         ~CXBracketsOptions();
@@ -17,6 +20,7 @@ class CXBracketsOptions
         bool IsEscapedFileExt(const TCHAR* szExt) const;
         bool IsSingleQuoteFileExt(const TCHAR* szExt) const;
         bool IsSupportedFile(const TCHAR* szExt) const;
+        void ReadConfig(const tstr& cfgFilePath);
         void ReadOptions(const TCHAR* szIniFilePath);
         void SaveOptions(const TCHAR* szIniFilePath);
 
@@ -196,6 +200,16 @@ class CXBracketsOptions
             return m_sPrevCharOK;
         }
 
+        const std::list<tFileSyntax>& getFileSyntaxes() const
+        {
+            return m_fileSyntaxes;
+        }
+
+        const tFileSyntax* getDefaultFileSyntax() const
+        {
+            return m_pDefaultFileSyntax;
+        }
+
     protected:
         UINT  m_uFlags;
         UINT  m_uFlags0;
@@ -213,6 +227,9 @@ class CXBracketsOptions
         tstr  m_sFileExtsRule;
         tstr  m_sNextCharOK;
         tstr  m_sPrevCharOK;
+
+        std::list<tFileSyntax> m_fileSyntaxes;
+        const tFileSyntax* m_pDefaultFileSyntax;
 };
 
 //---------------------------------------------------------------------------

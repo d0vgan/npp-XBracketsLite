@@ -1,4 +1,9 @@
 #include "XBracketsOptions.h"
+#include "json11/json11.hpp"
+#include <algorithm>
+#include <map>
+
+using namespace XBrackets;
 
 namespace
 {
@@ -105,7 +110,8 @@ CXBracketsOptions::CXBracketsOptions() :
   m_sEscapedFileExts(_T("cs; java; js; php; rc")),
   m_sSglQuoteFileExts(_T("js; pas; py; ps1; sh; htm; html; xml")),
   m_sNextCharOK(_T(".,!?:;</")),
-  m_sPrevCharOK(_T("([{<="))
+  m_sPrevCharOK(_T("([{<=")),
+  m_pDefaultFileSyntax(nullptr)
 {
 }
 
@@ -177,6 +183,228 @@ bool CXBracketsOptions::IsSupportedFile(const TCHAR* szExt) const
     }
 
     return bExclude;
+}
+
+static tBrPair readBrPairItem(const json11::Json& pairItem, bool isKindRequired)
+{
+    tBrPair brPair;
+
+    for ( const auto& elem : pairItem.array_items() )
+    {
+        if ( elem.is_string() )
+        {
+            const std::string& val = elem.string_value();
+
+            eBrPairKind kind = bpkNone;
+            if ( isKindRequired )
+            {
+                if ( brPair.kind == bpkNone )
+                {
+                    if ( val == "single-line-brackets" )
+                        kind = bpkSgLnBrackets;
+                    else if ( val == "multi-line-brackets" )
+                        kind = bpkMlLnBrackets;
+                    else if ( val == "single-line-quotes" )
+                        kind = bpkSgLnQuotes;
+                    else if ( val == "multi-line-quotes" )
+                        kind = bpkMlLnQuotes;
+                    else if ( val == "single-line-comment" )
+                        kind = bpkSgLnComm;
+                    else if ( val == "multi-line-comment" )
+                        kind = bpkMlLnComm;
+                    else if ( val == "quote-escape-char" )
+                        kind = bpkQtEsqChar;
+                }
+            }
+
+            if ( kind != bpkNone )
+                brPair.kind = kind;
+            else if ( brPair.leftBr.empty() )
+                brPair.leftBr = val;
+            else if ( brPair.rightBr.empty() && brPair.kind != bpkQtEsqChar )
+                brPair.rightBr = val;
+        }
+    }
+
+    return brPair;
+}
+
+static tFileSyntax readFileSyntaxItem(const json11::Json& syntaxItem)
+{
+    tFileSyntax fileSyntax;
+
+    for ( const auto& propItem : syntaxItem.object_items() )
+    {
+        if ( propItem.first == "name" )
+        {
+            if ( propItem.second.is_string() )
+            {
+                fileSyntax.name = propItem.second.string_value();
+            }
+        }
+        else if ( propItem.first == "parent" )
+        {
+            if ( propItem.second.is_string() )
+            {
+                fileSyntax.parent = propItem.second.string_value();
+            }
+        }
+        else if ( propItem.first == "fileExtensions" )
+        {
+            if ( propItem.second.is_array() )
+            {
+                for ( const auto& fileExtItem : propItem.second.array_items() )
+                {
+                    if ( fileExtItem.is_string() )
+                    {
+                        fileSyntax.fileExtensions.insert(string_to_tstr(fileExtItem.string_value()));
+                    }
+                }
+            }
+        }
+        else if ( propItem.first == "syntax" )
+        {
+            if ( propItem.second.is_array() )
+            {
+                for ( const auto& elementItem : propItem.second.array_items() )
+                {
+                    if ( elementItem.is_array() )
+                    {
+                        tBrPair brPair = readBrPairItem(elementItem, true);
+
+                        if ( brPair.kind != bpkNone )
+                        {
+                            if ( brPair.kind != bpkQtEsqChar )
+                                fileSyntax.pairs.push_back(std::move(brPair));
+                            else
+                                fileSyntax.qtEsc.push_back(std::move(brPair.leftBr));
+                        }
+                    }
+                }
+            }
+        }
+        else if ( propItem.first == "autocomplete" )
+        {
+            if ( propItem.second.is_array() )
+            {
+                for ( const auto& autocomplItem : propItem.second.array_items() )
+                {
+                    if ( autocomplItem.is_array() )
+                    {
+                        tBrPair brPair = readBrPairItem(autocomplItem, false);
+
+                        if ( !brPair.leftBr.empty() && !brPair.rightBr.empty() )
+                        {
+                            fileSyntax.autocomplete.push_back(std::move(brPair));
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    return fileSyntax;
+}
+
+static void postprocessSyntaxes(std::list<tFileSyntax>& fileSyntaxes, const tFileSyntax** ppDefaultFileSyntax)
+{
+    std::map<std::string, const tFileSyntax*> parentSyntaxes;
+
+    *ppDefaultFileSyntax = nullptr;
+
+    for ( const auto& fileSyntax : fileSyntaxes )
+    {
+        parentSyntaxes[fileSyntax.name] = &fileSyntax;
+    }
+
+    for ( auto& fileSyntax : fileSyntaxes )
+    {
+        if ( fileSyntax.fileExtensions.empty() )
+            *ppDefaultFileSyntax = &fileSyntax;
+
+        if ( fileSyntax.parent.empty() )
+            continue;
+
+        const auto itrParent = parentSyntaxes.find(fileSyntax.parent);
+        if ( itrParent == parentSyntaxes.end() )
+            continue;
+
+        const tFileSyntax* pParentSyntax = itrParent->second;
+
+        if ( !pParentSyntax->pairs.empty() )
+        {
+            std::vector<tBrPair> brPairs;
+            std::swap(fileSyntax.pairs, brPairs);
+            fileSyntax.pairs = pParentSyntax->pairs;
+            for ( const tBrPair& brPair : brPairs )
+            {
+                const auto itrBegin = fileSyntax.pairs.begin();
+                const auto itrEnd = fileSyntax.pairs.end();
+                auto itr = std::find_if(itrBegin, itrEnd, 
+                    [&brPair](const tBrPair& brp){
+                    return brp.leftBr == brPair.leftBr && brp.rightBr == brPair.rightBr;
+                }
+                );
+                if ( itr != itrEnd )
+                    itr->kind = brPair.kind;
+                else
+                    fileSyntax.pairs.push_back(brPair);
+            }
+        }
+
+        if ( !pParentSyntax->autocomplete.empty() )
+        {
+            std::vector<tBrPair> autocompl;
+            std::swap(fileSyntax.autocomplete, autocompl);
+            fileSyntax.autocomplete = pParentSyntax->autocomplete;
+            fileSyntax.autocomplete.insert(fileSyntax.autocomplete.end(), autocompl.begin(), autocompl.end());
+        }
+
+        if ( !pParentSyntax->qtEsc.empty() )
+        {
+            if ( fileSyntax.qtEsc.empty() )
+                fileSyntax.qtEsc = pParentSyntax->qtEsc;
+        }
+    }
+}
+
+void CXBracketsOptions::ReadConfig(const tstr& cfgFilePath)
+{
+    m_fileSyntaxes.clear();
+    m_pDefaultFileSyntax = nullptr;
+
+    const auto jsonBuf = readFile(cfgFilePath.c_str());
+
+    std::string err;
+    const auto jsonObj = json11::Json::parse(jsonBuf.data(), err);
+    if ( jsonObj.is_null() )
+        return;
+
+    if ( jsonObj.is_object() )
+    {
+        for ( const auto& item : jsonObj.object_items() )
+        {
+            if ( item.first == "fileSyntax" )
+            {
+                if ( item.second.is_array() )
+                {
+                    for ( const auto& syntaxItem : item.second.array_items() )
+                    {
+                        if ( syntaxItem.is_object() )
+                        {
+                            m_fileSyntaxes.push_back(readFileSyntaxItem(syntaxItem));
+                        }
+                    }
+                }
+            }
+            else if ( item.first == "settings" )
+            {
+                // TODO: read the settings here
+            }
+        }
+
+        postprocessSyntaxes(m_fileSyntaxes, &m_pDefaultFileSyntax);
+    }
 }
 
 void CXBracketsOptions::ReadOptions(const TCHAR* szIniFilePath)

@@ -54,6 +54,9 @@
     <ClCompile Include="src\json11\json11.cpp">
       <Filter>Source Files\json11</Filter>
     </ClCompile>
+    <ClCompile Include="src\XBracketsCommon.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\core\base.h">
@@ -91,6 +94,9 @@
     </ClInclude>
     <ClInclude Include="src\json11\json11.hpp">
       <Filter>Header Files\json11</Filter>
+    </ClInclude>
+    <ClInclude Include="src\XBracketsCommon.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

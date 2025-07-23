@@ -159,6 +159,7 @@
     <ClCompile Include="src\json11\json11.cpp" />
     <ClCompile Include="src\Main.cpp" />
     <ClCompile Include="src\SettingsDlg.cpp" />
+    <ClCompile Include="src\XBracketsCommon.cpp" />
     <ClCompile Include="src\XBracketsLogic.cpp" />
     <ClCompile Include="src\XBracketsPlugin.cpp" />
     <ClCompile Include="src\XBracketsMenu.cpp" />
@@ -173,6 +174,7 @@
     <ClInclude Include="src\json11\json11.hpp" />
     <ClInclude Include="src\resource.h" />
     <ClInclude Include="src\SettingsDlg.h" />
+    <ClInclude Include="src\XBracketsCommon.h" />
     <ClInclude Include="src\XBracketsLogic.h" />
     <ClInclude Include="src\XBracketsPlugin.h" />
     <ClInclude Include="src\XBracketsMenu.h" />
