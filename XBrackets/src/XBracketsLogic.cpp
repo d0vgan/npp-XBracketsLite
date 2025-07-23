@@ -1,6 +1,7 @@
 #include "XBracketsLogic.h"
 #include "XBracketsOptions.h"
 #include <vector>
+#include <map>
 #include <algorithm>
 
 #if XBR_USE_BRACKETSTREE
@@ -342,8 +343,10 @@ static CBracketsTree::tBrPair readBrPairItem(const json11::Json& pairItem, bool 
             {
                 if ( brPair.kind == CBracketsTree::bpkNone )
                 {
-                    if ( val == "brackets" )
-                        kind = CBracketsTree::bpkBrackets;
+                    if ( val == "single-line-brackets" )
+                        kind = CBracketsTree::bpkSgLnBrackets;
+                    else if ( val == "multi-line-brackets" )
+                        kind = CBracketsTree::bpkMlLnBrackets;
                     else if ( val == "single-line-quotes" )
                         kind = CBracketsTree::bpkSgLnQuotes;
                     else if ( val == "multi-line-quotes" )
@@ -352,8 +355,8 @@ static CBracketsTree::tBrPair readBrPairItem(const json11::Json& pairItem, bool 
                         kind = CBracketsTree::bpkSgLnComm;
                     else if ( val == "multi-line-comment" )
                         kind = CBracketsTree::bpkMlLnComm;
-                    else if ( val == "escape-char" )
-                        kind = CBracketsTree::bpkEsqChar;
+                    else if ( val == "quote-escape-char" )
+                        kind = CBracketsTree::bpkQtEsqChar;
                 }
             }
 
@@ -361,7 +364,7 @@ static CBracketsTree::tBrPair readBrPairItem(const json11::Json& pairItem, bool 
                 brPair.kind = kind;
             else if ( brPair.leftBr.empty() )
                 brPair.leftBr = val;
-            else if ( brPair.rightBr.empty() && brPair.kind != CBracketsTree::bpkEsqChar )
+            else if ( brPair.rightBr.empty() && brPair.kind != CBracketsTree::bpkQtEsqChar )
                 brPair.rightBr = val;
         }
     }
@@ -382,6 +385,13 @@ static CBracketsTree::tFileSyntax readFileSyntaxItem(const json11::Json& syntaxI
                 fileSyntax.name = propItem.second.string_value();
             }
         }
+        else if ( propItem.first == "parent" )
+        {
+            if ( propItem.second.is_string() )
+            {
+                fileSyntax.parent = propItem.second.string_value();
+            }
+        }
         else if ( propItem.first == "fileExtensions" )
         {
             if ( propItem.second.is_array() )
@@ -395,7 +405,7 @@ static CBracketsTree::tFileSyntax readFileSyntaxItem(const json11::Json& syntaxI
                 }
             }
         }
-        else if ( propItem.first == "elements" )
+        else if ( propItem.first == "syntax" )
         {
             if ( propItem.second.is_array() )
             {
@@ -407,7 +417,7 @@ static CBracketsTree::tFileSyntax readFileSyntaxItem(const json11::Json& syntaxI
 
                         if ( brPair.kind != CBracketsTree::bpkNone )
                         {
-                            if ( brPair.kind != CBracketsTree::bpkEsqChar )
+                            if ( brPair.kind != CBracketsTree::bpkQtEsqChar )
                                 fileSyntax.pairs.push_back(std::move(brPair));
                             else
                                 fileSyntax.qtEsc.push_back(std::move(brPair.leftBr));
@@ -439,6 +449,68 @@ static CBracketsTree::tFileSyntax readFileSyntaxItem(const json11::Json& syntaxI
     return fileSyntax;
 }
 
+static void postprocessSyntaxes(std::list<CBracketsTree::tFileSyntax>& fileSyntaxes, const CBracketsTree::tFileSyntax** ppDefaultFileSyntax)
+{
+    std::map<std::string, const CBracketsTree::tFileSyntax*> parentSyntaxes;
+
+    *ppDefaultFileSyntax = nullptr;
+
+    for ( const auto& fileSyntax : fileSyntaxes )
+    {
+        parentSyntaxes[fileSyntax.name] = &fileSyntax;
+    }
+
+    for ( auto& fileSyntax : fileSyntaxes )
+    {
+        if ( fileSyntax.fileExtensions.empty() )
+            *ppDefaultFileSyntax = &fileSyntax;
+
+        if ( fileSyntax.parent.empty() )
+            continue;
+
+        const auto itrParent = parentSyntaxes.find(fileSyntax.parent);
+        if ( itrParent == parentSyntaxes.end() )
+            continue;
+
+        const CBracketsTree::tFileSyntax* pParentSyntax = itrParent->second;
+
+        if ( !pParentSyntax->pairs.empty() )
+        {
+            std::vector<CBracketsTree::tBrPair> brPairs;
+            std::swap(fileSyntax.pairs, brPairs);
+            fileSyntax.pairs = pParentSyntax->pairs;
+            for ( const CBracketsTree::tBrPair& brPair : brPairs )
+            {
+                const auto itrBegin = fileSyntax.pairs.begin();
+                const auto itrEnd = fileSyntax.pairs.end();
+                auto itr = std::find_if(itrBegin, itrEnd, 
+                    [&brPair](const CBracketsTree::tBrPair& brp){
+                        return brp.leftBr == brPair.leftBr && brp.rightBr == brPair.rightBr;
+                    }
+                );
+                if ( itr != itrEnd )
+                    itr->kind = brPair.kind;
+                else
+                    fileSyntax.pairs.push_back(brPair);
+            }
+        }
+
+        if ( !pParentSyntax->autocomplete.empty() )
+        {
+            std::vector<CBracketsTree::tBrPair> autocompl;
+            std::swap(fileSyntax.autocomplete, autocompl);
+            fileSyntax.autocomplete = pParentSyntax->autocomplete;
+            fileSyntax.autocomplete.insert(fileSyntax.autocomplete.end(), autocompl.begin(), autocompl.end());
+        }
+
+        if ( !pParentSyntax->qtEsc.empty() )
+        {
+            if ( fileSyntax.qtEsc.empty() )
+                fileSyntax.qtEsc = pParentSyntax->qtEsc;
+        }
+    }
+}
+
 void CBracketsTree::readConfig(const tstr& cfgFilePath)
 {
     using namespace json11;
@@ -467,7 +539,14 @@ void CBracketsTree::readConfig(const tstr& cfgFilePath)
                     }
                 }
             }
+            else if ( item.first == "settings" )
+            {
+                // TODO: read the settings here
+                // TODO: looks like all the JSON Config reading must be moved to XBracketsOptions
+            }
         }
+
+        postprocessSyntaxes(m_fileSyntaxes, &m_pDefaultFileSyntax);
     }
 }
 
@@ -484,6 +563,8 @@ void CBracketsTree::setFileType(unsigned int uFileType, const tstr& fileExtensio
             break;
         }
     }
+    if ( m_pFileSyntax == nullptr )
+        m_pFileSyntax = m_pDefaultFileSyntax;
 }
 
 unsigned int CBracketsTree::getAutocompleteLeftBracketType(CSciMessager& sciMsgr, const char ch) const
@@ -600,7 +681,7 @@ void CBracketsTree::buildTree(CSciMessager& sciMsgr)
                         break;
 
                     const eBrPairKind kind = pItem->pBrPair->kind;
-                    if ( kind == bpkSgLnQuotes )
+                    if ( kind == bpkSgLnQuotes || kind == bpkSgLnBrackets )
                         pDelSgQtItem = pItem;
                     else if ( kind == bpkSgLnComm )
                         pDelSgCommItem = pItem;
@@ -624,7 +705,7 @@ void CBracketsTree::buildTree(CSciMessager& sciMsgr)
                     for ( auto pItem = pEnd - 1; ; --pItem )
                     {
                         const eBrPairKind kind = pItem->pBrPair->kind;
-                        if ( kind == bpkSgLnQuotes )
+                        if ( kind == bpkSgLnQuotes || kind == bpkSgLnBrackets )
                             unmatchedBrackets.erase(itrBegin + static_cast<size_t>(pItem - pBegin));
 
                         if ( pItem == pDelSgQtItem)
@@ -762,7 +843,7 @@ void CBracketsTree::buildTree(CSciMessager& sciMsgr)
                         }
 
                         const eBrPairKind kind = itr->pBrPair->kind;
-                        if ( kind == bpkMlLnComm || ((kind == bpkSgLnQuotes || kind == bpkMlLnQuotes) && pBrPair->kind == bpkBrackets) )
+                        if ( kind == bpkMlLnComm || ((kind == bpkSgLnQuotes || kind == bpkMlLnQuotes) && (pBrPair->kind == bpkMlLnBrackets || pBrPair->kind == bpkSgLnBrackets)) )
                         {
                             itrDel = itr;
                         }
@@ -1166,7 +1247,9 @@ void CXBracketsLogic::SetNppData(const NppData& nppd)
 
 void CXBracketsLogic::ReadConfig(const tstr& cfgFilePath)
 {
+#if XBR_USE_BRACKETSTREE
     m_bracketsTree.readConfig(cfgFilePath);
+#endif
 }
 
 void CXBracketsLogic::InvalidateCachedBrackets(unsigned int uInvalidateFlags, SCNotification* pscn)
