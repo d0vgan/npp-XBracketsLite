@@ -332,6 +332,10 @@ void CXBracketsPlugin::ReadOptions()
 
     g_opt.ReadOptions(szPath);
 
+    // TODO: if exists, read "XBrackets_UserConfig.json" from the PluginsConfigDir
+    // TODO: XBrackets->Settings should open the file "XBrackets_UserConfig.json" in Notepad++
+    // TODO: add FileWatcher for "XBrackets_UserConfig.json" to detect file modifications and call g_opt.ReadConfig
+
     tstr cfgFilePath(getDllDir());
     cfgFilePath.append(_T("\\XBrackets_Config.json"));
     g_opt.ReadConfig(cfgFilePath);
