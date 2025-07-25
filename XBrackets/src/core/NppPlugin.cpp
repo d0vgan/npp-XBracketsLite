@@ -18,18 +18,24 @@ void CNppPlugin::OnDllProcessAttach(HINSTANCE hDLLInstance)
     tstr dllFilePath(szPath, pos);
 
     pos = dllFilePath.find_last_of(_T("\\/"));
-    if ( pos == tstr::npos )
-        return; // should not happen
-
-    m_sDllDir.assign(dllFilePath, 0, pos);
-    m_sDllFileName.assign(dllFilePath, pos + 1);
-    m_sIniFileName.assign(dllFilePath, pos + 1);
+    if ( pos != tstr::npos )
+    {
+        m_sDllDir.assign(dllFilePath, 0, pos);
+        m_sDllFileName.assign(dllFilePath, pos + 1);
+    }
+    else
+    {
+        // should not happen, but anyway
+        m_sDllDir = _T(".");
+        m_sDllFileName = dllFilePath;
+    }
+    m_sIniFileName = m_sDllFileName;
 
     pos = m_sIniFileName.rfind(_T('.'));
-    if ( pos == tstr::npos )
-        return; // should not happen
-
-    m_sIniFileName.erase(pos, m_sIniFileName.length() - pos);
+    if ( pos != tstr::npos )
+    {
+        m_sIniFileName.erase(pos, m_sIniFileName.length() - pos);
+    }
     m_sIniFileName.append(_T(".ini"));
 }
 
