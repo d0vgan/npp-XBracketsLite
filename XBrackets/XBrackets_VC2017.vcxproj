@@ -152,6 +152,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\CFileModificationWatcher.cpp" />
     <ClCompile Include="src\core\NppMessager.cpp" />
     <ClCompile Include="src\core\NppPlugin.cpp" />
     <ClCompile Include="src\core\NppPluginMenu.cpp" />
@@ -166,6 +167,7 @@
     <ClCompile Include="src\XBracketsOptions.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\CFileModificationWatcher.h" />
     <ClInclude Include="src\core\base.h" />
     <ClInclude Include="src\core\NppMessager.h" />
     <ClInclude Include="src\core\NppPlugin.h" />

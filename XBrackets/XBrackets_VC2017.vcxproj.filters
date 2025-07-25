@@ -57,6 +57,9 @@
     <ClCompile Include="src\XBracketsCommon.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\CFileModificationWatcher.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\core\base.h">
@@ -96,6 +99,9 @@
       <Filter>Header Files\json11</Filter>
     </ClInclude>
     <ClInclude Include="src\XBracketsCommon.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\CFileModificationWatcher.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
