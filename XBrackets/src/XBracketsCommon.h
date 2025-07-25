@@ -74,6 +74,8 @@ namespace XBrackets
     };
 
     // helpers
+    bool isExistingFile(const TCHAR* filePath) noexcept;
+    bool isExistingFile(const tstr& filePath) noexcept;
     std::vector<char> readFile(const TCHAR* filePath);
     tstr string_to_tstr(const std::string& str);
 };

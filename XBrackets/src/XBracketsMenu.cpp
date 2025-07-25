@@ -29,11 +29,7 @@ void CXBracketsMenu::funcAutocomplete()
 
 void CXBracketsMenu::funcSettings()
 {
-    if ( PluginDialogBox(IDD_SETTINGS, SettingsDlgProc) == 1 )
-    {
-        UpdateMenuState();
-        thePlugin.SaveOptions();
-    }
+    thePlugin.OnSettings();
 }
 
 void CXBracketsMenu::funcGoToMatchingBracket()
@@ -58,12 +54,10 @@ void CXBracketsMenu::funcSelToNearestBrackets()
 
 void CXBracketsMenu::funcAbout()
 {
-    ::MessageBox(
-        m_nppMsgr.getNppWnd(),
+    thePlugin.PluginMessageBox(
         _T("XBrackets Lite ver. 1.4.0\r\n") \
         _T("(C) Vitaliy Dovgan aka DV, Jan 2009 - Jul 2025\r\n") \
         _T("(C) Vitaliy Dovgan aka DV, Oct 2006 (original idea)"),
-        _T("XBrackets plugin for Notepad++"),
         MB_OK
       );
 }

@@ -80,6 +80,7 @@ private:
 private:
     HANDLE m_hStopWatchThreadEvent;
     HANDLE m_hWatchThreadDoneEvent;
+    bool m_isWatchThreadStarted;
     CInternalDirectoryChangeListener m_DirChangeListener;
     dir_items_type m_Dirs;
 };

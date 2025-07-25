@@ -17,7 +17,8 @@ class CNppMessager
 
         LRESULT SendNppMsg(UINT uMsg, WPARAM wParam = 0, LPARAM lParam = 0);
         LRESULT SendNppMsg(UINT uMsg, WPARAM wParam = 0, LPARAM lParam = 0) const;
-        
+
+        BOOL    doOpen(const TCHAR* filePath);
         BOOL    getCurrentFileFullPath(int strLen, TCHAR *str) const;
         BOOL    getCurrentFileDirectory(int strLen, TCHAR *str) const;
         BOOL    getCurrentFileNameExt(int strLen, TCHAR *str) const;

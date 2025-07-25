@@ -13,6 +13,22 @@ WNDPROC CXBracketsPlugin::nppOriginalWndProc = NULL;
 WNDPROC CXBracketsPlugin::sciOriginalWndProc1 = NULL;
 WNDPROC CXBracketsPlugin::sciOriginalWndProc2 = NULL;
 
+CXBracketsPlugin::CConfigFileChangeListener::CConfigFileChangeListener(CXBracketsPlugin* pPlugin) : m_pPlugin(pPlugin)
+{
+}
+
+void CXBracketsPlugin::CConfigFileChangeListener::HandleFileChange(const FileInfoStruct* pFile)
+{
+    if ( pFile->fileSize.LowPart == 0 )
+        return; // Notepad++ seems to replace the file during the saving
+
+    m_pPlugin->OnConfigFileChanged(pFile->filePath);
+}
+
+CXBracketsPlugin::CXBracketsPlugin() : m_ConfigFileChangeListener(this)
+{
+}
+
 LRESULT CXBracketsPlugin::nppCallWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
     auto pCallWindowProc = isNppWndUnicode ? CallWindowProcW : CallWindowProcA;
@@ -224,6 +240,8 @@ void CXBracketsPlugin::OnNppReady()
 
 void CXBracketsPlugin::OnNppShutdown()
 {
+    m_FileWatcher.StopWatching();
+
     auto pSetWindowLongPtr = isNppWndUnicode ? SetWindowLongPtrW : SetWindowLongPtrA;
 
     if ( nppOriginalWndProc )
@@ -327,18 +345,42 @@ void CXBracketsPlugin::ReadOptions()
     TCHAR szPath[2*MAX_PATH + 1];
 
     m_nppMsgr.getPluginsConfigDir(2*MAX_PATH, szPath);
-    lstrcat(szPath, _T("\\"));
-    lstrcat(szPath, m_sIniFileName.c_str());
+    m_sIniFilePath = szPath;
+    if ( !m_sIniFilePath.empty() )
+    {
+        const TCHAR ch = m_sIniFilePath.back();
+        if ( ch != _T('\\') && ch != _T('/') )
+        {
+            m_sIniFilePath += _T('\\');
+        }
+        m_sUserConfigFilePath = m_sIniFilePath;
+    }
+    m_sUserConfigFilePath += _T("XBrackets_UserConfig.json");
+    m_sIniFilePath += m_sIniFileName;
 
-    g_opt.ReadOptions(szPath);
+    g_opt.ReadOptions(m_sIniFilePath.c_str());
 
-    // TODO: if exists, read "XBrackets_UserConfig.json" from the PluginsConfigDir
-    // TODO: XBrackets->Settings should open the file "XBrackets_UserConfig.json" in Notepad++
-    // TODO: add FileWatcher for "XBrackets_UserConfig.json" to detect file modifications and call g_opt.ReadConfig
+    m_sConfigFilePath = getDllDir();
+    m_sConfigFilePath.append(_T("\\XBrackets_Config.json"));
 
-    tstr cfgFilePath(getDllDir());
-    cfgFilePath.append(_T("\\XBrackets_Config.json"));
-    g_opt.ReadConfig(cfgFilePath);
+    const bool isUserConfig = XBrackets::isExistingFile(m_sUserConfigFilePath);
+    const tstr err = g_opt.ReadConfig(isUserConfig ? m_sUserConfigFilePath : m_sConfigFilePath);
+    if ( !err.empty() )
+    {
+        if ( isUserConfig )
+        {
+            g_opt.ReadConfig(m_sConfigFilePath);
+            onConfigFileError(m_sUserConfigFilePath, err);
+        }
+        else
+            PluginMessageBox(err.c_str(), MB_OK | MB_ICONERROR);
+    }
+
+    if ( isUserConfig )
+    {
+        m_FileWatcher.AddFile(m_sUserConfigFilePath.c_str(), &m_ConfigFileChangeListener);
+        m_FileWatcher.StartWatching();
+    }
 }
 
 void CXBracketsPlugin::SaveOptions()
@@ -353,4 +395,57 @@ void CXBracketsPlugin::SaveOptions()
 
         g_opt.SaveOptions(szPath);
     }
+}
+
+void CXBracketsPlugin::OnSettings()
+{
+    if ( !XBrackets::isExistingFile(m_sUserConfigFilePath) )
+    {
+        ::CopyFile(m_sConfigFilePath.c_str(), m_sUserConfigFilePath.c_str(), TRUE);
+
+        m_FileWatcher.AddFile(m_sUserConfigFilePath.c_str(), &m_ConfigFileChangeListener);
+        m_FileWatcher.StartWatching();
+    }
+
+    m_nppMsgr.doOpen(m_sUserConfigFilePath.c_str());
+}
+
+void CXBracketsPlugin::OnConfigFileChanged(const tstr& configFilePath)
+{
+    const tstr err = g_opt.ReadConfig(configFilePath);
+    if ( !err.empty() )
+    {
+        onConfigFileError(configFilePath, err);
+        return;
+    }
+
+    m_PluginMenu.UpdateMenuState();
+    m_BracketsLogic.UpdateFileType();
+    m_BracketsLogic.InvalidateCachedBrackets();
+}
+
+void CXBracketsPlugin::onConfigFileError(const tstr& configFilePath, const tstr& err)
+{
+    PluginMessageBox(err.c_str(), MB_OK | MB_ICONERROR);
+    m_nppMsgr.doOpen(configFilePath.c_str());
+    const auto n = err.find(_T("Stopped at offset "));
+    if (n != tstr::npos)
+    {
+        int pos = _ttoi(err.c_str() + n + 18);
+        if (pos > 0)
+        {
+            CSciMessager sciMsgr(m_nppMsgr.getCurrentScintillaWnd());
+            sciMsgr.setSel(pos - 1, pos - 1);
+        }
+    }
+}
+
+void CXBracketsPlugin::PluginMessageBox(const TCHAR* szMessageText, UINT uType)
+{
+    ::MessageBox(
+        m_nppMsgr.getNppWnd(),
+        szMessageText,
+        PLUGIN_NAME,
+        uType
+      );
 }

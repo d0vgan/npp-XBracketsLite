@@ -48,6 +48,7 @@ CDirectoryWatcher::CDirectoryWatcher()
 {
     m_hStopWatchThreadEvent = ::CreateEvent(NULL, TRUE, FALSE, NULL);
     m_hWatchThreadDoneEvent = ::CreateEvent(NULL, TRUE, TRUE, NULL);
+    m_isWatchThreadStarted = false;
 }
 
 CDirectoryWatcher::~CDirectoryWatcher()
@@ -146,11 +147,17 @@ void CDirectoryWatcher::AddFile(LPCTSTR cszFilePath, IFileChangeListener* pChang
 
 void CDirectoryWatcher::StartWatching()
 {
+    if ( m_isWatchThreadStarted )
+        return;
+
+    ::ResetEvent(m_hStopWatchThreadEvent);
+
     DWORD dwThreadID = 0;
     HANDLE hThread = ::CreateThread(NULL, 0, WatchThreadProc, this, 0, &dwThreadID);
     if ( hThread != NULL )
     {
         ::CloseHandle(hThread);
+        m_isWatchThreadStarted = true;
     }
 }
 
@@ -158,6 +165,7 @@ void CDirectoryWatcher::StopWatching()
 {
     ::SetEvent(m_hStopWatchThreadEvent);
     ::WaitForSingleObject(m_hWatchThreadDoneEvent, INFINITE);
+    m_isWatchThreadStarted = false;
 }
 
 void CDirectoryWatcher::CInternalDirectoryChangeListener::HandleDirectoryChange(const DirWatchStruct* pDir)

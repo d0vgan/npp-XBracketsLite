@@ -1,5 +1,7 @@
 #include "SettingsDlg.h"
 #include "resource.h"
+
+/*
 #include "XBracketsPlugin.h"
 #include "XBracketsOptions.h"
 
@@ -423,3 +425,5 @@ BOOL DlgItem_SetText(HWND hDlg, UINT idDlgItem, const TCHAR* pszText)
     }
     return FALSE;
 }
+
+*/

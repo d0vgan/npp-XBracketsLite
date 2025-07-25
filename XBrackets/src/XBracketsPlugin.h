@@ -4,10 +4,26 @@
 #include "core/NppPlugin.h"
 #include "XBracketsLogic.h"
 #include "XBracketsMenu.h"
+#include "XBracketsOptions.h"
+#include "CFileModificationWatcher.h"
 
 class CXBracketsPlugin : public CNppPlugin
 {
+    private:
+        class CConfigFileChangeListener : public IFileChangeListener
+        {
+        public:
+            CConfigFileChangeListener(CXBracketsPlugin* pPlugin);
+
+            virtual void HandleFileChange(const FileInfoStruct* pFile) override;
+
+        private:
+            CXBracketsPlugin* m_pPlugin;
+        };
+
     public:
+        CXBracketsPlugin();
+
         // standard n++ plugin functions
         virtual void         nppBeNotified(SCNotification* pscn) override;
         virtual FuncItem*    nppGetFuncsArray(int* pnbFuncItems) override;
@@ -39,6 +55,13 @@ class CXBracketsPlugin : public CNppPlugin
 
         void ReadOptions();
         void SaveOptions();
+        void OnSettings();
+        void OnConfigFileChanged(const tstr& configFilePath);
+
+        void PluginMessageBox(const TCHAR* szMessageText, UINT uType);
+
+    private:
+        void onConfigFileError(const tstr& configFilePath, const tstr& err);
 
     public:
         static const TCHAR* PLUGIN_NAME;
@@ -52,6 +75,11 @@ class CXBracketsPlugin : public CNppPlugin
 
         CXBracketsMenu m_PluginMenu;
         CXBracketsLogic m_BracketsLogic;
+        CFileModificationWatcher m_FileWatcher;
+        CConfigFileChangeListener m_ConfigFileChangeListener;
+        tstr m_sIniFilePath;
+        tstr m_sConfigFilePath;
+        tstr m_sUserConfigFilePath;
 
         static bool    isNppMacroStarted;
         static bool    isNppWndUnicode;

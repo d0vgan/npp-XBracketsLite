@@ -22,6 +22,11 @@ LRESULT CNppMessager::SendNppMsg(UINT uMsg, WPARAM wParam , LPARAM lParam ) cons
     return ::SendMessage(m_nppData._nppHandle, uMsg, wParam, lParam);
 }
 
+BOOL CNppMessager::doOpen(const TCHAR* filePath)
+{
+    return (BOOL) SendNppMsg( NPPM_DOOPEN, 0, (LPARAM) filePath );
+}
+
 BOOL CNppMessager::getCurrentFileFullPath(int strLen, TCHAR *str) const
 {
     return (BOOL) SendNppMsg( NPPM_GETFULLCURRENTPATH, (WPARAM) strLen, (LPARAM) str );

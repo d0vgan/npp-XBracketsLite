@@ -89,9 +89,6 @@ namespace
 
 static const TCHAR INI_SECTION_OPTIONS[] = _T("Options");
 static const TCHAR INI_OPTION_FLAGS[] = _T("Flags");
-static const TCHAR INI_OPTION_SELAUTOBR[] = _T("Sel_AutoBr");
-static const TCHAR INI_OPTION_NEXTCHAROK[] = _T("Next_Char_OK");
-static const TCHAR INI_OPTION_PREVCHAROK[] = _T("Prev_Char_OK");
 static const TCHAR INI_OPTION_HTMLFILEEXTS[] = _T("HtmlFileExts");
 static const TCHAR INI_OPTION_ESCAPEDFILEEXTS[] = _T("EscapedFileExts");
 static const TCHAR INI_OPTION_SGLQUOTEFILEEXTS[] = _T("SingleQuoteFileExts");
@@ -100,12 +97,8 @@ static const TCHAR INI_OPTION_FILEEXTSRULE[] = _T("FileExtsRule");
 CXBracketsOptions::CXBracketsOptions() :
   // default values:
   m_uFlags(OPTF_AUTOCOMPLETE | OPTF_DOSINGLEQUOTE | OPTF_DOSINGLEQUOTEIF | OPTF_DOTAG | OPTF_DOTAGIF | OPTF_SKIPESCAPED),
-  m_uFlags0(-1),
   m_uSelAutoBr(sabNone),
-  m_uSelAutoBr0(-1),
   m_bSaveFileExtsRule(false),
-  m_bSaveNextCharOK(false),
-  m_bSavePrevCharOK(false),
   m_sHtmlFileExts(_T("htm; xml; php")),
   m_sEscapedFileExts(_T("cs; java; js; php; rc")),
   m_sSglQuoteFileExts(_T("js; pas; py; ps1; sh; htm; html; xml")),
@@ -122,10 +115,6 @@ CXBracketsOptions::~CXBracketsOptions()
 bool CXBracketsOptions::MustBeSaved() const
 {
     return ( m_bSaveFileExtsRule ||
-             m_bSaveNextCharOK ||
-             m_bSavePrevCharOK ||
-             m_uFlags != m_uFlags0 ||
-             m_uSelAutoBr != m_uSelAutoBr0 ||
              lstrcmpi(m_sHtmlFileExts.c_str(), m_sHtmlFileExts0.c_str()) != 0 ||
              lstrcmpi(m_sEscapedFileExts.c_str(), m_sEscapedFileExts0.c_str()) != 0 ||
              lstrcmpi(m_sSglQuoteFileExts.c_str(), m_sSglQuoteFileExts0.c_str()) != 0
@@ -368,22 +357,32 @@ static void postprocessSyntaxes(std::list<tFileSyntax>& fileSyntaxes, const tFil
     }
 }
 
-void CXBracketsOptions::ReadConfig(const tstr& cfgFilePath)
+tstr CXBracketsOptions::ReadConfig(const tstr& cfgFilePath)
 {
     std::list<tFileSyntax> fileSyntaxes;
     const tFileSyntax* pDefaultFileSyntax = nullptr;
 
     const auto jsonBuf = readFile(cfgFilePath.c_str());
     if ( jsonBuf.empty() )
-        return; // TODO: show an error "Could not open the file"
+    {
+        tstr msg(_T("Could not read the config file:\r\n\r\n"));
+        msg += cfgFilePath;
+        return msg;
+    }
 
     std::string err;
-    const auto jsonObj = json11::Json::parse(jsonBuf.data(), err);
+    const auto jsonObj = json11::Json::parse(jsonBuf.data(), err, json11::COMMENTS);
     if ( jsonObj.is_null() )
-        return; // TODO: show an error "Failed to parse JSON, the error is: ..."
+    {
+        tstr msg(_T("Failed to parse the JSON config:\r\n\r\n"));
+        msg += string_to_tstr(err);
+        return msg;
+    }
 
     if ( !jsonObj.is_object() )
-        return; // TODO: show an error "JSON config is not a valid JSON object"
+    {
+        return tstr(_T("The JSON config is not a valid JSON object"));
+    }
 
     for ( const auto& item : jsonObj.object_items() )
     {
@@ -402,7 +401,39 @@ void CXBracketsOptions::ReadConfig(const tstr& cfgFilePath)
         }
         else if ( item.first == "settings" )
         {
-            // TODO: read the settings here
+            if ( item.second.is_object() )
+            {
+                for ( const auto& settingItem : item.second.object_items() )
+                {
+                    const auto& settingName = settingItem.first;
+                    const auto& settingVal = settingItem.second;
+                    if ( settingName == "AutoComplete" )
+                    {
+                        if ( settingVal.is_bool() )
+                            setBracketsAutoComplete(settingVal.bool_value());
+                    }
+                    else if ( settingName == "AutoComplete_WhenRightBrExists" )
+                    {
+                        if ( settingVal.is_bool() )
+                            setBracketsRightExistsOK(settingVal.bool_value());
+                    }
+                    else if ( settingName == "Sel_AutoBr" )
+                    {
+                        if ( settingVal.is_number() )
+                            m_uSelAutoBr = settingVal.int_value();
+                    }
+                    else if ( settingName == "Next_Char_OK" )
+                    {
+                        if ( settingVal.is_string() )
+                            m_sNextCharOK = string_to_tstr(settingVal.string_value());
+                    }
+                    else if ( settingName == "Prev_Char_OK" )
+                    {
+                        if ( settingVal.is_string() )
+                            m_sPrevCharOK = string_to_tstr(settingVal.string_value());
+                    }
+                }
+            }
         }
     }
 
@@ -411,24 +442,14 @@ void CXBracketsOptions::ReadConfig(const tstr& cfgFilePath)
     // OK, finally:
     std::swap(m_fileSyntaxes, fileSyntaxes);
     std::swap(m_pDefaultFileSyntax, pDefaultFileSyntax);
+
+    return tstr();
 }
 
 void CXBracketsOptions::ReadOptions(const TCHAR* szIniFilePath)
 {
     const TCHAR NOKEYSTR[] = _T("=:=%*@$^!~#");
     TCHAR szTempExts[STR_FILEEXTS_SIZE];
-
-    m_uFlags0 = ::GetPrivateProfileInt( INI_SECTION_OPTIONS, INI_OPTION_FLAGS, -1, szIniFilePath );
-    if ( m_uFlags0 != (UINT) (-1) )
-    {
-        m_uFlags = m_uFlags0;
-    }
-
-    m_uSelAutoBr0 = ::GetPrivateProfileInt( INI_SECTION_OPTIONS, INI_OPTION_SELAUTOBR, -1, szIniFilePath );
-    if ( m_uSelAutoBr0 != (UINT) (-1) )
-    {
-        m_uSelAutoBr = m_uSelAutoBr0;
-    }
 
     szTempExts[0] = 0;
     ::GetPrivateProfileString( INI_SECTION_OPTIONS, INI_OPTION_HTMLFILEEXTS,
@@ -468,40 +489,10 @@ void CXBracketsOptions::ReadOptions(const TCHAR* szIniFilePath)
             m_sFileExtsRule = &szTempExts[i];
         }
     }
-
-    szTempExts[0] = 0;
-    ::GetPrivateProfileString( INI_SECTION_OPTIONS, INI_OPTION_NEXTCHAROK,
-        NOKEYSTR, szTempExts, STR_FILEEXTS_SIZE - 1, szIniFilePath );
-    if ( lstrcmp(szTempExts, NOKEYSTR) == 0 )
-    {
-        m_bSaveNextCharOK = true;
-    }
-    else
-    {
-        m_sNextCharOK = szTempExts;
-    }
-
-    szTempExts[0] = 0;
-    ::GetPrivateProfileString( INI_SECTION_OPTIONS, INI_OPTION_PREVCHAROK,
-        NOKEYSTR, szTempExts, STR_FILEEXTS_SIZE - 1, szIniFilePath );
-    if ( lstrcmp(szTempExts, NOKEYSTR) == 0 )
-    {
-        m_bSavePrevCharOK = true;
-    }
-    else
-    {
-        m_sPrevCharOK = szTempExts;
-    }
 }
 
 void CXBracketsOptions::SaveOptions(const TCHAR* szIniFilePath)
 {
-    TCHAR szNum[10];
-
-    ::wsprintf(szNum, _T("%u"), m_uFlags);
-    if ( ::WritePrivateProfileString(INI_SECTION_OPTIONS, INI_OPTION_FLAGS, szNum, szIniFilePath) )
-        m_uFlags0 = m_uFlags;
-
     if ( ::WritePrivateProfileString(INI_SECTION_OPTIONS, INI_OPTION_HTMLFILEEXTS, m_sHtmlFileExts.c_str(), szIniFilePath) )
         m_sHtmlFileExts0 = m_sHtmlFileExts;
 
@@ -515,24 +506,5 @@ void CXBracketsOptions::SaveOptions(const TCHAR* szIniFilePath)
     {
         if ( ::WritePrivateProfileString(INI_SECTION_OPTIONS, INI_OPTION_FILEEXTSRULE, m_sFileExtsRule.c_str(), szIniFilePath) )
             m_bSaveFileExtsRule = false;
-    }
-
-    if ( m_uSelAutoBr != m_uSelAutoBr0 )
-    {
-        ::wsprintf(szNum, _T("%u"), m_uSelAutoBr);
-        if ( ::WritePrivateProfileString(INI_SECTION_OPTIONS, INI_OPTION_SELAUTOBR, szNum, szIniFilePath) )
-            m_uSelAutoBr0 = m_uSelAutoBr;
-    }
-
-    if ( m_bSaveNextCharOK )
-    {
-        if ( ::WritePrivateProfileString(INI_SECTION_OPTIONS, INI_OPTION_NEXTCHAROK, m_sNextCharOK.c_str(), szIniFilePath) )
-            m_bSaveNextCharOK = false;
-    }
-
-    if ( m_bSavePrevCharOK )
-    {
-        if ( ::WritePrivateProfileString(INI_SECTION_OPTIONS, INI_OPTION_PREVCHAROK, m_sPrevCharOK.c_str(), szIniFilePath) )
-            m_bSavePrevCharOK = false;
     }
 }

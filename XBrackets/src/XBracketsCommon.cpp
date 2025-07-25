@@ -2,9 +2,20 @@
 
 namespace XBrackets
 {
+    bool isExistingFile(const TCHAR* filePath) noexcept
+    {
+        DWORD dwAttr = ::GetFileAttributes(filePath);
+        return ((dwAttr != INVALID_FILE_ATTRIBUTES) && ((dwAttr & FILE_ATTRIBUTE_DIRECTORY) == 0));
+    }
+
+    bool isExistingFile(const tstr& filePath) noexcept
+    {
+        return isExistingFile(filePath.c_str());
+    }
+
     std::vector<char> readFile(const TCHAR* filePath)
     {
-        HANDLE hFile = ::CreateFile(filePath, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
+        HANDLE hFile = ::CreateFile(filePath, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
         if ( hFile == INVALID_HANDLE_VALUE )
         {
             // ERROR: Could not open the file

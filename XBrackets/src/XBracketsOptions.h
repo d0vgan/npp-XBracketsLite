@@ -20,7 +20,7 @@ class CXBracketsOptions
         bool IsEscapedFileExt(const TCHAR* szExt) const;
         bool IsSingleQuoteFileExt(const TCHAR* szExt) const;
         bool IsSupportedFile(const TCHAR* szExt) const;
-        void ReadConfig(const tstr& cfgFilePath);
+        tstr ReadConfig(const tstr& cfgFilePath);
         void ReadOptions(const TCHAR* szIniFilePath);
         void SaveOptions(const TCHAR* szIniFilePath);
 
@@ -212,12 +212,8 @@ class CXBracketsOptions
 
     protected:
         UINT  m_uFlags;
-        UINT  m_uFlags0;
         UINT  m_uSelAutoBr; // one of eSelAutoBr
-        UINT  m_uSelAutoBr0;
         bool  m_bSaveFileExtsRule;
-        bool  m_bSaveNextCharOK;
-        bool  m_bSavePrevCharOK;
         tstr  m_sHtmlFileExts;
         tstr  m_sHtmlFileExts0;
         tstr  m_sEscapedFileExts;

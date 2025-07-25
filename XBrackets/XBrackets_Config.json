@@ -1,5 +1,7 @@
 {
   "settings": {
+    "AutoComplete": true,
+    "AutoComplete_WhenRightBrExists": false,
     "Sel_AutoBr": 4,
     "Next_Char_OK": ".,!?:;</",
     "Prev_Char_OK": "([{<="

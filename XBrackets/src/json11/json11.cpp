@@ -736,9 +736,25 @@ Json Json::parse(const string &in, string &err, JsonParse strategy) {
     // Check for any trailing garbage
     parser.consume_garbage();
     if (parser.failed)
+    {
+        string full_err;
+        full_err.reserve(err.length() + 30);
+        full_err.append("Stopped at offset ")
+            .append(std::to_string(parser.i))
+            .append(":\n").append(err);
+        err.swap(full_err);
         return Json();
+    }
     if (parser.i != in.size())
-        return parser.fail("unexpected trailing " + esc(in[parser.i]));
+    {
+        string full_err;
+        full_err.reserve(60);
+        full_err.append("Stopped at offset ")
+            .append(std::to_string(parser.i))
+            .append(":\n").append("unexpected trailing ")
+            .append(esc(in[parser.i]));
+        return parser.fail(std::move(full_err));
+    }
 
     return result;
 }
