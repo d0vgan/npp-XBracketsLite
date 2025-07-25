@@ -364,6 +364,17 @@ void CXBracketsPlugin::ReadOptions()
     m_sConfigFilePath.append(_T("\\XBrackets_Config.json"));
 
     const bool isUserConfig = XBrackets::isExistingFile(m_sUserConfigFilePath);
+    if ( !isUserConfig )
+    {
+        if ( !XBrackets::isExistingFile(m_sConfigFilePath) )
+        {
+            tstr err = _T("The default config file does not exist:\r\n");
+            err.append(m_sConfigFilePath);
+            PluginMessageBox(err.c_str(), MB_OK | MB_ICONERROR);
+            return;
+        }
+    }
+
     const tstr err = g_opt.ReadConfig(isUserConfig ? m_sUserConfigFilePath : m_sConfigFilePath);
     if ( !err.empty() )
     {
