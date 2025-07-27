@@ -26,10 +26,7 @@ public:
 public:
     CBracketsTree();
 
-    void setFileType(const tstr& fileExtension);
-
-    unsigned int getAutocompleteLeftBracketType(CSciMessager& sciMsgr, const char ch) const;
-    const tBrPair* getAutoCompleteBrPair(unsigned int nBracketType) const;
+    void setFileSyntax(const tFileSyntax* pFileSyntax);
 
     bool isTreeEmpty() const;
     void buildTree(CSciMessager& sciMsgr);
@@ -55,6 +52,8 @@ class CXBracketsLogic
 {
 public:
     using tstr = XBrackets::tstr;
+    using tBrPair = XBrackets::tBrPair;
+    using tFileSyntax = XBrackets::tFileSyntax;
 
     enum eCharProcessingResult {
         cprNone = 0,
@@ -77,15 +76,13 @@ public:
         icbfAll = (icbfBrPair | icbfAutoRightBr | icbfTree)
     };
 
-    static const char* strBrackets[XBrackets::tbtCount];
-
 public:
     CXBracketsLogic();
 
     // interaction with the plugin
     void SetNppData(const NppData& nppd);
-    void UpdateFileType();
-    void InvalidateCachedBrackets(unsigned int uInvalidateFlags = icbfAll, SCNotification* pscn = nullptr);
+    void UpdateFileType(unsigned int uInvalidateFlags = icbfAll);
+    void InvalidateCachedBrackets(unsigned int uInvalidateFlags, SCNotification* pscn = nullptr);
     eCharProcessingResult OnChar(const int ch);
     void PerformBracketsAction(eGetBracketsAction nBrAction);
 
@@ -102,33 +99,29 @@ private:
     // internal vars
     CBracketsTree m_bracketsTree;
     CNppMessager m_nppMsgr;
-    Sci_Position m_nAutoRightBracketPos;
-    Sci_Position m_nCachedLeftBrPos;
-    Sci_Position m_nCachedRightBrPos;
-    unsigned int m_uFileType;
+    const tFileSyntax* m_pFileSyntax{nullptr};
+    Sci_Position m_nAutoRightBracketPos{-1};
+    int          m_nAutoRightBracketType{-1};
+    int          m_nAutoRightBracketOffset{-1};
+    Sci_Position m_nCachedLeftBrPos{-1};
+    Sci_Position m_nCachedRightBrPos{-1};
+    unsigned int m_uFileType{XBrackets::tfmIsSupported};
 
 private:
     // custom functions
-    eCharProcessingResult autoBracketsFunc(unsigned int nBracketType);
-    bool autoBracketsOverSelectionFunc(unsigned int nBracketType);
-    bool isEnclosedInBrackets(const char* pszTextLeft, const char* pszTextRight, unsigned int* pnBracketType, bool bInSelection);
+    int getAutocompleteLeftBracketType(CSciMessager& sciMsgr, const char ch) const;
+    int getAutocompleteRightBracketType(CSciMessager& sciMsgr, const char ch) const;
+    const tBrPair* getAutoCompleteBrPair(int nBracketType) const;
+    eCharProcessingResult autoBracketsFunc(int nBracketType);
+    bool autoBracketsOverSelectionFunc(int nBracketType);
+    bool isEnclosedInBrackets(const char* pszTextLeft, const char* pszTextRight, int* pnBracketType, bool bInSelection);
     unsigned int detectFileType(tstr* pFileExt = nullptr);
     unsigned int getFileType() const;
     void setFileType(unsigned int uFileType);
 
-    bool isDoubleQuoteSupported() const;
-    bool isSingleQuoteSupported() const;
-    bool isTagSupported() const;
-    bool isTag2Supported() const;
     bool isSkipEscapedSupported() const;
 
     bool isEscapedPos(const CSciMessager& sciMsgr, const Sci_Position nCharPos) const;
-
-    enum eBracketOptions {
-        bofIgnoreMode = 0x01
-    };
-    XBrackets::TBracketType getLeftBracketType(const int ch, unsigned int uOptions = 0) const;
-    XBrackets::TBracketType getRightBracketType(const int ch, unsigned int uOptions = 0) const;
 };
 
 //---------------------------------------------------------------------------

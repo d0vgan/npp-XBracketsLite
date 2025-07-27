@@ -60,19 +60,6 @@ namespace XBrackets
         tfmIsSupported    = 0x1000
     };
 
-    enum TBracketType {
-        tbtNone = 0,
-        tbtBracket,  //  (
-        tbtSquare,   //  [
-        tbtBrace,    //  {
-        tbtDblQuote, //  "
-        tbtSglQuote, //  '
-        tbtTag,      //  <
-        tbtTag2,     //  />
-
-        tbtCount
-    };
-
     // helpers
     bool isExistingFile(const TCHAR* filePath) noexcept;
     bool isExistingFile(const tstr& filePath) noexcept;

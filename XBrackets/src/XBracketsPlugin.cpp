@@ -191,12 +191,11 @@ void CXBracketsPlugin::OnNppSetInfo(const NppData& nppd)
 void CXBracketsPlugin::OnNppBufferActivated()
 {
     m_BracketsLogic.UpdateFileType();
-    m_BracketsLogic.InvalidateCachedBrackets();
 }
 
 void CXBracketsPlugin::OnNppBufferReload()
 {
-    m_BracketsLogic.InvalidateCachedBrackets();
+    m_BracketsLogic.InvalidateCachedBrackets(CXBracketsLogic::icbfAll);
 }
 
 void CXBracketsPlugin::OnNppFileOpened()
@@ -207,14 +206,13 @@ void CXBracketsPlugin::OnNppFileOpened()
 
 void CXBracketsPlugin::OnNppFileReload()
 {
-    m_BracketsLogic.InvalidateCachedBrackets();
+    m_BracketsLogic.InvalidateCachedBrackets(CXBracketsLogic::icbfAll);
 }
 
 void CXBracketsPlugin::OnNppFileSaved()
 {
-    m_BracketsLogic.UpdateFileType();
     // AutoRightBr is still valid, but file type may be changed:
-    m_BracketsLogic.InvalidateCachedBrackets(CXBracketsLogic::icbfBrPair);
+    m_BracketsLogic.UpdateFileType(CXBracketsLogic::icbfBrPair);
 }
 
 void CXBracketsPlugin::OnNppReady()
@@ -222,7 +220,6 @@ void CXBracketsPlugin::OnNppReady()
     ReadOptions();
     CXBracketsMenu::UpdateMenuState();
     m_BracketsLogic.UpdateFileType();
-    m_BracketsLogic.InvalidateCachedBrackets();
 
     m_nppMsgr.SendNppMsg(NPPM_ADDSCNMODIFIEDFLAGS, 0, SC_MOD_INSERTTEXT | SC_MOD_DELETETEXT | SC_MOD_BEFOREINSERT | SC_MOD_BEFOREDELETE);
 
@@ -291,7 +288,6 @@ void CXBracketsPlugin::OnNppMacro(int nMacroState)
 
         g_opt.setBracketsAutoComplete(nPrevAutoComplete > 0);
         m_BracketsLogic.UpdateFileType();
-        m_BracketsLogic.InvalidateCachedBrackets();
     }
 
     CXBracketsMenu::AllowAutocomplete(!isNppMacroStarted);
@@ -432,7 +428,6 @@ void CXBracketsPlugin::OnConfigFileChanged(const tstr& configFilePath)
 
     m_PluginMenu.UpdateMenuState();
     m_BracketsLogic.UpdateFileType();
-    m_BracketsLogic.InvalidateCachedBrackets();
 }
 
 void CXBracketsPlugin::onConfigFileError(const tstr& configFilePath, const tstr& err)
