@@ -749,7 +749,7 @@ CXBracketsLogic::eCharProcessingResult CXBracketsLogic::OnChar(const int ch)
     if ( !g_opt.getBracketsAutoComplete() )
         return cprNone;
 
-    if ( (getFileType() & tfmIsSupported) == 0 )
+    if ( (m_uFileType & tfmIsSupported) == 0 )
         return cprNone;
 
     CSciMessager sciMsgr(m_nppMsgr.getCurrentScintillaWnd());
@@ -912,21 +912,23 @@ void CXBracketsLogic::PerformBracketsAction(eGetBracketsAction nBrAction)
 void CXBracketsLogic::UpdateFileType(unsigned int uInvalidateFlags)
 {
     tstr fileExtension;
-    unsigned int uFileType = detectFileType(&fileExtension);
 
-    setFileType(uFileType);
-
+    m_uFileType = detectFileType(&fileExtension);
     m_pFileSyntax = nullptr;
-    for ( const auto& syntax : g_opt.getFileSyntaxes() )
+
+    if ( m_uFileType & tfmIsSupported )
     {
-        if ( syntax.fileExtensions.find(fileExtension) != syntax.fileExtensions.end() )
+        for ( const auto& syntax : g_opt.getFileSyntaxes() )
         {
-            m_pFileSyntax = &syntax;
-            break;
+            if ( syntax.fileExtensions.find(fileExtension) != syntax.fileExtensions.end() )
+            {
+                m_pFileSyntax = &syntax;
+                break;
+            }
         }
+        if ( m_pFileSyntax == nullptr )
+            m_pFileSyntax = g_opt.getDefaultFileSyntax();
     }
-    if ( m_pFileSyntax == nullptr )
-        m_pFileSyntax = g_opt.getDefaultFileSyntax();
 
     m_bracketsTree.setFileSyntax(m_pFileSyntax);
 
@@ -1292,7 +1294,7 @@ unsigned int CXBracketsLogic::detectFileType(tstr* pFileExt)
         if ( *pszExt == _T('.') )
         {
             ++pszExt;
-            if ( !(*pszExt) )
+            if ( *pszExt == 0 )
             {
                 if ( pFileExt )
                 {
@@ -1303,33 +1305,6 @@ unsigned int CXBracketsLogic::detectFileType(tstr* pFileExt)
         }
 
         ::CharLower(pszExt);
-
-        if ( lstrcmp(pszExt, _T("c")) == 0 ||
-             lstrcmp(pszExt, _T("cc")) == 0 ||
-             lstrcmp(pszExt, _T("cpp")) == 0 ||
-             lstrcmp(pszExt, _T("cxx")) == 0 ||
-             lstrcmp(pszExt, _T("h")) == 0 ||
-             lstrcmp(pszExt, _T("hh")) == 0 ||
-             lstrcmp(pszExt, _T("hpp")) == 0 ||
-             lstrcmp(pszExt, _T("hxx")) == 0 )
-        {
-            uType |= tfmComment1 | tfmEscaped1;
-        }
-        else if ( lstrcmp(pszExt, _T("pas")) == 0 )
-        {
-            uType |= tfmComment1;
-        }
-        else
-        {
-            if ( g_opt.IsHtmlCompatible(pszExt) )
-                uType |= tfmHtmlCompatible;
-
-            if ( g_opt.IsEscapedFileExt(pszExt) )
-                uType |= tfmEscaped1;
-        }
-
-        if ( g_opt.IsSingleQuoteFileExt(pszExt) )
-            uType |= tfmSingleQuote;
 
         if ( g_opt.IsSupportedFile(pszExt) )
             uType |= tfmIsSupported;
@@ -1342,14 +1317,4 @@ unsigned int CXBracketsLogic::detectFileType(tstr* pFileExt)
         *pFileExt = pszExt;
     }
     return uType;
-}
-
-unsigned int CXBracketsLogic::getFileType() const
-{
-    return m_uFileType;
-}
-
-void CXBracketsLogic::setFileType(unsigned int uFileType)
-{
-    m_uFileType = uFileType;
 }

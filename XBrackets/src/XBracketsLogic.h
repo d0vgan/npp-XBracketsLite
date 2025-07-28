@@ -116,11 +116,7 @@ private:
     bool autoBracketsOverSelectionFunc(int nBracketType);
     bool isEnclosedInBrackets(const char* pszTextLeft, const char* pszTextRight, int* pnBracketType, bool bInSelection);
     unsigned int detectFileType(tstr* pFileExt = nullptr);
-    unsigned int getFileType() const;
-    void setFileType(unsigned int uFileType);
-
     bool isSkipEscapedSupported() const;
-
     bool isEscapedPos(const CSciMessager& sciMsgr, const Sci_Position nCharPos) const;
 };
 

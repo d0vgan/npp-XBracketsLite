@@ -52,12 +52,12 @@ namespace XBrackets
     };
 
     enum TFileType2 {
-        tfmNone           = 0x0000,
-        tfmComment1       = 0x0001,
-        tfmHtmlCompatible = 0x0002,
-        tfmEscaped1       = 0x0004,
-        tfmSingleQuote    = 0x0008,
         tfmIsSupported    = 0x1000
+    };
+
+    enum eStringCase {
+        scUpper = 1,
+        scLower = 2
     };
 
     // helpers
@@ -65,6 +65,7 @@ namespace XBrackets
     bool isExistingFile(const tstr& filePath) noexcept;
     std::vector<char> readFile(const TCHAR* filePath);
     tstr string_to_tstr(const std::string& str);
+    tstr string_to_tstr_changecase(const std::string& str, eStringCase strCase);
 };
 
 //---------------------------------------------------------------------------

@@ -4,7 +4,8 @@
     "AutoComplete_WhenRightBrExists": false,
     "Sel_AutoBr": 4,
     "Next_Char_OK": ".,!?:;</",
-    "Prev_Char_OK": "([{<="
+    "Prev_Char_OK": "([{<=",
+    "FileExtsRule": ""
   },
   "fileSyntax": [
     {
@@ -111,6 +112,29 @@
         [ "\"", "\"" ],
         [ "'", "'" ],
         [ "%", "%" ]
+      ]
+    },
+    {
+      "name": "AutoHotkey",
+      "fileExtensions": [
+        "ahk"
+      ],
+      "syntax": [
+        [ "(", ")", "multi-line-brackets" ],
+        [ "{", "}", "multi-line-brackets" ],
+        [ "[", "]", "multi-line-brackets" ],
+        [ "\"", "\"", "single-line-quotes" ],
+        [ "%", "%", "single-line-quotes" ],
+        [ ";", "", "single-line-comment" ],
+        [ "/*", "*/", "multi-line-comment" ]
+      ],
+      "autocomplete": [
+        [ "(", ")" ],
+        [ "{", "}" ],
+        [ "[", "]" ],
+        [ "\"", "\"" ],
+        [ "%", "%" ],
+        [ "/*", "*/" ]
       ]
     }
   ]

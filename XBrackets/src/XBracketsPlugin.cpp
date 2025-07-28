@@ -280,6 +280,7 @@ void CXBracketsPlugin::OnNppMacro(int nMacroState)
     {
         nPrevAutoComplete = g_opt.getBracketsAutoComplete() ? 1 : 0;
         g_opt.setBracketsAutoComplete(false);
+        m_BracketsLogic.InvalidateCachedBrackets(CXBracketsLogic::icbfAll);
     }
     else
     {
@@ -394,13 +395,7 @@ void CXBracketsPlugin::SaveOptions()
 {
     if ( g_opt.MustBeSaved() )
     {
-        TCHAR szPath[2*MAX_PATH + 1];
-
-        m_nppMsgr.getPluginsConfigDir(2*MAX_PATH, szPath);
-        lstrcat(szPath, _T("\\"));
-        lstrcat(szPath, m_sIniFileName.c_str());
-
-        g_opt.SaveOptions(szPath);
+        g_opt.SaveOptions(m_sIniFilePath.c_str());
     }
 }
 
