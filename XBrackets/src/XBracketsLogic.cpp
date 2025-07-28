@@ -287,10 +287,12 @@ void CBracketsTree::buildTree(CSciMessager& sciMsgr)
                 }
             }
 
-            if ( pBrPair->leftBr.length() > 1 )
+            int nBrLen = static_cast<int>(pBrPair->leftBr.length());
+            if ( nBrLen > 1 )
             {
-                p += (pBrPair->leftBr.length() - 1);
-                nPos += (pBrPair->leftBr.length() - 1);
+                --nBrLen;
+                p += nBrLen;
+                nPos += nBrLen;
             }
         }
         else
@@ -332,10 +334,12 @@ void CBracketsTree::buildTree(CSciMessager& sciMsgr)
                     }
                 }
 
-                if ( pBrPair->rightBr.length() > 1 )
+                int nBrLen = static_cast<int>(pBrPair->rightBr.length());
+                if ( nBrLen > 1 )
                 {
-                    p += (pBrPair->rightBr.length() - 1);
-                    nPos += (pBrPair->leftBr.length() - 1);
+                    --nBrLen;
+                    p += nBrLen;
+                    nPos += nBrLen;
                 }
             }
         }
@@ -375,53 +379,79 @@ void CBracketsTree::updateTree(const SCNotification* pscn)
     if ( (pscn->modificationType & (SC_MOD_INSERTTEXT | SC_MOD_DELETETEXT | SC_MOD_BEFOREINSERT | SC_MOD_BEFOREDELETE)) == 0 )
         return; // unsupported modification type
 
+    if ( pscn->modificationType & (SC_MOD_DELETETEXT | SC_MOD_BEFOREDELETE) )
+    {
+        invalidateTree();
+        return; // part of a bracket may be deleted
+    }
+
     CSciMessager sciMsgr(reinterpret_cast<HWND>(pscn->nmhdr.hwndFrom));
     if ( sciMsgr.getSelections() > 1 )
     {
         invalidateTree();
-        return; // tree needs to be recreated
+        return; // multiple selection
     }
 
-    // 1. checking the document's text around pscn->position
+    unsigned int nMaxBrLen = 0;
     bool needsInvalidate = false;
-    const Sci_Position nTextLen = sciMsgr.getTextLength();
-    Sci_Position nPos1 = pscn->position >= 8 ? pscn->position - 8 : 0;
-    Sci_Position nPos2 = pscn->position + 8 < nTextLen ? pscn->position + 8 : nTextLen;
-    size_t nOffset = pscn->position >= 8 ? 0 : 8 - pscn->position;
 
-    char szText[18]{};
-    sciMsgr.getTextRange(nPos1, nPos2, szText + nOffset);
-
-    for ( auto& item : m_pFileSyntax->pairs )
+    for ( const auto& brPair : m_pFileSyntax->pairs )
     {
-        size_t nBrLen = item.leftBr.length();
-        if ( nBrLen > 1 )
-        {
-            const char* p = strstr(szText + 9 - nBrLen, item.leftBr.c_str());
-            if ( p != nullptr && p < szText + 8 ) // inside the left bracket
-            {
-                needsInvalidate = true;
-                break;
-            }
-        }
+        unsigned int nBrLen = static_cast<unsigned int>(brPair.leftBr.length());
+        if ( nMaxBrLen < nBrLen )
+            nMaxBrLen = nBrLen;
 
-        nBrLen = item.rightBr.length();
-        if ( nBrLen > 1 )
+        nBrLen = static_cast<unsigned int>(brPair.rightBr.length());
+        if ( nMaxBrLen < nBrLen )
+            nMaxBrLen = nBrLen;
+    }
+
+    if ( nMaxBrLen > 1 )
+    {
+        --nMaxBrLen; // e.g.  <!-|-  or  -|->  in case of  <!-- -->
+
+        // 1. checking the document's text around pscn->position
+        const Sci_Position nTextLen = sciMsgr.getTextLength();
+        Sci_Position nPos1 = pscn->position >= static_cast<Sci_Position>(nMaxBrLen) ? pscn->position - nMaxBrLen : 0;
+        Sci_Position nPos2 = pscn->position + static_cast<Sci_Position>(nMaxBrLen) < nTextLen ? pscn->position + nMaxBrLen : nTextLen;
+        unsigned int nOffset = pscn->position >= static_cast<Sci_Position>(nMaxBrLen) ? 0 : nMaxBrLen - static_cast<unsigned int>(pscn->position);
+
+        char szText[20]{};
+        sciMsgr.getTextRange(nPos1, nPos2, szText + nOffset);
+
+        for ( auto& item : m_pFileSyntax->pairs )
         {
-            const char* p = strstr(szText + 9 - nBrLen, item.rightBr.c_str());
-            if ( p != nullptr && p < szText + 8 ) // inside the right bracket
+            unsigned int nBrLen = static_cast<unsigned int>(item.leftBr.length());
+            if ( nBrLen > 1 )
             {
-                needsInvalidate = true;
-                break;
+                --nBrLen;
+                const char* p = strstr(szText + nMaxBrLen - nBrLen, item.leftBr.c_str());
+                if ( p != nullptr && p < szText + nMaxBrLen ) // inside the left bracket
+                {
+                    needsInvalidate = true;
+                    break;
+                }
+            }
+
+            nBrLen = static_cast<unsigned int>(item.rightBr.length());
+            if ( nBrLen > 1 )
+            {
+                --nBrLen;
+                const char* p = strstr(szText + nMaxBrLen - nBrLen, item.rightBr.c_str());
+                if ( p != nullptr && p < szText + nMaxBrLen ) // inside the right bracket
+                {
+                    needsInvalidate = true;
+                    break;
+                }
             }
         }
     }
 
-    if ( pscn->modificationType & (SC_MOD_INSERTTEXT | SC_MOD_DELETETEXT) )
+    if ( pscn->modificationType & SC_MOD_INSERTTEXT )
     {
         if ( !needsInvalidate )
         {
-            // 2. checking for inserted/deleted new line
+            // 2. checking for inserted new line
             const char* p = pscn->text;
             const char* const pEnd = p + pscn->length;
 
@@ -438,7 +468,7 @@ void CBracketsTree::updateTree(const SCNotification* pscn)
 
         if ( !needsInvalidate )
         {
-            // 3. checking for inserted/deleted brackets or quotes
+            // 3. checking for inserted brackets or quotes
             const char* p = pscn->text;
             const char* const pEnd = p + pscn->length;
 
@@ -470,11 +500,11 @@ void CBracketsTree::updateTree(const SCNotification* pscn)
         return; // tree needs to be recreated
     }
 
-    const Sci_Position pos = pscn->position;
-    const Sci_Position len = pscn->length;
-
     if ( pscn->modificationType & SC_MOD_INSERTTEXT )
     {
+        const Sci_Position pos = pscn->position;
+        const Sci_Position len = pscn->length;
+
         for ( auto& item : m_bracketsTree )
         {
             if ( item.nLeftBrPos >= pos )
@@ -485,21 +515,6 @@ void CBracketsTree::updateTree(const SCNotification* pscn)
             else if ( item.nRightBrPos >= pos )
             {
                 item.nRightBrPos += len;
-            }
-        }
-    }
-    else if ( pscn->modificationType & SC_MOD_DELETETEXT )
-    {
-        for ( auto& item : m_bracketsTree )
-        {
-            if ( item.nLeftBrPos >= pos )
-            {
-                item.nLeftBrPos -= len;
-                item.nRightBrPos -= len;
-            }
-            else if ( item.nRightBrPos >= pos )
-            {
-                item.nRightBrPos -= len;
             }
         }
     }
