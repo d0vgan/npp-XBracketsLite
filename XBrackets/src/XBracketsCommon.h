@@ -23,6 +23,26 @@ namespace XBrackets
         bpkQtEsqChar     // escape character in quotes
     };
 
+    static inline bool isBrKind(eBrPairKind kind)
+    {
+        return (kind == bpkSgLnBrackets || kind == bpkMlLnBrackets);
+    }
+
+    static inline bool isQtKind(eBrPairKind kind)
+    {
+        return (kind == bpkSgLnQuotes || kind == bpkMlLnQuotes);
+    }
+
+    static inline bool isSgLnBrQtKind(eBrPairKind kind)
+    {
+        return (kind == bpkSgLnBrackets || kind == bpkSgLnQuotes);
+    }
+
+    static inline bool isMlLnBrQtKind(eBrPairKind kind)
+    {
+        return (kind == bpkMlLnBrackets || kind == bpkMlLnQuotes);
+    }
+
     enum eConsts {
         MAX_ESCAPED_PREFIX  = 20
     };
