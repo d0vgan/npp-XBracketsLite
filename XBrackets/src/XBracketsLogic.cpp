@@ -352,6 +352,7 @@ void CBracketsTree::buildTree(CSciMessager& sciMsgr)
                         {
                             if ( !isQtKind(itrItem->pBrPair->kind) || !isEscapedPos(vText.data(), nPos) )
                             {
+                                // TODO: fix "ab" "cd" "ef"
                                 // itrItem points to an unmatched left bracket, nPos is its right bracket
                                 unmatchedRightBrackets.push_back({-1, nPos, nLine, static_cast<Sci_Position>(unmatchedLeftBrackets.size()), pBrPair}); // |)
                             }
