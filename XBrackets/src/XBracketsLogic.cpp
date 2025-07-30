@@ -155,18 +155,17 @@ void CBracketsTree::buildTree(CSciMessager& sciMsgr)
                                     // Handle all these cases:
                                     //
                                     //   /*
-                                    //   " */ " "
+                                    //   " */ " "  ""
                                     //
-                                    //    /*
-                                    //    [ */ ]
-                                    //
-                                    // The problem: as "/*" and "*/" are located on different lines,
-                                    // the first pass of `processUnmatchedRightBrackets` finds only
-                                    // the pair on the current line: " " or [ ].
-                                    // The second pass finds /* */.
-                                    // The first pass needs to be tuned to search for "/*" before
-                                    // the current line.
-                                    //
+                                    // The problem: at first, the last quote in `" */ "` is detected as a "right quote",
+                                    // and then the detected `/* */` multi-line comment "eats" the left quote,
+                                    // thus having a wrong "right quote" after the `*/`.
+                                    // Maybe in this case we should move all odd quotes from unmatchedRightBrackets
+                                    // to unmatchedLeftBrackets, and keep all even quotes in unmatchedRightBrackets?
+                                    // Alternatively, maybe additional conditions could be added in the code
+                                    // near the following comment below:
+                                    // "// itrItem points to an unmatched left bracket, nPos is its right bracket"
+                                    // 
                                     if ( pRight->nRightBrPos < pLeftItem->nRightBrPos && pRight->pBrPair->kind != bpkMlLnComm )
                                         pRight->nLeftBrPos = 0; // mark as "processed"
 
@@ -203,7 +202,7 @@ void CBracketsTree::buildTree(CSciMessager& sciMsgr)
                             break;
                         }
 
-                        if ( pLeftItem == pLeftStart )
+                        if ( pLeftItem == (pRightBrPair->kind != bpkMlLnComm ? pLeftStart : pLeftBegin) )
                             break;
                     }
                 }
