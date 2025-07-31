@@ -33,6 +33,7 @@
         [ "{", "}", "multi-line-brackets" ],
         [ "(", ")", "multi-line-brackets" ],
         [ "[", "]", "multi-line-brackets" ],
+        [ "<", ">", "single-line-brackets" ],
         [ "\"", "\"", "single-line-quotes" ],
         [ "'", "'", "single-line-quotes" ],
         [ "//", "", "single-line-comment" ],
@@ -53,9 +54,6 @@
       "parent": "C",
       "fileExtensions": [
         "cc", "cpp", "cxx", "hh", "hpp", "hxx"
-      ],
-      "syntax": [
-        [ "<", ">", "single-line-brackets" ]
       ]
     },
     {
@@ -112,6 +110,31 @@
         [ "\"", "\"" ],
         [ "'", "'" ],
         [ "%", "%" ]
+      ]
+    },
+    {
+      "name": "PowerShell",
+      "fileExtensions": [
+        "ps1"
+      ],
+      "syntax": [
+        [ "{", "}", "multi-line-brackets" ],
+        [ "(", ")", "multi-line-brackets" ],
+        [ "[", "]", "multi-line-brackets" ],
+        [ "<#", "#>", "multi-line-comment" ],
+        [ "#", "", "single-line-comment" ],
+        [ "@\"", "\"@", "multi-line-quotes" ],
+        [ "@'", "'@", "multi-line-quotes" ],
+        [ "\"", "\"", "single-line-quotes" ],
+        [ "'", "'", "single-line-quotes" ],
+        [ "`", "quote-escape-char" ]
+      ],
+      "autocomplete": [
+        [ "{", "}" ],
+        [ "(", ")" ],
+        [ "[", "]" ],
+        [ "\"", "\"" ],
+        [ "'", "'" ]
       ]
     },
     {

@@ -213,8 +213,13 @@ void CBracketsTree::buildTree(CSciMessager& sciMsgr)
             continue;
         }
 
-        const tBrPair* pBrPair = getLeftBrPair(p, nTextLen - nPos);
-        if ( pBrPair != nullptr )
+        const tBrPair* pLeftBrPair = getLeftBrPair(p, nTextLen - nPos);
+        const tBrPair* pRightBrPair = getRightBrPair(p, nTextLen - nPos);
+        const tBrPair* pBrPair = (pLeftBrPair != nullptr && (pRightBrPair == nullptr || pRightBrPair->rightBr.length() <= pLeftBrPair->leftBr.length())) ? pLeftBrPair : pRightBrPair;
+        if ( pBrPair == nullptr )
+            continue;
+
+        if ( pBrPair == pLeftBrPair )
         {
             if ( pBrPair->leftBr == pBrPair->rightBr )
             {
@@ -327,53 +332,49 @@ void CBracketsTree::buildTree(CSciMessager& sciMsgr)
                 nPos += nBrLen;
             }
         }
-        else
+        else if ( pBrPair == pRightBrPair )
         {
-            pBrPair = getRightBrPair(p, nTextLen - nPos);
-            if ( pBrPair != nullptr )
+            // right bracket
+            Sci_Position nFoundItemIdx = -1;
+            for ( Sci_Position nItemIdx = nCurrentParentIdx; nItemIdx != -1; )
             {
-                // right bracket
-                Sci_Position nFoundItemIdx = -1;
-                for ( Sci_Position nItemIdx = nCurrentParentIdx; nItemIdx != -1; )
+                const tBrPairItem& item = bracketsTree[nItemIdx];
+                if ( isSgLnBrQtKind(pBrPair->kind) && item.nLine != nCurrentLine )
+                    break;
+
+                if ( item.pBrPair->leftBr == pBrPair->leftBr )
                 {
-                    const tBrPairItem& item = bracketsTree[nItemIdx];
-                    if ( isSgLnBrQtKind(pBrPair->kind) && item.nLine != nCurrentLine )
-                        break;
-
-                    if ( item.pBrPair->leftBr == pBrPair->leftBr )
-                    {
-                        nFoundItemIdx = nItemIdx;
-                        break;
-                    }
-
-                    if ( item.pBrPair->kind == bpkMlLnComm && pBrPair->kind != bpkMlLnComm )
-                        break;
-
-                    if ( pBrPair->kind != bpkMlLnComm && !isQtKind(pBrPair->kind) && (item.pBrPair->kind == bpkSgLnComm || isQtKind(item.pBrPair->kind)) )
-                    {
-                        bracketsTree.push_back({-1, nPos, nCurrentLine, nCurrentParentIdx, pBrPair});
-                        break;
-                    }
-
-                    nItemIdx = item.nParentIdx;
+                    nFoundItemIdx = nItemIdx;
+                    break;
                 }
 
-                if ( nFoundItemIdx != -1 )
-                {
-                    tBrPairItem& item = bracketsTree[nFoundItemIdx];
-                    item.nRightBrPos = nPos; // |)
-                    nCurrentParentIdx = item.nParentIdx;
+                if ( item.pBrPair->kind == bpkMlLnComm && pBrPair->kind != bpkMlLnComm )
+                    break;
 
-                    invalidateChildRightBrackets(nFoundItemIdx);
+                if ( pBrPair->kind != bpkMlLnComm && !isQtKind(pBrPair->kind) && (item.pBrPair->kind == bpkSgLnComm || isQtKind(item.pBrPair->kind)) )
+                {
+                    bracketsTree.push_back({-1, nPos, nCurrentLine, nCurrentParentIdx, pBrPair});
+                    break;
                 }
 
-                int nBrLen = static_cast<int>(pBrPair->rightBr.length());
-                if ( nBrLen > 1 )
-                {
-                    --nBrLen;
-                    p += nBrLen;
-                    nPos += nBrLen;
-                }
+                nItemIdx = item.nParentIdx;
+            }
+
+            if ( nFoundItemIdx != -1 )
+            {
+                tBrPairItem& item = bracketsTree[nFoundItemIdx];
+                item.nRightBrPos = nPos; // |)
+                nCurrentParentIdx = item.nParentIdx;
+
+                invalidateChildRightBrackets(nFoundItemIdx);
+            }
+
+            int nBrLen = static_cast<int>(pBrPair->rightBr.length());
+            if ( nBrLen > 1 )
+            {
+                --nBrLen;
+                p += nBrLen;
+                nPos += nBrLen;
             }
         }
     }
