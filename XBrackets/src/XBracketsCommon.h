@@ -58,7 +58,7 @@ namespace XBrackets
         Sci_Position nLeftBrPos{-1};  // (| 
         Sci_Position nRightBrPos{-1}; // |)
         Sci_Position nLine{-1}; // only for internal comparison
-        Sci_Position nParentLeftBrPos{-1};
+        Sci_Position nParentIdx{-1};
         const tBrPair* pBrPair{};
     };
 

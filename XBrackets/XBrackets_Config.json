@@ -136,6 +136,30 @@
         [ "%", "%" ],
         [ "/*", "*/" ]
       ]
+    },
+    {
+      "name": "Python",
+      "fileExtensions": [
+        "py"
+      ],
+      "syntax": [
+        [ "(", ")", "multi-line-brackets" ],
+        [ "{", "}", "multi-line-brackets" ],
+        [ "[", "]", "multi-line-brackets" ],
+        [ "#", "", "single-line-comment" ],
+        [ "\"\"\"", "\"\"\"", "multi-line-quotes" ],
+        [ "'''", "'''", "multi-line-quotes" ],
+        [ "\"", "\"", "single-line-quotes" ],
+        [ "'", "'", "single-line-quotes" ],
+        [ "\\", "quote-escape-char" ]
+      ],
+      "autocomplete": [
+        [ "(", ")" ],
+        [ "{", "}" ],
+        [ "[", "]" ],
+        [ "\"", "\"" ],
+        [ "'", "'" ]
+      ]
     }
   ]
 }
