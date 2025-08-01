@@ -41,6 +41,8 @@ class CXBracketsOptions
                 m_uFlags ^= uWhich;
         }
 
+        void readConfigSettingsItem(const void* pContext);
+
     public:
         enum eConsts {
             MAX_EXT             = 50,

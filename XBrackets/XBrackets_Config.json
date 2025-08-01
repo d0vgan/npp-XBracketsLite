@@ -9,7 +9,7 @@
   },
   "fileSyntax": [
     {
-      "name": "Text",
+      "name": "Text/Unknown",
       "fileExtensions": [],
       "syntax": [
         [ "{", "}", "multi-line-brackets" ],
@@ -62,22 +62,22 @@
         "xml", "vcxproj", "csproj"
       ],
       "syntax": [
-        [ "<!--", "-->", "multi-line-comment" ],
         [ "<", ">", "multi-line-brackets" ],
         [ "\"", "\"", "single-line-quotes" ],
         [ "'", "'", "single-line-quotes" ],
         [ "{", "}", "multi-line-brackets" ],
         [ "(", ")", "multi-line-brackets" ],
-        [ "[", "]", "multi-line-brackets" ]
+        [ "[", "]", "multi-line-brackets" ],
+        [ "<!--", "-->", "multi-line-comment" ]
       ],
       "autocomplete": [
-        [ "<!--", "-->" ],
         [ "<", ">" ],
         [ "\"", "\"" ],
         [ "'", "'" ],
         [ "(", ")" ],
         [ "{", "}" ],
-        [ "[", "]" ]
+        [ "[", "]" ],
+        [ "<!--", "--" ]
       ]
     },
     {
@@ -121,20 +121,23 @@
         [ "{", "}", "multi-line-brackets" ],
         [ "(", ")", "multi-line-brackets" ],
         [ "[", "]", "multi-line-brackets" ],
+        [ "\"", "\"", "single-line-quotes" ],
+        [ "'", "'", "single-line-quotes" ],
+        [ "`", "quote-escape-char" ],
         [ "<#", "#>", "multi-line-comment" ],
         [ "#", "", "single-line-comment" ],
         [ "@\"", "\"@", "multi-line-quotes" ],
-        [ "@'", "'@", "multi-line-quotes" ],
-        [ "\"", "\"", "single-line-quotes" ],
-        [ "'", "'", "single-line-quotes" ],
-        [ "`", "quote-escape-char" ]
+        [ "@'", "'@", "multi-line-quotes" ]
       ],
       "autocomplete": [
         [ "{", "}" ],
         [ "(", ")" ],
         [ "[", "]" ],
         [ "\"", "\"" ],
-        [ "'", "'" ]
+        [ "'", "'" ],
+        [ "<#", "#>" ],
+        [ "@\"", "\"@" ],
+        [ "@'", "'@" ]
       ]
     },
     {
@@ -169,19 +172,21 @@
         [ "(", ")", "multi-line-brackets" ],
         [ "{", "}", "multi-line-brackets" ],
         [ "[", "]", "multi-line-brackets" ],
-        [ "#", "", "single-line-comment" ],
-        [ "\"\"\"", "\"\"\"", "multi-line-quotes" ],
-        [ "'''", "'''", "multi-line-quotes" ],
         [ "\"", "\"", "single-line-quotes" ],
         [ "'", "'", "single-line-quotes" ],
-        [ "\\", "quote-escape-char" ]
+        [ "\\", "quote-escape-char" ],
+        [ "#", "", "single-line-comment" ],
+        [ "\"\"\"", "\"\"\"", "multi-line-quotes" ],
+        [ "'''", "'''", "multi-line-quotes" ]
       ],
       "autocomplete": [
         [ "(", ")" ],
         [ "{", "}" ],
         [ "[", "]" ],
         [ "\"", "\"" ],
-        [ "'", "'" ]
+        [ "'", "'" ],
+        [ "\"\"\"", "\"\"\"" ],
+        [ "'''", "'''" ]
       ]
     }
   ]

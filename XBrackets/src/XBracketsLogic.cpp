@@ -351,7 +351,9 @@ void CBracketsTree::buildTree(CSciMessager& sciMsgr)
                 if ( item.pBrPair->kind == bpkMlLnComm && pBrPair->kind != bpkMlLnComm )
                     break;
 
-                if ( pBrPair->kind != bpkMlLnComm && !isQtKind(pBrPair->kind) && (item.pBrPair->kind == bpkSgLnComm || isQtKind(item.pBrPair->kind)) )
+                if ( item.nLine == nCurrentLine &&
+                     (item.pBrPair->kind == bpkSgLnComm || item.pBrPair->kind == bpkSgLnQuotes) &&
+                     pBrPair->kind != bpkMlLnComm && !isQtKind(pBrPair->kind) )
                 {
                     bracketsTree.push_back({-1, nPos, nCurrentLine, nCurrentParentIdx, pBrPair});
                     break;
@@ -1149,9 +1151,9 @@ CXBracketsLogic::eCharProcessingResult CXBracketsLogic::autoBracketsFunc(int nBr
     //    is always >= 0x80 whereas the character codes
     //    of standard Latin symbols are < 0x80)
 
-    bool  bPrevCharOK = true;
-    bool  bNextCharOK = false;
-    char  next_ch = sciMsgr.getCharAt(nEditPos);
+    bool bPrevCharOK = true;
+    bool bNextCharOK = false;
+    const char next_ch = sciMsgr.getCharAt(nEditPos);
 
     if ( isWhiteSpaceOrNulChar(next_ch) ||
          g_opt.getNextCharOK().find(static_cast<TCHAR>(next_ch)) != tstr::npos )
@@ -1171,7 +1173,8 @@ CXBracketsLogic::eCharProcessingResult CXBracketsLogic::autoBracketsFunc(int nBr
         bPrevCharOK = false;
 
         // previous character
-        char prev_ch = (nEditPos >= 1) ? sciMsgr.getCharAt(nEditPos - 1) : 0;
+        const Sci_Position nLeftBrLen = static_cast<Sci_Position>(pBrPair->leftBr.length());
+        const char prev_ch = (nEditPos >= nLeftBrLen) ? sciMsgr.getCharAt(nEditPos - nLeftBrLen) : 0;
 
         if ( isWhiteSpaceOrNulChar(prev_ch) ||
              g_opt.getPrevCharOK().find(static_cast<TCHAR>(prev_ch)) != tstr::npos )

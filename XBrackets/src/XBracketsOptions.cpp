@@ -247,6 +247,19 @@ static tFileSyntax readFileSyntaxItem(const json11::Json& syntaxItem)
                         }
                     }
                 }
+
+                if ( !fileSyntax.pairs.empty() )
+                {
+                    // longer pairs are placed first to avoid intersections with
+                    // characters of shorter pairs
+                    std::sort(fileSyntax.pairs.begin(), fileSyntax.pairs.end(),
+                        [](const tBrPair& item1, const tBrPair& item2){
+                            const auto lenLeftBr1 = item1.leftBr.length();
+                            const auto lenLeftBr2 = item2.leftBr.length();
+                            return (lenLeftBr1 > lenLeftBr2 || 
+                                (lenLeftBr1 == lenLeftBr2 && item1.rightBr.length() > item2.rightBr.length()));
+                    });
+                }
             }
         }
         else if ( propItem.first == "autocomplete" )
@@ -264,6 +277,19 @@ static tFileSyntax readFileSyntaxItem(const json11::Json& syntaxItem)
                             fileSyntax.autocomplete.push_back(std::move(brPair));
                         }
                     }
+                }
+
+                if ( !fileSyntax.autocomplete.empty() )
+                {
+                    // longer pairs are placed first to avoid intersections with
+                    // characters of shorter pairs
+                    std::sort(fileSyntax.autocomplete.begin(), fileSyntax.autocomplete.end(),
+                        [](const tBrPair& item1, const tBrPair& item2){
+                            const auto lenLeftBr1 = item1.leftBr.length();
+                            const auto lenLeftBr2 = item2.leftBr.length();
+                            return (lenLeftBr1 > lenLeftBr2 || 
+                                (lenLeftBr1 == lenLeftBr2 && item1.rightBr.length() > item2.rightBr.length()));
+                    });
                 }
             }
         }
@@ -334,6 +360,49 @@ static void postprocessSyntaxes(std::list<tFileSyntax>& fileSyntaxes, const tFil
     }
 }
 
+void CXBracketsOptions::readConfigSettingsItem(const void* pContext)
+{
+    const auto pJsonItem = reinterpret_cast<const json11::Json*>(pContext);
+    if ( !pJsonItem->is_object() )
+        return;
+
+    for ( const auto& settingItem : pJsonItem->object_items() )
+    {
+        const auto& settingName = settingItem.first;
+        const auto& settingVal = settingItem.second;
+        if ( settingName == "AutoComplete" )
+        {
+            if ( settingVal.is_bool() )
+                setBracketsAutoComplete(settingVal.bool_value());
+        }
+        else if ( settingName == "AutoComplete_WhenRightBrExists" )
+        {
+            if ( settingVal.is_bool() )
+                setBracketsRightExistsOK(settingVal.bool_value());
+        }
+        else if ( settingName == "Sel_AutoBr" )
+        {
+            if ( settingVal.is_number() )
+                m_uSelAutoBr = settingVal.int_value();
+        }
+        else if ( settingName == "Next_Char_OK" )
+        {
+            if ( settingVal.is_string() )
+                m_sNextCharOK = string_to_tstr(settingVal.string_value());
+        }
+        else if ( settingName == "Prev_Char_OK" )
+        {
+            if ( settingVal.is_string() )
+                m_sPrevCharOK = string_to_tstr(settingVal.string_value());
+        }
+        else if ( settingName == "FileExtsRule" )
+        {
+            if ( settingVal.is_string() )
+                m_sFileExtsRule = string_to_tstr_changecase(settingVal.string_value(), scLower);
+        }
+    }
+}
+
 tstr CXBracketsOptions::ReadConfig(const tstr& cfgFilePath)
 {
     std::list<tFileSyntax> fileSyntaxes;
@@ -378,44 +447,7 @@ tstr CXBracketsOptions::ReadConfig(const tstr& cfgFilePath)
         }
         else if ( item.first == "settings" )
         {
-            if ( item.second.is_object() )
-            {
-                for ( const auto& settingItem : item.second.object_items() )
-                {
-                    const auto& settingName = settingItem.first;
-                    const auto& settingVal = settingItem.second;
-                    if ( settingName == "AutoComplete" )
-                    {
-                        if ( settingVal.is_bool() )
-                            setBracketsAutoComplete(settingVal.bool_value());
-                    }
-                    else if ( settingName == "AutoComplete_WhenRightBrExists" )
-                    {
-                        if ( settingVal.is_bool() )
-                            setBracketsRightExistsOK(settingVal.bool_value());
-                    }
-                    else if ( settingName == "Sel_AutoBr" )
-                    {
-                        if ( settingVal.is_number() )
-                            m_uSelAutoBr = settingVal.int_value();
-                    }
-                    else if ( settingName == "Next_Char_OK" )
-                    {
-                        if ( settingVal.is_string() )
-                            m_sNextCharOK = string_to_tstr(settingVal.string_value());
-                    }
-                    else if ( settingName == "Prev_Char_OK" )
-                    {
-                        if ( settingVal.is_string() )
-                            m_sPrevCharOK = string_to_tstr(settingVal.string_value());
-                    }
-                    else if ( settingName == "FileExtsRule" )
-                    {
-                        if ( settingVal.is_string() )
-                            m_sFileExtsRule = string_to_tstr_changecase(settingVal.string_value(), scLower);
-                    }
-                }
-            }
+            readConfigSettingsItem(&item.second);
         }
     }
 
