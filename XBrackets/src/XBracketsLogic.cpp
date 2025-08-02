@@ -55,6 +55,11 @@ namespace
         return false;
     }
 
+    inline bool isTabSpace(const char ch)
+    {
+        return (ch == ' ' || ch == '\t');
+    }
+
     bool isSepOrOneOf(const char ch, const char* pChars)
     {
         return ( isWhiteSpaceOrNulChar(ch) || strchr(pChars, ch) != NULL );
@@ -113,12 +118,29 @@ void CBracketsTree::buildTree(CSciMessager& sciMsgr)
         const tBrPairItem* pEnd = bracketsTree.data() + bracketsTree.size();
         for ( ; pItem != pEnd; ++pItem )
         {
-            if ( pItem->nRightBrPos != -1 && pItem->nLeftBrPos == -1 && pItem->nParentIdx >= nFoundItemIdx )
+            if ( pItem->isIncomplete() && pItem->nParentIdx >= nFoundItemIdx )
+            {
+                pItem->nLeftBrPos = -1;
                 pItem->nRightBrPos = -1;
+            }
         }
     };
 
-    for ( const char* p = vText.data(); p < vText.data() + nTextLen; ++p, ++nPos )
+    auto getOpenParentIdx = [&bracketsTree](Sci_Position nParentIdx)
+    {
+        while ( nParentIdx != -1 )
+        {
+            const tBrPairItem& item = bracketsTree[nParentIdx];
+            if ( item.isOpenLeftBr() )
+                break;
+
+            nParentIdx = item.nParentIdx;
+        }
+        return nParentIdx;
+    };
+
+    const char* const pEnd = vText.data() + nTextLen;
+    for ( const char* p = vText.data(); p < pEnd; ++p, ++nPos )
     {
         bool isNewLine = false;
         if ( *p == '\r' )
@@ -151,7 +173,9 @@ void CBracketsTree::buildTree(CSciMessager& sciMsgr)
                         nCommIdx = nIdx;
                         nNewParentIdx = item.nParentIdx;
                     }
-                    else if ( nNewParentIdx == -1 && !isSgLnBrQtKind(item.pBrPair->kind) )
+                    else if ( nNewParentIdx == -1 &&
+                              item.isOpenLeftBr() &&
+                              !isSgLnBrQtKind(item.pBrPair->kind) )
                     {
                         nNewParentIdx = nIdx;
                     }
@@ -179,28 +203,27 @@ void CBracketsTree::buildTree(CSciMessager& sciMsgr)
                         if ( rightItem.nLine != nCurrentLine )
                             break;
 
-                        if ( rightItem.nRightBrPos != -1 && rightItem.nLeftBrPos == -1 )
+                        if ( rightItem.isOpenRightBr() )
                         {
                             // potentially a right bracket after an incomplete single-line quote
                             for ( Sci_Position nLeftIdx = nCurrentParentIdx; nLeftIdx != -1; )
                             {
                                 tBrPairItem& leftItem = bracketsTree[nLeftIdx];
-                                if ( leftItem.nRightBrPos != -1 )
-                                    continue;
-
-                                if ( leftItem.nLine != nCurrentLine && isSgLnBrQtKind(rightItem.pBrPair->kind) )
-                                    break;
-
-                                if ( leftItem.pBrPair->leftBr == rightItem.pBrPair->leftBr )
+                                if ( leftItem.isOpenLeftBr() )
                                 {
-                                    leftItem.nRightBrPos = rightItem.nRightBrPos;
-                                    if ( nLeftIdx == nCurrentParentIdx )
-                                    {
-                                        nCurrentParentIdx = leftItem.nParentIdx;
-                                    }
-                                    break;
-                                }
+                                    if ( leftItem.nLine != nCurrentLine && isSgLnBrQtKind(rightItem.pBrPair->kind) )
+                                        break;
 
+                                    if ( leftItem.pBrPair->leftBr == rightItem.pBrPair->leftBr )
+                                    {
+                                        leftItem.nRightBrPos = rightItem.nRightBrPos;
+                                        if ( nLeftIdx == nCurrentParentIdx )
+                                        {
+                                            nCurrentParentIdx = getOpenParentIdx(leftItem.nParentIdx);
+                                        }
+                                        break;
+                                    }
+                                }
                                 nLeftIdx = leftItem.nParentIdx;
                             }
                         }
@@ -214,14 +237,25 @@ void CBracketsTree::buildTree(CSciMessager& sciMsgr)
             continue;
         }
 
-        if ( isWhiteSpaceOrNulChar(*p) )
+        if ( isTabSpace(*p) )
         {
+            for ( const char* pNext = p + 1; pNext < pEnd; ++pNext )
+            {
+                if ( isTabSpace(*pNext) )
+                {
+                    ++p;
+                    ++nPos;
+                }
+                else
+                    break;
+            }
             if ( !bracketsTree.empty() )
             {
                 const tBrPairItem& item = bracketsTree.back();
-                if ( item.pBrPair->kind == bpkSgLnQuotesNoInnerSpace )
+                if ( item.isOpenLeftBr() && 
+                     isNoInnerSpaceKind(item.pBrPair->kind) )
                 {
-                    nCurrentParentIdx = item.nParentIdx;
+                    nCurrentParentIdx = getOpenParentIdx(item.nParentIdx);
                     bracketsTree.pop_back();
                 }
             }
@@ -246,18 +280,20 @@ void CBracketsTree::buildTree(CSciMessager& sciMsgr)
                     for ( Sci_Position nItemIdx = nCurrentParentIdx; nItemIdx != -1; )
                     {
                         const tBrPairItem& item = bracketsTree[nItemIdx];
-                        if ( isSgLnBrQtKind(pBrPair->kind) && item.nLine != nCurrentLine )
-                            break;
-
-                        if ( item.pBrPair->leftBr == pBrPair->leftBr )
+                        if ( item.isOpenLeftBr() )
                         {
-                            nFoundItemIdx = nItemIdx;
-                            break;
+                            if ( isSgLnBrQtKind(pBrPair->kind) && item.nLine != nCurrentLine )
+                                break;
+
+                            if ( item.pBrPair->leftBr == pBrPair->leftBr )
+                            {
+                                nFoundItemIdx = nItemIdx;
+                                break;
+                            }
+
+                            if ( pBrPair->kind == bpkMlLnComm && item.pBrPair->kind == bpkMlLnComm ) // TODO: verify this condition
+                                break;
                         }
-
-                        if ( pBrPair->kind == bpkMlLnComm && item.pBrPair->kind == bpkMlLnComm ) // TODO: verify this condition
-                            break;
-
                         nItemIdx = item.nParentIdx;
                     }
 
@@ -268,7 +304,7 @@ void CBracketsTree::buildTree(CSciMessager& sciMsgr)
                         {
                             // nPos is its right bracket
                             item.nRightBrPos = nPos; // |)
-                            nCurrentParentIdx = item.nParentIdx;
+                            nCurrentParentIdx = getOpenParentIdx(item.nParentIdx);
 
                             invalidateChildRightBrackets(nFoundItemIdx);
                         }
@@ -292,7 +328,7 @@ void CBracketsTree::buildTree(CSciMessager& sciMsgr)
                         {
                             // item is an unmatched left bracket, nPos is its right bracket
                             item.nRightBrPos = nPos; // |)
-                            nCurrentParentIdx = item.nParentIdx;
+                            nCurrentParentIdx = getOpenParentIdx(item.nParentIdx);
                         }
                         else
                         {
@@ -354,26 +390,28 @@ void CBracketsTree::buildTree(CSciMessager& sciMsgr)
             for ( Sci_Position nItemIdx = nCurrentParentIdx; nItemIdx != -1; )
             {
                 const tBrPairItem& item = bracketsTree[nItemIdx];
-                if ( isSgLnBrQtKind(pBrPair->kind) && item.nLine != nCurrentLine )
-                    break;
-
-                if ( item.pBrPair->leftBr == pBrPair->leftBr )
+                if ( item.isOpenLeftBr() )
                 {
-                    nFoundItemIdx = nItemIdx;
-                    break;
+                    if ( isSgLnBrQtKind(pBrPair->kind) && item.nLine != nCurrentLine )
+                        break;
+
+                    if ( item.pBrPair->leftBr == pBrPair->leftBr )
+                    {
+                        nFoundItemIdx = nItemIdx;
+                        break;
+                    }
+
+                    if ( item.pBrPair->kind == bpkMlLnComm && pBrPair->kind != bpkMlLnComm )
+                        break;
+
+                    if ( item.nLine == nCurrentLine &&
+                         (item.pBrPair->kind == bpkSgLnComm || isSgLnQtKind(item.pBrPair->kind)) &&
+                         pBrPair->kind != bpkMlLnComm && !isQtKind(pBrPair->kind) )
+                    {
+                        bracketsTree.push_back({-1, nPos, nCurrentLine, nCurrentParentIdx, pBrPair});
+                        break;
+                    }
                 }
-
-                if ( item.pBrPair->kind == bpkMlLnComm && pBrPair->kind != bpkMlLnComm )
-                    break;
-
-                if ( item.nLine == nCurrentLine &&
-                     (item.pBrPair->kind == bpkSgLnComm || item.pBrPair->kind == bpkSgLnQuotes || item.pBrPair->kind == bpkSgLnQuotesNoInnerSpace) &&
-                     pBrPair->kind != bpkMlLnComm && !isQtKind(pBrPair->kind) )
-                {
-                    bracketsTree.push_back({-1, nPos, nCurrentLine, nCurrentParentIdx, pBrPair});
-                    break;
-                }
-
                 nItemIdx = item.nParentIdx;
             }
 
@@ -381,7 +419,7 @@ void CBracketsTree::buildTree(CSciMessager& sciMsgr)
             {
                 tBrPairItem& item = bracketsTree[nFoundItemIdx];
                 item.nRightBrPos = nPos; // |)
-                nCurrentParentIdx = item.nParentIdx;
+                nCurrentParentIdx = getOpenParentIdx(item.nParentIdx);
 
                 invalidateChildRightBrackets(nFoundItemIdx);
             }
@@ -404,7 +442,7 @@ void CBracketsTree::buildTree(CSciMessager& sciMsgr)
     idxMapping.reserve(bracketsTree.size()/2);
     for ( auto& item : bracketsTree )
     {
-        if ( item.nLeftBrPos != -1 && item.nRightBrPos != -1 )
+        if ( item.isComplete() )
         {
             idxMapping.push_back({idx, m_bracketsTree.size()});
             if ( item.nParentIdx != -1 )
@@ -534,7 +572,7 @@ void CBracketsTree::updateTree(const SCNotification* pscn)
                 if ( isWhiteSpaceOrNulChar(ch) )
                 {
                     // '\n' and '\r' can break single-line brackets and quotes
-                    // ' ' and '\t' are significant for bpkSgLnQuotesNoInnerSpace
+                    // ' ' and '\t' are significant for isNoInnerSpaceKind()
                     needsInvalidate = true;
                     break;
                 }
@@ -720,7 +758,7 @@ const tBrPairItem* CBracketsTree::findParent(const tBrPairItem* pBrPair) const
     for ( int nParentIdx = pBrPair->nParentIdx; nParentIdx != -1; )
     {
         const tBrPairItem& item = m_bracketsTree[nParentIdx];
-        if ( item.nLeftBrPos != -1 && item.nRightBrPos != -1 )
+        if ( item.isComplete() )
             return &item;
 
         nParentIdx = item.nParentIdx;
@@ -741,7 +779,7 @@ const tBrPair* CBracketsTree::getLeftBrPair(const char* p, size_t nLen) const
         {
             if ( memcmp(p, brPair.leftBr.c_str(), nLeftBrLen) == 0 )
             {
-                if ( brPair.kind != bpkSgLnQuotesNoInnerSpace ||
+                if ( !isNoInnerSpaceKind(brPair.kind) ||
                      (nLeftBrLen != nLen && !isWhiteSpaceOrNulChar(*(p + nLeftBrLen))) )
                     return &brPair;
             }
@@ -763,7 +801,7 @@ const tBrPair* CBracketsTree::getRightBrPair(const char* p, size_t nLen, size_t 
         {
             if ( memcmp(p, brPair.rightBr.c_str(), nRightBrLen) == 0 )
             {
-                if ( brPair.kind != bpkSgLnQuotesNoInnerSpace ||
+                if ( !isNoInnerSpaceKind(brPair.kind) ||
                      (nCurrentOffset != 0 && !isWhiteSpaceOrNulChar(*(p - 1))) )
                 return &brPair;
             }

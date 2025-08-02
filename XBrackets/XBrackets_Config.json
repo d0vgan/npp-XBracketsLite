@@ -100,7 +100,7 @@
         [ "[", "]", "single-line-brackets" ],
         [ "\"", "\"", "single-line-quotes" ],
         [ "'", "'", "single-line-quotes" ],
-        [ "%", "%", "single-line-quotes-noinnerspace" ],
+        [ "%", "%", "single-line-brackets-noinnerspace" ],
         [ "REM", "", "single-line-comment" ],
         [ "::", "", "single-line-comment" ]
       ],
@@ -150,7 +150,8 @@
         [ "{", "}", "multi-line-brackets" ],
         [ "[", "]", "multi-line-brackets" ],
         [ "\"", "\"", "single-line-quotes" ],
-        [ "%", "%", "single-line-quotes-noinnerspace" ],
+        [ "'", "'", "single-line-quotes" ],
+        [ "%", "%", "single-line-brackets-noinnerspace" ],
         [ ";", "", "single-line-comment" ],
         [ "/*", "*/", "multi-line-comment" ]
       ],

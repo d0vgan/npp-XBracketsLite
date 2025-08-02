@@ -3,7 +3,6 @@
 //---------------------------------------------------------------------------
 #include "XBracketsCommon.h"
 #include <vector>
-#include <list>
 
 class CBracketsTree
 {
@@ -39,7 +38,6 @@ public:
 private:
     const tBrPair* getLeftBrPair(const char* p, size_t nLen) const;
     const tBrPair* getRightBrPair(const char* p, size_t nLen, size_t nCurrentOffset) const;
-
     bool isEscapedPos(const char* pTextBegin, const Sci_Position nPos) const;
 
 private:

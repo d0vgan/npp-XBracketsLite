@@ -168,6 +168,8 @@ static tBrPair readBrPairItem(const json11::Json& pairItem, bool isKindRequired)
                 {
                     if ( val == "single-line-brackets" )
                         kind = bpkSgLnBrackets;
+                    else if ( val == "single-line-brackets-noinnerspace" )
+                        kind = bpkSgLnBracketsNoInnerSpace;
                     else if ( val == "multi-line-brackets" )
                         kind = bpkMlLnBrackets;
                     else if ( val == "single-line-quotes" )

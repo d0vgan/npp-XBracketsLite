@@ -14,19 +14,20 @@ namespace XBrackets
 
     enum eBrPairKind {
         bpkNone = 0,
-        bpkSgLnBrackets,           // single-line brackets pair
-        bpkMlLnBrackets,           // multi-line brackets pair
-        bpkSgLnQuotes,             // single-line quotes pair
-        bpkSgLnQuotesNoInnerSpace, // single-line quotes pair that can't contain a space
-        bpkMlLnQuotes,             // multi-line quotes pair
-        bpkSgLnComm,               // single-line comment
-        bpkMlLnComm,               // multi-line comment pair
-        bpkQtEsqChar               // escape character in quotes
+        bpkSgLnBrackets,             // single-line brackets pair
+        bpkSgLnBracketsNoInnerSpace, // single-line brackets pair that can't contain a space
+        bpkMlLnBrackets,             // multi-line brackets pair
+        bpkSgLnQuotes,               // single-line quotes pair
+        bpkSgLnQuotesNoInnerSpace,   // single-line quotes pair that can't contain a space
+        bpkMlLnQuotes,               // multi-line quotes pair
+        bpkSgLnComm,                 // single-line comment
+        bpkMlLnComm,                 // multi-line comment pair
+        bpkQtEsqChar                 // escape character in quotes
     };
 
     static inline bool isBrKind(eBrPairKind kind)
     {
-        return (kind == bpkSgLnBrackets || kind == bpkMlLnBrackets);
+        return (kind == bpkSgLnBrackets || kind == bpkSgLnBracketsNoInnerSpace || kind == bpkMlLnBrackets);
     }
 
     static inline bool isQtKind(eBrPairKind kind)
@@ -34,14 +35,30 @@ namespace XBrackets
         return (kind == bpkSgLnQuotes || kind == bpkSgLnQuotesNoInnerSpace || kind == bpkMlLnQuotes);
     }
 
+    static inline bool isSgLnBrKind(eBrPairKind kind)
+    {
+        return (kind == bpkSgLnBrackets || kind == bpkSgLnBracketsNoInnerSpace);
+    }
+
+    static inline bool isSgLnQtKind(eBrPairKind kind)
+    {
+        return (kind == bpkSgLnQuotes || kind == bpkSgLnQuotesNoInnerSpace);
+    }
+
     static inline bool isSgLnBrQtKind(eBrPairKind kind)
     {
-        return (kind == bpkSgLnBrackets || kind == bpkSgLnQuotes || kind == bpkSgLnQuotesNoInnerSpace);
+        return (kind == bpkSgLnBrackets || kind == bpkSgLnBracketsNoInnerSpace ||
+                kind == bpkSgLnQuotes || kind == bpkSgLnQuotesNoInnerSpace);
     }
 
     static inline bool isMlLnBrQtKind(eBrPairKind kind)
     {
         return (kind == bpkMlLnBrackets || kind == bpkMlLnQuotes);
+    }
+
+    static inline bool isNoInnerSpaceKind(eBrPairKind kind)
+    {
+        return (kind == bpkSgLnBracketsNoInnerSpace || kind == bpkSgLnQuotesNoInnerSpace);
     }
 
     enum eConsts {
@@ -61,6 +78,26 @@ namespace XBrackets
         Sci_Position nLine{-1}; // only for internal comparison
         Sci_Position nParentIdx{-1};
         const tBrPair* pBrPair{};
+
+        bool isComplete() const
+        {
+            return (nLeftBrPos != -1 && nRightBrPos != -1);
+        }
+
+        bool isIncomplete() const
+        {
+            return (nLeftBrPos == -1 || nRightBrPos == -1);
+        }
+
+        bool isOpenLeftBr() const
+        {
+            return (nLeftBrPos != -1 && nRightBrPos == -1);
+        }
+
+        bool isOpenRightBr() const
+        {
+            return (nLeftBrPos == -1 && nRightBrPos != -1);
+        }
     };
 
     struct tFileSyntax {
