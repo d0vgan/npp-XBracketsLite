@@ -213,8 +213,22 @@ void CBracketsTree::buildTree(CSciMessager& sciMsgr)
             continue;
         }
 
+        if ( isWhiteSpaceOrNulChar(*p) )
+        {
+            if ( !bracketsTree.empty() )
+            {
+                const tBrPairItem& item = bracketsTree.back();
+                if ( item.pBrPair->kind == bpkSgLnQuotesNoInnerSpace )
+                {
+                    nCurrentParentIdx = item.nParentIdx;
+                    bracketsTree.pop_back();
+                }
+            }
+            continue;
+        }
+
         const tBrPair* pLeftBrPair = getLeftBrPair(p, nTextLen - nPos);
-        const tBrPair* pRightBrPair = getRightBrPair(p, nTextLen - nPos);
+        const tBrPair* pRightBrPair = getRightBrPair(p, nTextLen - nPos, nPos);
         const tBrPair* pBrPair = (pLeftBrPair != nullptr && (pRightBrPair == nullptr || pRightBrPair->rightBr.length() <= pLeftBrPair->leftBr.length())) ? pLeftBrPair : pRightBrPair;
         if ( pBrPair == nullptr )
             continue;
@@ -352,7 +366,7 @@ void CBracketsTree::buildTree(CSciMessager& sciMsgr)
                     break;
 
                 if ( item.nLine == nCurrentLine &&
-                     (item.pBrPair->kind == bpkSgLnComm || item.pBrPair->kind == bpkSgLnQuotes) &&
+                     (item.pBrPair->kind == bpkSgLnComm || item.pBrPair->kind == bpkSgLnQuotes || item.pBrPair->kind == bpkSgLnQuotesNoInnerSpace) &&
                      pBrPair->kind != bpkMlLnComm && !isQtKind(pBrPair->kind) )
                 {
                     bracketsTree.push_back({-1, nPos, nCurrentLine, nCurrentParentIdx, pBrPair});
@@ -513,8 +527,10 @@ void CBracketsTree::updateTree(const SCNotification* pscn)
             for ( ; p != pEnd; ++p )
             {
                 const char ch = *p;
-                if ( ch == '\n' || ch == '\r' )
+                if ( isWhiteSpaceOrNulChar(ch) )
                 {
+                    // '\n' and '\r' can break single-line brackets and quotes
+                    // ' ' and '\t' are significant for bpkSgLnQuotesNoInnerSpace
                     needsInvalidate = true;
                     break;
                 }
@@ -716,27 +732,37 @@ const tBrPair* CBracketsTree::getLeftBrPair(const char* p, size_t nLen) const
 
     for ( const auto& brPair : m_pFileSyntax->pairs )
     {
-        if ( brPair.leftBr.length() <= nLen )
+        const size_t nLeftBrLen = brPair.leftBr.length();
+        if ( nLeftBrLen <= nLen )
         {
-            if ( memcmp(p, brPair.leftBr.c_str(), brPair.leftBr.length()) == 0 )
-                return &brPair;
+            if ( memcmp(p, brPair.leftBr.c_str(), nLeftBrLen) == 0 )
+            {
+                if ( brPair.kind != bpkSgLnQuotesNoInnerSpace ||
+                     (nLeftBrLen != nLen && !isWhiteSpaceOrNulChar(*(p + nLeftBrLen))) )
+                    return &brPair;
+            }
         }
     }
 
     return nullptr;
 }
 
-const tBrPair* CBracketsTree::getRightBrPair(const char* p, size_t nLen) const
+const tBrPair* CBracketsTree::getRightBrPair(const char* p, size_t nLen, size_t nCurrentOffset) const
 {
     if ( m_pFileSyntax == nullptr )
         return nullptr;
 
     for ( const auto& brPair : m_pFileSyntax->pairs )
     {
-        if ( brPair.kind != bpkSgLnComm && brPair.rightBr.length() <= nLen )
+        const size_t nRightBrLen = brPair.rightBr.length();
+        if ( brPair.kind != bpkSgLnComm && nRightBrLen <= nLen )
         {
-            if ( memcmp(p, brPair.rightBr.c_str(), brPair.rightBr.length()) == 0 )
+            if ( memcmp(p, brPair.rightBr.c_str(), nRightBrLen) == 0 )
+            {
+                if ( brPair.kind != bpkSgLnQuotesNoInnerSpace ||
+                     (nCurrentOffset != 0 && !isWhiteSpaceOrNulChar(*(p - 1))) )
                 return &brPair;
+            }
         }
     }
 

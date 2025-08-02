@@ -14,13 +14,14 @@ namespace XBrackets
 
     enum eBrPairKind {
         bpkNone = 0,
-        bpkSgLnBrackets, // single-line brackets pair
-        bpkMlLnBrackets, // multi-line brackets pair
-        bpkSgLnQuotes,   // sinle-line quotes pair
-        bpkMlLnQuotes,   // multi-line quotes pair
-        bpkSgLnComm,     // single-line comment
-        bpkMlLnComm,     // multi-line comment pair
-        bpkQtEsqChar     // escape character in quotes
+        bpkSgLnBrackets,           // single-line brackets pair
+        bpkMlLnBrackets,           // multi-line brackets pair
+        bpkSgLnQuotes,             // single-line quotes pair
+        bpkSgLnQuotesNoInnerSpace, // single-line quotes pair that can't contain a space
+        bpkMlLnQuotes,             // multi-line quotes pair
+        bpkSgLnComm,               // single-line comment
+        bpkMlLnComm,               // multi-line comment pair
+        bpkQtEsqChar               // escape character in quotes
     };
 
     static inline bool isBrKind(eBrPairKind kind)
@@ -30,12 +31,12 @@ namespace XBrackets
 
     static inline bool isQtKind(eBrPairKind kind)
     {
-        return (kind == bpkSgLnQuotes || kind == bpkMlLnQuotes);
+        return (kind == bpkSgLnQuotes || kind == bpkSgLnQuotesNoInnerSpace || kind == bpkMlLnQuotes);
     }
 
     static inline bool isSgLnBrQtKind(eBrPairKind kind)
     {
-        return (kind == bpkSgLnBrackets || kind == bpkSgLnQuotes);
+        return (kind == bpkSgLnBrackets || kind == bpkSgLnQuotes || kind == bpkSgLnQuotesNoInnerSpace);
     }
 
     static inline bool isMlLnBrQtKind(eBrPairKind kind)

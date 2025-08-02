@@ -172,6 +172,8 @@ static tBrPair readBrPairItem(const json11::Json& pairItem, bool isKindRequired)
                         kind = bpkMlLnBrackets;
                     else if ( val == "single-line-quotes" )
                         kind = bpkSgLnQuotes;
+                    else if ( val == "single-line-quotes-noinnerspace" )
+                        kind = bpkSgLnQuotesNoInnerSpace;
                     else if ( val == "multi-line-quotes" )
                         kind = bpkMlLnQuotes;
                     else if ( val == "single-line-comment" )
@@ -193,6 +195,24 @@ static tBrPair readBrPairItem(const json11::Json& pairItem, bool isKindRequired)
     }
 
     return brPair;
+}
+
+static void sort_brpairs_by_len(std::vector<tBrPair>& brpairs)
+{
+    if ( brpairs.empty() )
+        return;
+
+    // longer pairs are placed first to avoid intersections with
+    // characters of shorter pairs
+    std::sort(brpairs.begin(), brpairs.end(),
+        [](const tBrPair& item1, const tBrPair& item2)
+        {
+            const auto lenLeftBr1 = item1.leftBr.length();
+            const auto lenLeftBr2 = item2.leftBr.length();
+            return (lenLeftBr1 > lenLeftBr2 || 
+                (lenLeftBr1 == lenLeftBr2 && item1.rightBr.length() > item2.rightBr.length()));
+        }
+    );
 }
 
 static tFileSyntax readFileSyntaxItem(const json11::Json& syntaxItem)
@@ -247,19 +267,7 @@ static tFileSyntax readFileSyntaxItem(const json11::Json& syntaxItem)
                         }
                     }
                 }
-
-                if ( !fileSyntax.pairs.empty() )
-                {
-                    // longer pairs are placed first to avoid intersections with
-                    // characters of shorter pairs
-                    std::sort(fileSyntax.pairs.begin(), fileSyntax.pairs.end(),
-                        [](const tBrPair& item1, const tBrPair& item2){
-                            const auto lenLeftBr1 = item1.leftBr.length();
-                            const auto lenLeftBr2 = item2.leftBr.length();
-                            return (lenLeftBr1 > lenLeftBr2 || 
-                                (lenLeftBr1 == lenLeftBr2 && item1.rightBr.length() > item2.rightBr.length()));
-                    });
-                }
+                sort_brpairs_by_len(fileSyntax.pairs);
             }
         }
         else if ( propItem.first == "autocomplete" )
@@ -278,19 +286,7 @@ static tFileSyntax readFileSyntaxItem(const json11::Json& syntaxItem)
                         }
                     }
                 }
-
-                if ( !fileSyntax.autocomplete.empty() )
-                {
-                    // longer pairs are placed first to avoid intersections with
-                    // characters of shorter pairs
-                    std::sort(fileSyntax.autocomplete.begin(), fileSyntax.autocomplete.end(),
-                        [](const tBrPair& item1, const tBrPair& item2){
-                            const auto lenLeftBr1 = item1.leftBr.length();
-                            const auto lenLeftBr2 = item2.leftBr.length();
-                            return (lenLeftBr1 > lenLeftBr2 || 
-                                (lenLeftBr1 == lenLeftBr2 && item1.rightBr.length() > item2.rightBr.length()));
-                    });
-                }
+                sort_brpairs_by_len(fileSyntax.autocomplete);
             }
         }
     }
