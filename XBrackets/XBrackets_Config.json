@@ -188,6 +188,29 @@
         [ "\"\"\"", "\"\"\"" ],
         [ "'''", "'''" ]
       ]
+    },
+    {
+      "name": "Perl",
+      "fileExtensions": [
+        "pl", "pm"
+      ],
+      "syntax": [
+        [ "(", ")", "multi-line-brackets" ],
+        [ "{", "}", "multi-line-brackets" ],
+        [ "[", "]", "multi-line-brackets" ],
+        [ "\"", "\"", "multi-line-quotes" ],
+        [ "'", "'", "multi-line-quotes" ],
+        [ "#", "", "single-line-comment" ],
+        [ "=pod", "=cut", "multi-line-comment" ]
+      ],
+      "autocomplete": [
+        [ "(", ")" ],
+        [ "{", "}" ],
+        [ "[", "]" ],
+        [ "\"", "\"" ],
+        [ "'", "'" ],
+        [ "=pod", "=cut"]
+      ]
     }
   ]
 }
