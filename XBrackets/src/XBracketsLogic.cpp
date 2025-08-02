@@ -2,8 +2,9 @@
 #include "XBracketsOptions.h"
 #include <string>
 #include <vector>
-#include <map>
 #include <algorithm>
+#include <utility>
+
 
 using namespace XBrackets;
 
@@ -395,20 +396,23 @@ void CBracketsTree::buildTree(CSciMessager& sciMsgr)
         }
     }
 
-    std::map<size_t, size_t> mapIdxs;
+    std::vector<std::pair<size_t, size_t>> idxMapping;
     size_t idx = 0;
 
     m_bracketsTree.clear();
     m_bracketsTree.reserve(bracketsTree.size()/2);
+    idxMapping.reserve(bracketsTree.size()/2);
     for ( auto& item : bracketsTree )
     {
         if ( item.nLeftBrPos != -1 && item.nRightBrPos != -1 )
         {
-            mapIdxs[idx] = m_bracketsTree.size();
+            idxMapping.push_back({idx, m_bracketsTree.size()});
             if ( item.nParentIdx != -1 )
             {
-                const auto itrIdx = mapIdxs.find(item.nParentIdx);
-                if ( itrIdx != mapIdxs.end() )
+                const auto itrEnd = idxMapping.end();
+                const auto itrIdx = std::lower_bound(idxMapping.begin(), itrEnd, item.nParentIdx,
+                    [](const auto& item, size_t idx) { return item.first < idx; });
+                if ( itrIdx != itrEnd && itrIdx->first == item.nParentIdx )
                     item.nParentIdx = itrIdx->second;
                 else
                     item.nParentIdx = -1;
