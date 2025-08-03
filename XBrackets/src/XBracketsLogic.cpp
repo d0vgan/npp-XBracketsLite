@@ -112,7 +112,42 @@ void CBracketsTree::buildTree(CSciMessager& sciMsgr)
     Sci_Position nCurrentLine = 0;
     Sci_Position nCurrentParentIdx = -1;
 
-    auto invalidateChildRightBrackets = [&bracketsTree](Sci_Position nFoundItemIdx)
+    auto completeChildQuotedBrackets = [&bracketsTree](Sci_Position nParentIdx)
+    {
+        const Sci_Position nEndIdx = static_cast<Sci_Position>(bracketsTree.size());
+        for ( Sci_Position nLeftIdx = nParentIdx + 1; nLeftIdx < nEndIdx; ++nLeftIdx )
+        {
+            tBrPairItem& leftItem = bracketsTree[nLeftIdx];
+            if ( leftItem.isOpenLeftBr() )
+            {
+                for ( Sci_Position nRightIdx = nLeftIdx + 1; nRightIdx < nEndIdx; ++nRightIdx )
+                {
+                    const tBrPairItem& rightItem = bracketsTree[nRightIdx];
+                    if ( rightItem.isOpenRightBr() && leftItem.pBrPair->leftBr == rightItem.pBrPair->leftBr )
+                    {
+                        leftItem.nRightBrPos = rightItem.nRightBrPos;
+                        /*
+                        // The following inner loop makes sense, but kills the inner () pair in "[ (')]".
+                        // Without this inner loop, both [] and () are detected as pairs in "[ ('] )".
+                        // As it is inside quotes, I think we can live with it :)
+                        for ( Sci_Position nChildIdx = nLeftIdx + 1; nChildIdx < nRightIdx; ++nChildIdx )
+                        {
+                            tBrPairItem& childItem = bracketsTree[nChildIdx];
+                            if ( childItem.isIncomplete() )
+                            {
+                                childItem.nLeftBrPos = -1;
+                                childItem.nRightBrPos = -1;
+                            }
+                        }
+                        */
+                        break;
+                    }
+                }
+            }
+        }
+    };
+
+    auto invalidateChildIncompleteBrackets = [&bracketsTree](Sci_Position nFoundItemIdx)
     {
         tBrPairItem* pItem = bracketsTree.data() + nFoundItemIdx + 1;
         const tBrPairItem* pEnd = bracketsTree.data() + bracketsTree.size();
@@ -306,7 +341,11 @@ void CBracketsTree::buildTree(CSciMessager& sciMsgr)
                             item.nRightBrPos = nPos; // |)
                             nCurrentParentIdx = getOpenParentIdx(item.nParentIdx);
 
-                            invalidateChildRightBrackets(nFoundItemIdx);
+                            if ( isQtKind(item.pBrPair->kind) )
+                            {
+                                completeChildQuotedBrackets(nFoundItemIdx);
+                            }
+                            invalidateChildIncompleteBrackets(nFoundItemIdx);
                         }
                     }
                     else
@@ -421,7 +460,11 @@ void CBracketsTree::buildTree(CSciMessager& sciMsgr)
                 item.nRightBrPos = nPos; // |)
                 nCurrentParentIdx = getOpenParentIdx(item.nParentIdx);
 
-                invalidateChildRightBrackets(nFoundItemIdx);
+                if ( isQtKind(item.pBrPair->kind) )
+                {
+                    completeChildQuotedBrackets(nFoundItemIdx);
+                }
+                invalidateChildIncompleteBrackets(nFoundItemIdx);
             }
 
             int nBrLen = static_cast<int>(pBrPair->rightBr.length());

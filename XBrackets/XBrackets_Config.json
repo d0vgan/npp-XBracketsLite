@@ -36,9 +36,9 @@
         [ "<", ">", "single-line-brackets" ],
         [ "\"", "\"", "single-line-quotes" ],
         [ "'", "'", "single-line-quotes" ],
+        [ "\\", "quote-escape-char" ],
         [ "//", "", "single-line-comment" ],
-        [ "/*", "*/", "multi-line-comment" ],
-        [ "\\", "quote-escape-char" ]
+        [ "/*", "*/", "multi-line-comment" ]
       ],
       "autocomplete": [
         [ "{", "}" ],
@@ -54,6 +54,56 @@
       "parent": "C",
       "fileExtensions": [
         "cc", "cpp", "cxx", "hh", "hpp", "hxx"
+      ],
+      "syntax": [
+        [ "R\"(", ")\"", "multi-line-quotes" ]
+      ]
+    },
+    {
+      "name": "awk",
+      "fileExtensions": [
+        "awk"
+      ],
+      "syntax": [
+        [ "{", "}", "multi-line-brackets" ],
+        [ "(", ")", "multi-line-brackets" ],
+        [ "[", "]", "multi-line-brackets" ],
+        [ "\"", "\"", "single-line-quotes" ],
+        [ "/", "/", "single-line-quotes" ],
+        [ "\\", "quote-escape-char" ],
+        [ "#", "", "single-line-comment" ]
+      ],
+      "autocomplete": [
+        [ "{", "}" ],
+        [ "(", ")" ],
+        [ "[", "]" ],
+        [ "\"", "\"" ]
+      ]
+    },
+    {
+      "name": "Go",
+      "fileExtensions": [
+        "go"
+      ],
+      "syntax": [
+        [ "{", "}", "multi-line-brackets" ],
+        [ "(", ")", "multi-line-brackets" ],
+        [ "[", "]", "multi-line-brackets" ],
+        [ "\"", "\"", "single-line-quotes" ],
+        [ "'", "'", "single-line-quotes" ],
+        [ "`", "`", "multi-line-quotes" ],
+        [ "\\", "quote-escape-char" ],
+        [ "//", "", "single-line-comment" ],
+        [ "/*", "*/", "multi-line-comment" ]
+      ],
+      "autocomplete": [
+        [ "{", "}" ],
+        [ "(", ")" ],
+        [ "[", "]" ],
+        [ "\"", "\"" ],
+        [ "'", "'" ],
+        [ "`", "`" ],
+        [ "/*", "*/" ]
       ]
     },
     {

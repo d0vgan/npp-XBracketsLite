@@ -340,6 +340,7 @@ static void postprocessSyntaxes(std::list<tFileSyntax>& fileSyntaxes, const tFil
                 else
                     fileSyntax.pairs.push_back(brPair);
             }
+            sort_brpairs_by_len(fileSyntax.pairs);
         }
 
         if ( !pParentSyntax->autocomplete.empty() )
@@ -348,6 +349,7 @@ static void postprocessSyntaxes(std::list<tFileSyntax>& fileSyntaxes, const tFil
             std::swap(fileSyntax.autocomplete, autocompl);
             fileSyntax.autocomplete = pParentSyntax->autocomplete;
             fileSyntax.autocomplete.insert(fileSyntax.autocomplete.end(), autocompl.begin(), autocompl.end());
+            sort_brpairs_by_len(fileSyntax.autocomplete);
         }
 
         if ( !pParentSyntax->qtEsc.empty() )
