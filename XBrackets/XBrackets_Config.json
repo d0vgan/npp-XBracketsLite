@@ -60,6 +60,27 @@
       ]
     },
     {
+      "name": "C#",
+      "parent": "C",
+      "fileExtensions": [
+        "cs", "csx"
+      ],
+      "syntax": [
+        [ "@\"", "\"", "multi-line-quotes" ]
+      ]
+    },
+    {
+      "name": "JavaScript",
+      "parent": "C",
+      "fileExtensions": [
+        "js"
+      ],
+      "syntax": [
+        [ "/", "/", "single-line-quotes" ],
+        [ "`", "`", "multi-line-quotes" ]
+      ]
+    },
+    {
       "name": "awk",
       "fileExtensions": [
         "awk"
@@ -104,6 +125,36 @@
         [ "'", "'" ],
         [ "`", "`" ],
         [ "/*", "*/" ]
+      ]
+    },
+    {
+      "name": "ini",
+      "fileExtensions": [
+        "ini", "inf", "url"
+      ],
+      "syntax": [
+        [ "{", "}", "single-line-brackets" ],
+        [ "(", ")", "single-line-brackets" ],
+        [ "[", "]", "single-line-brackets" ],
+        [ "\"", "\"", "single-line-quotes" ],
+        [ ";", "", "single-line-comment" ],
+        [ "#", "", "single-line-comment" ]
+      ],
+      "autocomplete": [
+        [ "{", "}" ],
+        [ "(", ")" ],
+        [ "[", "]" ],
+        [ "\"", "\"" ]
+      ]
+    },
+    {
+      "name": "reg",
+      "parent": "ini",
+      "fileExtensions": [
+        "reg"
+      ],
+      "syntax": [
+        [ "\\", "quote-escape-char" ]
       ]
     },
     {

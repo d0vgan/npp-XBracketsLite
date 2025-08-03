@@ -297,9 +297,17 @@ void CBracketsTree::buildTree(CSciMessager& sciMsgr)
             continue;
         }
 
-        const tBrPair* pLeftBrPair = getLeftBrPair(p, nTextLen - nPos);
-        const tBrPair* pRightBrPair = getRightBrPair(p, nTextLen - nPos, nPos);
-        const tBrPair* pBrPair = (pLeftBrPair != nullptr && (pRightBrPair == nullptr || pRightBrPair->rightBr.length() <= pLeftBrPair->leftBr.length())) ? pLeftBrPair : pRightBrPair;
+        const tBrPair* pLeftBrPair = nullptr;
+        const tBrPair* pRightBrPair = nullptr;
+        const tBrPair* pBrPair = nullptr;
+        if ( nCurrentParentIdx == -1 ||
+             !isQtKind(bracketsTree[nCurrentParentIdx].pBrPair->kind) ||
+             !isEscapedPos(vText.data(), nPos) )
+        {
+            pLeftBrPair = getLeftBrPair(p, nTextLen - nPos);
+            pRightBrPair = getRightBrPair(p, nTextLen - nPos, nPos);
+            pBrPair = (pLeftBrPair != nullptr && (pRightBrPair == nullptr || pRightBrPair->rightBr.length() <= pLeftBrPair->leftBr.length())) ? pLeftBrPair : pRightBrPair;
+        }
         if ( pBrPair == nullptr )
             continue;
 
