@@ -70,6 +70,16 @@
       ]
     },
     {
+      "name": "Java",
+      "parent": "C",
+      "fileExtensions": [
+        "java"
+      ],
+      "syntax": [
+        [ "\"\"\"", "\"\"\"", "multi-line-quotes" ]
+      ]
+    },
+    {
       "name": "JavaScript",
       "parent": "C",
       "fileExtensions": [
@@ -155,6 +165,25 @@
       ],
       "syntax": [
         [ "\\", "quote-escape-char" ]
+      ]
+    },
+    {
+      "name": "JSON",
+      "fileExtensions": [
+        "json"
+      ],
+      "syntax": [
+        [ "{", "}", "multi-line-brackets" ],
+        [ "(", ")", "multi-line-brackets" ],
+        [ "[", "]", "multi-line-brackets" ],
+        [ "\"", "\"", "single-line-quotes" ],
+        [ "\\", "quote-escape-char" ]
+      ],
+      "autocomplete": [
+        [ "{", "}" ],
+        [ "(", ")" ],
+        [ "[", "]" ],
+        [ "\"", "\"" ]
       ]
     },
     {
