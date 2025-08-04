@@ -25,15 +25,12 @@
       ]
     },
     {
-      "name": "C",
-      "fileExtensions": [
-        "c", "h"
-      ],
+      "name": "C-like",
+      "fileExtensions": null,
       "syntax": [
         [ "{", "}", "multi-line-brackets" ],
         [ "(", ")", "multi-line-brackets" ],
         [ "[", "]", "multi-line-brackets" ],
-        [ "<", ">", "single-line-brackets" ],
         [ "\"", "\"", "single-line-quotes" ],
         [ "'", "'", "single-line-quotes" ],
         [ "\\", "quote-escape-char" ],
@@ -47,6 +44,16 @@
         [ "\"", "\"" ],
         [ "'", "'" ],
         [ "/*", "*/" ]
+      ]
+    },
+    {
+      "name": "C",
+      "parent": "C-like",
+      "fileExtensions": [
+        "c", "h"
+      ],
+      "syntax": [
+        [ "<", ">", "single-line-brackets" ]
       ]
     },
     {
@@ -81,7 +88,7 @@
     },
     {
       "name": "JavaScript",
-      "parent": "C",
+      "parent": "C-like",
       "fileExtensions": [
         "js"
       ],

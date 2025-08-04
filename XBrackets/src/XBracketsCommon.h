@@ -100,6 +100,10 @@ namespace XBrackets
         }
     };
 
+    enum eFileSyntaxFlags {
+        fsfNullFileExt = 0x0001  // do not process file extensions
+    };
+
     struct tFileSyntax {
         std::string name;
         std::string parent;
@@ -107,6 +111,7 @@ namespace XBrackets
         std::vector<tBrPair> pairs;        // pairs (syntax)
         std::vector<tBrPair> autocomplete; // user-defined pairs for auto-completion
         std::vector<std::string> qtEsc;    // escape characters in quotes
+        unsigned int uFlags{0};            // see eFileSyntaxFlags
     };
 
     enum TFileType2 {

@@ -297,6 +297,7 @@ void CBracketsTree::buildTree(CSciMessager& sciMsgr)
             continue;
         }
 
+        std::vector<const tBrPair*> rightBrPairs;
         const tBrPair* pLeftBrPair = nullptr;
         const tBrPair* pRightBrPair = nullptr;
         const tBrPair* pBrPair = nullptr;
@@ -305,7 +306,11 @@ void CBracketsTree::buildTree(CSciMessager& sciMsgr)
              !isEscapedPos(vText.data(), nPos) )
         {
             pLeftBrPair = getLeftBrPair(p, nTextLen - nPos);
-            pRightBrPair = getRightBrPair(p, nTextLen - nPos, nPos);
+            rightBrPairs = getRightBrPair(p, nTextLen - nPos, nPos);
+            if ( !rightBrPairs.empty() )
+            {
+                pRightBrPair = rightBrPairs.front();
+            }
             pBrPair = (pLeftBrPair != nullptr && (pRightBrPair == nullptr || pRightBrPair->rightBr.length() <= pLeftBrPair->leftBr.length())) ? pLeftBrPair : pRightBrPair;
         }
         if ( pBrPair == nullptr )
@@ -328,11 +333,17 @@ void CBracketsTree::buildTree(CSciMessager& sciMsgr)
                             if ( isSgLnBrQtKind(pBrPair->kind) && item.nLine != nCurrentLine )
                                 break;
 
-                            if ( item.pBrPair->leftBr == pBrPair->leftBr )
+                            for ( const tBrPair* pRightBrPair : rightBrPairs )
                             {
-                                nFoundItemIdx = nItemIdx;
-                                break;
+                                if ( item.pBrPair->leftBr == pRightBrPair->leftBr )
+                                {
+                                    pBrPair = pRightBrPair;
+                                    nFoundItemIdx = nItemIdx;
+                                    break;
+                                }
                             }
+                            if ( nFoundItemIdx != -1 )
+                                break;
 
                             if ( pBrPair->kind == bpkMlLnComm && item.pBrPair->kind == bpkMlLnComm ) // TODO: verify this condition
                                 break;
@@ -442,11 +453,17 @@ void CBracketsTree::buildTree(CSciMessager& sciMsgr)
                     if ( isSgLnBrQtKind(pBrPair->kind) && item.nLine != nCurrentLine )
                         break;
 
-                    if ( item.pBrPair->leftBr == pBrPair->leftBr )
+                    for ( const tBrPair* pRightBrPair : rightBrPairs )
                     {
-                        nFoundItemIdx = nItemIdx;
-                        break;
+                        if ( item.pBrPair->leftBr == pRightBrPair->leftBr )
+                        {
+                            pBrPair = pRightBrPair;
+                            nFoundItemIdx = nItemIdx;
+                            break;
+                        }
                     }
+                    if ( nFoundItemIdx != -1 )
+                        break;
 
                     if ( item.pBrPair->kind == bpkMlLnComm && pBrPair->kind != bpkMlLnComm )
                         break;
@@ -832,7 +849,9 @@ const tBrPair* CBracketsTree::getLeftBrPair(const char* p, size_t nLen) const
             {
                 if ( !isNoInnerSpaceKind(brPair.kind) ||
                      (nLeftBrLen != nLen && !isWhiteSpaceOrNulChar(*(p + nLeftBrLen))) )
+                {
                     return &brPair;
+                }
             }
         }
     }
@@ -840,10 +859,12 @@ const tBrPair* CBracketsTree::getLeftBrPair(const char* p, size_t nLen) const
     return nullptr;
 }
 
-const tBrPair* CBracketsTree::getRightBrPair(const char* p, size_t nLen, size_t nCurrentOffset) const
+std::vector<const tBrPair*> CBracketsTree::getRightBrPair(const char* p, size_t nLen, size_t nCurrentOffset) const
 {
     if ( m_pFileSyntax == nullptr )
-        return nullptr;
+        return {};
+
+    std::vector<const tBrPair*> brPairs;
 
     for ( const auto& brPair : m_pFileSyntax->pairs )
     {
@@ -854,12 +875,14 @@ const tBrPair* CBracketsTree::getRightBrPair(const char* p, size_t nLen, size_t 
             {
                 if ( !isNoInnerSpaceKind(brPair.kind) ||
                      (nCurrentOffset != 0 && !isWhiteSpaceOrNulChar(*(p - 1))) )
-                return &brPair;
+                {
+                    brPairs.push_back(&brPair);
+                }
             }
         }
     }
 
-    return nullptr;
+    return brPairs;
 }
 
 bool CBracketsTree::isEscapedPos(const char* pTextBegin, const Sci_Position nPos) const
@@ -1110,7 +1133,8 @@ void CXBracketsLogic::UpdateFileType(unsigned int uInvalidateFlags)
     {
         for ( const auto& syntax : g_opt.getFileSyntaxes() )
         {
-            if ( syntax.fileExtensions.find(fileExtension) != syntax.fileExtensions.end() )
+            if ( (syntax.uFlags & fsfNullFileExt) == 0 &&
+                 syntax.fileExtensions.find(fileExtension) != syntax.fileExtensions.end() )
             {
                 m_pFileSyntax = &syntax;
                 break;

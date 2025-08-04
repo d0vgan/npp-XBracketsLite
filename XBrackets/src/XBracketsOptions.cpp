@@ -249,6 +249,10 @@ static tFileSyntax readFileSyntaxItem(const json11::Json& syntaxItem)
                     }
                 }
             }
+            else if ( propItem.second.is_null() )
+            {
+                fileSyntax.uFlags |= fsfNullFileExt;
+            }
         }
         else if ( propItem.first == "syntax" )
         {
