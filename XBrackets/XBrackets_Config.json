@@ -145,6 +145,28 @@
       ]
     },
     {
+      "name": "Pascal",
+      "fileExtensions": [
+        "pas", "dpr"
+      ],
+      "syntax": [
+        [ "(", ")", "multi-line-brackets" ],
+        [ "[", "]", "multi-line-brackets" ],
+        [ "'", "'", "single-line-quotes" ],
+        [ "//", "", "single-line-comment" ],
+        [ "{", "}", "multi-line-comment" ],
+        [ "(*", "*)", "multi-line-comment" ]
+      ],
+      "autocomplete": [
+        [ "{", "}" ],
+        [ "(", ")" ],
+        [ "[", "]" ],
+        [ "'", "'" ],
+        [ "`", "`" ],
+        [ "(*", "*" ]
+      ]
+    },
+    {
       "name": "ini",
       "fileExtensions": [
         "ini", "inf", "url"
@@ -278,6 +300,28 @@
       ]
     },
     {
+      "name": "sh",
+      "fileExtensions": [
+        "sh"
+      ],
+      "syntax": [
+        [ "{", "}", "multi-line-brackets" ],
+        [ "(", ")", "multi-line-brackets" ],
+        [ "[", "]", "single-line-brackets" ],
+        [ "\"", "\"", "multi-line-quotes" ],
+        [ "'", "'", "single-line-quotes" ],
+        [ "\\", "quote-escape-char" ],
+        [ "# ", "", "single-line-comment" ]
+      ],
+      "autocomplete": [
+        [ "{", "}" ],
+        [ "(", ")" ],
+        [ "[", "]" ],
+        [ "\"", "\"" ],
+        [ "'", "'" ]
+      ]
+    },
+    {
       "name": "AutoHotkey",
       "fileExtensions": [
         "ahk"
@@ -348,6 +392,36 @@
         [ "\"", "\"" ],
         [ "'", "'" ],
         [ "=pod", "=cut"]
+      ]
+    },
+    {
+      "name": "Lua",
+      "fileExtensions": [
+        "lua"
+      ],
+      "syntax": [
+        [ "{", "}", "multi-line-brackets" ],
+        [ "(", ")", "multi-line-brackets" ],
+        [ "[", "]", "multi-line-brackets" ],
+        [ "\"", "\"", "single-line-quotes" ],
+        [ "'", "'", "single-line-quotes" ],
+        [ "\\", "quote-escape-char" ],
+        [ "--", "", "single-line-comment" ],
+        [ "[[", "]]", "multi-line-brackets" ],
+        [ "[=[", "]=]", "multi-line-brackets" ],
+        [ "[==[", "]==]", "multi-line-brackets" ],
+        [ "[===[", "]===]", "multi-line-brackets" ],
+        [ "--[[", "]]", "multi-line-comment" ],
+        [ "--[=[", "]=]", "multi-line-comment" ],
+        [ "--[==[", "]==]", "multi-line-comment" ],
+        [ "--[===[", "]===]", "multi-line-comment" ]
+      ],
+      "autocomplete": [
+        [ "{", "}" ],
+        [ "(", ")" ],
+        [ "[", "]" ],
+        [ "\"", "\"" ],
+        [ "'", "'" ]
       ]
     }
   ]
