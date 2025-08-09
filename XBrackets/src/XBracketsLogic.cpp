@@ -268,7 +268,15 @@ void CBracketsTree::buildTree(CSciMessager& sciMsgr)
 
                 if ( nCommIdx != -1 )
                 {
-                    bracketsTree.erase(bracketsTree.begin() + nCommIdx, bracketsTree.end());
+                    for ( Sci_Position idx = bracketsTree.size() - 1; idx >= nCommIdx; --idx )
+                    {
+                        tBrPairItem& item = bracketsTree[idx];
+                        if ( idx == nCommIdx || item.isIncomplete() )
+                        {
+                            item.nLeftBrPos = -1;
+                            item.nRightBrPos = -1;
+                        }
+                    }
                 }
 
                 if ( nCurrentParentIdx != -1 )
@@ -981,11 +989,6 @@ void CXBracketsLogic::SetNppData(const NppData& nppd)
 
 void CXBracketsLogic::InvalidateCachedBrackets(unsigned int uInvalidateFlags, SCNotification* pscn)
 {
-    if ( uInvalidateFlags & icbfBrPair )
-    {
-        m_nCachedLeftBrPos = -1;
-        m_nCachedRightBrPos = -1;
-    }
     if ( uInvalidateFlags & icbfAutoRightBr )
     {
         m_nAutoRightBracketPos = -1;
@@ -1007,7 +1010,7 @@ CXBracketsLogic::eCharProcessingResult CXBracketsLogic::OnChar(const int ch)
     const int nAutoRightBrType = m_nAutoRightBracketType;
     const int nAutoRightBrOffset = m_nAutoRightBracketOffset; // will be used below
 
-    InvalidateCachedBrackets(icbfBrPair | icbfAutoRightBr);
+    InvalidateCachedBrackets(icbfAutoRightBr);
 
     if ( !g_opt.getBracketsAutoComplete() )
         return cprNone;

@@ -67,11 +67,10 @@ public:
     };
 
     enum eInvalidateCachedBracketsFlags{
-        icbfBrPair      = 0x01,
-        icbfAutoRightBr = 0x02,
-        icbfTree        = 0x04,
+        icbfAutoRightBr = 0x01,
+        icbfTree        = 0x02,
 
-        icbfAll = (icbfBrPair | icbfAutoRightBr | icbfTree)
+        icbfAll = (icbfAutoRightBr | icbfTree)
     };
 
 public:
@@ -101,8 +100,6 @@ private:
     Sci_Position m_nAutoRightBracketPos{-1};
     int          m_nAutoRightBracketType{-1};
     int          m_nAutoRightBracketOffset{-1};
-    Sci_Position m_nCachedLeftBrPos{-1};
-    Sci_Position m_nCachedRightBrPos{-1};
     unsigned int m_uFileType{XBrackets::tfmIsSupported};
 
 private:

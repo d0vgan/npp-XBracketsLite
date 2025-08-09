@@ -212,7 +212,7 @@ void CXBracketsPlugin::OnNppFileReload()
 void CXBracketsPlugin::OnNppFileSaved()
 {
     // AutoRightBr is still valid, but file type may be changed:
-    m_BracketsLogic.UpdateFileType(CXBracketsLogic::icbfBrPair);
+    m_BracketsLogic.UpdateFileType(CXBracketsLogic::icbfTree);
 }
 
 void CXBracketsPlugin::OnNppReady()
@@ -309,7 +309,7 @@ void CXBracketsPlugin::OnSciModified(SCNotification* pscn)
 
 void CXBracketsPlugin::OnSciTextChanged(SCNotification* pscn)
 {
-    unsigned int uInvalidateFlags = CXBracketsLogic::icbfBrPair | CXBracketsLogic::icbfAutoRightBr;
+    unsigned int uInvalidateFlags = CXBracketsLogic::icbfAutoRightBr;
     if ( pscn != nullptr )
     {
         uInvalidateFlags |= CXBracketsLogic::icbfAll;
