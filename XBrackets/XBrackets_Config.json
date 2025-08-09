@@ -308,7 +308,7 @@
         [ "{", "}", "multi-line-brackets" ],
         [ "(", ")", "multi-line-brackets" ],
         [ "[", "]", "single-line-brackets" ],
-        [ "\"", "\"", "multi-line-quotes" ],
+        [ "\"", "\"", "single-line-quotes" ],
         [ "'", "'", "single-line-quotes" ],
         [ "\\", "quote-escape-char" ],
         [ "# ", "", "single-line-comment" ]
