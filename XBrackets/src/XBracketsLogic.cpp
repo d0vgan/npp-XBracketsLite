@@ -183,6 +183,7 @@ void CBracketsTree::buildTree(CSciMessager& sciMsgr)
     Sci_Position nPos = 0;
     Sci_Position nCurrentLine = 0;
     Sci_Position nCurrentParentIdx = -1;
+    Sci_Position nPrevLineTreeSize = 0;
     unsigned int isQuoted = 0;
     unsigned int isSgLnQuoted = 0;
 
@@ -233,7 +234,7 @@ void CBracketsTree::buildTree(CSciMessager& sciMsgr)
 
         if ( isNewLine )
         {
-            if ( nCurrentParentIdx != -1 )
+            if ( nCurrentParentIdx != -1 && nCurrentParentIdx >= nPrevLineTreeSize )
             {
                 Sci_Position nNewParentIdx = -1;
                 Sci_Position nCommIdx = -1;
@@ -306,6 +307,7 @@ void CBracketsTree::buildTree(CSciMessager& sciMsgr)
         #endif
             isQuoted -= isSgLnQuoted;
             isSgLnQuoted = 0;
+            nPrevLineTreeSize = bracketsTree.size();
             ++nCurrentLine;
             continue;
         }
@@ -329,6 +331,10 @@ void CBracketsTree::buildTree(CSciMessager& sciMsgr)
                      isNoInnerSpaceKind(item.pBrPair->kind) )
                 {
                     nCurrentParentIdx = getOpenParentIdx(item.nParentIdx);
+                    if ( item.nLine != nCurrentLine )
+                    {
+                        --nPrevLineTreeSize;
+                    }
                     bracketsTree.pop_back();
                 }
             }
