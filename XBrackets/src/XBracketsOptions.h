@@ -102,6 +102,17 @@ class CXBracketsOptions
             return m_pDefaultFileSyntax;
         }
 
+        const bool getUpdateTreeAllowed() const
+        {
+            // buildTree() takes less than a second for a 1 MB file even on a
+            // 10-years old notebook.
+            // updateTree() is called on each and every character typed or
+            // deleted, potentially slowing down the entire reaction to typing.
+            // As buildTree() is fast enough, we can just call invalidateTree()
+            // instead of updateTree().
+            return false;
+        }
+
     protected:
         UINT  m_uFlags;
         UINT  m_uSelAutoBr; // one of eSelAutoBr

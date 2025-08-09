@@ -997,10 +997,16 @@ void CXBracketsLogic::InvalidateCachedBrackets(unsigned int uInvalidateFlags, SC
     }
     if ( uInvalidateFlags & icbfTree )
     {
-        if ( pscn == nullptr || (pscn->modificationType & (SC_MOD_INSERTTEXT | SC_MOD_DELETETEXT | SC_MOD_BEFOREINSERT | SC_MOD_BEFOREDELETE)) == 0 )
+        if ( !g_opt.getUpdateTreeAllowed() ||
+             pscn == nullptr || 
+             (pscn->modificationType & (SC_MOD_INSERTTEXT | SC_MOD_DELETETEXT | SC_MOD_BEFOREINSERT | SC_MOD_BEFOREDELETE)) == 0 )
+        {
             m_bracketsTree.invalidateTree();
+        }
         else
+        {
             m_bracketsTree.updateTree(pscn);
+        }
     }
 }
 
