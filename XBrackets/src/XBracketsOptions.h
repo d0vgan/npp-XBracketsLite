@@ -110,6 +110,7 @@ class CXBracketsOptions
             // deleted, potentially slowing down the entire reaction to typing.
             // As buildTree() is fast enough, we can just call invalidateTree()
             // instead of updateTree().
+            // See also: CXBracketsPlugin::OnNppReady().
             return false;
         }
 

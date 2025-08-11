@@ -221,7 +221,12 @@ void CXBracketsPlugin::OnNppReady()
     CXBracketsMenu::UpdateMenuState();
     m_BracketsLogic.UpdateFileType();
 
-    m_nppMsgr.SendNppMsg(NPPM_ADDSCNMODIFIEDFLAGS, 0, SC_MOD_INSERTTEXT | SC_MOD_DELETETEXT | SC_MOD_BEFOREINSERT | SC_MOD_BEFOREDELETE);
+    unsigned int uSciFlags = (SC_MOD_INSERTTEXT | SC_MOD_DELETETEXT);
+    if ( g_opt.getUpdateTreeAllowed() )
+    {
+        uSciFlags |= (SC_MOD_BEFOREINSERT | SC_MOD_BEFOREDELETE);
+    }
+    m_nppMsgr.SendNppMsg(NPPM_ADDSCNMODIFIEDFLAGS, 0, uSciFlags);
 
     auto pSetWindowLongPtr = isNppWndUnicode ? SetWindowLongPtrW : SetWindowLongPtrA;
 

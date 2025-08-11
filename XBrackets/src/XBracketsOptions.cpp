@@ -172,16 +172,24 @@ static tBrPair readBrPairItem(const json11::Json& pairItem, bool isKindRequired)
                         kind = bpkSgLnBracketsNoInnerSpace;
                     else if ( val == "multi-line-brackets" )
                         kind = bpkMlLnBrackets;
+                    else if ( val == "multi-line-brackets-linestart" )
+                        kind = bpkMlLnBracketsLineStart;
                     else if ( val == "single-line-quotes" )
                         kind = bpkSgLnQuotes;
                     else if ( val == "single-line-quotes-noinnerspace" )
                         kind = bpkSgLnQuotesNoInnerSpace;
                     else if ( val == "multi-line-quotes" )
                         kind = bpkMlLnQuotes;
+                    else if ( val == "multi-line-quotes-linestart" )
+                        kind = bpkMlLnQuotesLineStart;
                     else if ( val == "single-line-comment" )
                         kind = bpkSgLnComm;
+                    else if ( val == "single-line-comment-linestart" )
+                        kind = bpkSgLnCommLineStart;
                     else if ( val == "multi-line-comment" )
                         kind = bpkMlLnComm;
+                    else if ( val == "multi-line-comment-linestart" )
+                        kind = bpkMlLnCommLineStart;
                     else if ( val == "quote-escape-char" )
                         kind = bpkQtEsqChar;
                 }

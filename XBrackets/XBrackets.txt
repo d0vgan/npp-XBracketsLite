@@ -5,12 +5,12 @@
 
 XBrackets Lite allows to auto-complete brackets ([{<"">}]) i.e. it inserts the
 corresponding right (closing) bracket when a left (opening) bracket is typed.
-Starting from version 2.0, multi-character brackets and quotes are supported.
+Starting from the version 2.0, multi-character brackets and quotes are supported.
 The plugin uses "smart" auto-completion:
 - next character is analysed for ([{< brackets;
 - next & previous characters are analysed for " and ' quotes.
 
-XBrackets Lite adds the following functions:
+XBrackets Lite, starting from the version 2.0, adds the following functions:
 * Go To Matching Bracket: when the caret is at a bracket or quote character,
   jumps to the pair bracket or quote, e.g. |( ) becomes ( )|
 * Sel To Matching Brackets: when the caret is at a bracket or quote character,
@@ -25,9 +25,10 @@ The "Go To" and "Sel To" functions are based on a brackets tree which is built b
 user-defined rules specified in the file "plugins\XBrackets\XBrackets_Config.json".
 This file is a static configuration file similar to Notepad++'s "stylers.model.xml"
 and "langs.model.xml".
-Once you call Plugins -> XBrackets Lite -> Settings, this file is overridden by
-"plugins\Config\XBrackets_UserConfig.json". From that moment, XBrackets Lite always
-reads its configuration from the "plugins\Config\XBrackets_UserConfig.json".
+Once you call Plugins -> XBrackets Lite -> Settings, the "XBrackets_Config.json"
+file is overridden by a newly created "plugins\Config\XBrackets_UserConfig.json".
+From that moment, XBrackets Lite always reads its configuration from the file
+"plugins\Config\XBrackets_UserConfig.json".
 If your configuration file "XBrackets_UserConfig.json" is corrupted or you want to
 return to the default configuration, just delete this file, and XBrackets Lite will
 use the "plugins\XBrackets\XBrackets_Config.json" again.
@@ -55,11 +56,15 @@ The following pair kinds are supported in the "syntax" array:
 * "single-line-brackets": single-line brackets pair;
 * "single-line-brackets-noinnerspace": single-line brackets pair that can't contain a space;
 * "multi-line-brackets": multi-line brackets pair;
+* "multi-line-brackets-linestart": multi-line brackets pair that starts at the beginning of the line;
 * "single-line-quotes": single-line quotes pair;
 * "single-line-quotes-noinnerspace": single-line quotes pair that can't contain a space;
 * "multi-line-quotes": multi-line quotes pair;
+* "multi-line-quotes-linestart": multi-line quotes pair that starts at the beginning of the line;
 * "single-line-comment": single-line comment;
+* "single-line-comment-linestart": single-line comment that starts at the beginning of the line;
 * "multi-line-comment": multi-line comment pair;
+* "multi-line-comment-linestart": multi-line comment pair that starts at the beginning of the line;
 * "quote-escape-char": escape character in quotes.
 
 The difference between the "brackets" and "quotes" is the following:
