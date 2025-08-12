@@ -259,7 +259,7 @@
         [ "[", "]", "single-line-brackets" ],
         [ "\"", "\"", "single-line-quotes" ],
         [ "'", "'", "single-line-quotes" ],
-        [ "%", "%", "single-line-brackets-noinnerspace" ],
+        [ "%", "%", "single-line-brackets", 1 ],
         [ "REM", "", "single-line-comment" ],
         [ "::", "", "single-line-comment" ]
       ],
@@ -285,8 +285,8 @@
         [ "`", "quote-escape-char" ],
         [ "<#", "#>", "multi-line-comment" ],
         [ "#", "", "single-line-comment" ],
-        [ "@\"", "\"@", "multi-line-quotes" ],
-        [ "@'", "'@", "multi-line-quotes" ]
+        [ "@\"", "\"@", "multi-line-quotes", 4 ],
+        [ "@'", "'@", "multi-line-quotes", 4 ]
       ],
       "autocomplete": [
         [ "{", "}" ],
@@ -332,9 +332,9 @@
         [ "[", "]", "multi-line-brackets" ],
         [ "\"", "\"", "single-line-quotes" ],
         [ "'", "'", "single-line-quotes" ],
-        [ "%", "%", "single-line-brackets-noinnerspace" ],
+        [ "%", "%", "single-line-brackets", 1 ],
         [ ";", "", "single-line-comment" ],
-        [ "/*", "*/", "multi-line-comment" ]
+        [ "/*", "*/", "multi-line-comment", 6 ]
       ],
       "autocomplete": [
         [ "(", ")" ],
@@ -383,7 +383,7 @@
         [ "\"", "\"", "multi-line-quotes" ],
         [ "'", "'", "multi-line-quotes" ],
         [ "#", "", "single-line-comment" ],
-        [ "=pod", "=cut", "multi-line-comment" ]
+        [ "=pod", "=cut", "multi-line-comment", 6 ]
       ],
       "autocomplete": [
         [ "(", ")" ],

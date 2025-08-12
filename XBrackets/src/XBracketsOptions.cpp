@@ -161,46 +161,44 @@ static tBrPair readBrPairItem(const json11::Json& pairItem, bool isKindRequired)
         {
             const std::string& val = elem.string_value();
 
-            eBrPairKind kind = bpkNone;
+            unsigned int kind = 0;
             if ( isKindRequired )
             {
-                if ( brPair.kind == bpkNone )
+                if ( brPair.kind == 0 )
                 {
                     if ( val == "single-line-brackets" )
-                        kind = bpkSgLnBrackets;
-                    else if ( val == "single-line-brackets-noinnerspace" )
-                        kind = bpkSgLnBracketsNoInnerSpace;
+                        kind = bpkfBr;
                     else if ( val == "multi-line-brackets" )
-                        kind = bpkMlLnBrackets;
-                    else if ( val == "multi-line-brackets-linestart" )
-                        kind = bpkMlLnBracketsLineStart;
+                        kind = bpkfBr | bpkfMlLn;
                     else if ( val == "single-line-quotes" )
-                        kind = bpkSgLnQuotes;
-                    else if ( val == "single-line-quotes-noinnerspace" )
-                        kind = bpkSgLnQuotesNoInnerSpace;
+                        kind = bpkfQt;
                     else if ( val == "multi-line-quotes" )
-                        kind = bpkMlLnQuotes;
-                    else if ( val == "multi-line-quotes-linestart" )
-                        kind = bpkMlLnQuotesLineStart;
+                        kind = bpkfQt | bpkfMlLn;
                     else if ( val == "single-line-comment" )
-                        kind = bpkSgLnComm;
-                    else if ( val == "single-line-comment-linestart" )
-                        kind = bpkSgLnCommLineStart;
+                        kind = bpkfComm;
                     else if ( val == "multi-line-comment" )
-                        kind = bpkMlLnComm;
-                    else if ( val == "multi-line-comment-linestart" )
-                        kind = bpkMlLnCommLineStart;
+                        kind = bpkfComm | bpkfMlLn;
                     else if ( val == "quote-escape-char" )
-                        kind = bpkQtEsqChar;
+                        kind = bpkfEscCh;
                 }
             }
 
-            if ( kind != bpkNone )
+            if ( kind != 0 )
                 brPair.kind = kind;
             else if ( brPair.leftBr.empty() )
                 brPair.leftBr = val;
-            else if ( brPair.rightBr.empty() && brPair.kind != bpkQtEsqChar )
+            else if ( brPair.rightBr.empty() && (brPair.kind & bpkfEscCh) == 0 )
                 brPair.rightBr = val;
+        }
+        else if ( elem.is_number() )
+        {
+            const unsigned int val = elem.int_value();
+            if ( val & 0x01 )
+                brPair.kind |= bpkfNoInSp;
+            if ( val & 0x02 )
+                brPair.kind |= bpkfOpnLnSt;
+            if ( val & 0x04 )
+                brPair.kind |= bpkfClsLnSt;
         }
     }
 
@@ -272,9 +270,9 @@ static tFileSyntax readFileSyntaxItem(const json11::Json& syntaxItem)
                     {
                         tBrPair brPair = readBrPairItem(elementItem, true);
 
-                        if ( brPair.kind != bpkNone )
+                        if ( brPair.kind != 0 )
                         {
-                            if ( brPair.kind != bpkQtEsqChar )
+                            if ( (brPair.kind & bpkfEscCh) == 0 )
                                 fileSyntax.pairs.push_back(std::move(brPair));
                             else
                                 fileSyntax.qtEsc.push_back(std::move(brPair.leftBr));
@@ -348,7 +346,7 @@ static void postprocessSyntaxes(std::list<tFileSyntax>& fileSyntaxes, const tFil
                 }
                 );
                 if ( itr != itrEnd )
-                    itr->kind = brPair.kind;
+                    itr->kind = brPair.kind; // preserving the child's pair kind
                 else
                     fileSyntax.pairs.push_back(brPair);
             }

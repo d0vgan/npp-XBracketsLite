@@ -37,7 +37,7 @@ public:
 
 private:
     const tBrPair* getLeftBrPair(const char* p, size_t nLen, bool isLineStart) const;
-    std::vector<const tBrPair*> getRightBrPair(const char* p, size_t nLen, size_t nCurrentOffset) const;
+    std::vector<const tBrPair*> getRightBrPair(const char* p, size_t nLen, size_t nCurrentOffset, bool isLineStart) const;
     bool isEscapedPos(const char* pTextBegin, const Sci_Position nPos) const;
 
 private:

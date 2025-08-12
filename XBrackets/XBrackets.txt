@@ -40,7 +40,7 @@ The file "XBrackets_Config.json" contains the following nodes:
 Each item under the "fileSyntax" is a JSON object with the following properties:
 * "name": identifies the internal name of the item. This name can be used as a
   parent of the items below.
-* "parent" (optional): identifies the parent item. The current item copies all the
+* "parent" (optional): identifies the parent item. The current item inherits all the
   properties of its parent and can override only the pair kinds under its "syntax"
   array.
 * "fileExtensions": array of file extensions associated with this item.
@@ -54,33 +54,32 @@ Each item under the "fileSyntax" is a JSON object with the following properties:
 
 The following pair kinds are supported in the "syntax" array:
 * "single-line-brackets": single-line brackets pair;
-* "single-line-brackets-noinnerspace": single-line brackets pair that can't contain a space;
 * "multi-line-brackets": multi-line brackets pair;
-* "multi-line-brackets-linestart": multi-line brackets pair that starts at the beginning of the line;
 * "single-line-quotes": single-line quotes pair;
-* "single-line-quotes-noinnerspace": single-line quotes pair that can't contain a space;
 * "multi-line-quotes": multi-line quotes pair;
-* "multi-line-quotes-linestart": multi-line quotes pair that starts at the beginning of the line;
 * "single-line-comment": single-line comment;
-* "single-line-comment-linestart": single-line comment that starts at the beginning of the line;
 * "multi-line-comment": multi-line comment pair;
-* "multi-line-comment-linestart": multi-line comment pair that starts at the beginning of the line;
 * "quote-escape-char": escape character in quotes.
 
+While specifying a pair kind, an optional integer value may specify additional
+attributes. This integer value will be a sum of the following values, depending
+on the desired behavior:
+* 1: a given pair can't contain a space;
+* 2: a left (opening) bracket should start at the beginning of a line;
+* 4: a right (closing) bracket should start at the beginning of a line.
+
 The difference between the "brackets" and "quotes" is the following:
-the "brackets" can not enquote other characters, i.e. `%a"b%` will not be a %% pair
-in case of "single-line-brackets" and "single-line-brackets-noinnerspace".
-And the "quotes" can enquote other characters, so e.g. `%a"b%` and `%a)b%` will be
-a %% pair in case of "single-line-quotes" and "single-line-quotes-noinnerspace".
+The "brackets" can not enquote other characters, so e.g. `%a"b%` and `%a)b%`
+will not be a %% pair in case of "single-line-brackets" and "multi-line-brackets".
+The "quotes" can enquote other characters, so e.g. `%a"b%` and `%a)b%` will be
+a %% pair in case of "single-line-quotes" and "multi-line-quotes".
 
 The plugin's settings under the "settings" node:
-
-Special manual options inside the file "XBrackets.ini":
 * "AutoComplete": specifies whether brackets auto-completion is enabled.
 * "AutoComplete_WhenRightBrExists": specifies whether to add the corresponding
   closing (right) bracket when such a bracket already exists after the caret.
-* "Sel_AutoBr": allows to specify what to do with the selected text when a
-  left (opening) bracket has been typed.
+* "Sel_AutoBr": specifies what to do with the selected text when a left (opening)
+  bracket has been typed.
   The following values are supported:
     "Sel_AutoBr": 0
       When a left (opening) bracket is typed, the selected text is removed
@@ -145,8 +144,8 @@ Special manual options inside the file "XBrackets.ini":
   Example:
     // auto-complete after ([{<= and '\0', '\r', '\n', ' ', '\t'
     "Prev_Char_OK": "([{<="
-* "FileExtsRule": allows to specify file extensions which will be supported or
-  ignored by XBrackets.
+* "FileExtsRule": specifies file extensions which will be supported or ignored
+  by XBrackets.
   Examples:
     // tells XBrackets to support ANY file (by default)
     "FileExtsRule": ""

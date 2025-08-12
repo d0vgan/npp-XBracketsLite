@@ -13,90 +13,79 @@ namespace XBrackets
     typedef std::basic_string<TCHAR> tstr;
 
     enum eBrPairKindFlags {
-        bpkfBr     = 0x0001,
-        bpkfQt     = 0x0002,
-        bpkfComm   = 0x0004,
-        bpkfEsqCh  = 0x0008,
-        bpkfMlLn   = 0x0100,
-        bpkfNoInSp = 0x1000,
-        bpkfLnSt   = 0x2000
+        bpkfBr      = 0x0001, // (kind) a pair of brackets
+        bpkfQt      = 0x0002, // (kind) a pair of quotes
+        bpkfComm    = 0x0004, // (kind) a comment
+        bpkfEscCh   = 0x0008, // (kind) an escape character in quotes
+        bpkfMlLn    = 0x0100, // (attr) multiline
+        bpkfNoInSp  = 0x1000, // (attr) can't contain a space
+        bpkfOpnLnSt = 0x2000, // (attr) the left (opening) bracket starts at the beginning of the line
+        bpkfClsLnSt = 0x4000  // (attr) the right (closing) bracket starts at the beginning of the line
     };
 
-    enum eBrPairKind {
-        bpkNone = 0,
-        bpkSgLnBrackets             = (bpkfBr),                         // single-line brackets pair
-        bpkSgLnBracketsNoInnerSpace = (bpkfBr | bpkfNoInSp),            // single-line brackets pair that can't contain a space
-        bpkMlLnBrackets             = (bpkfBr | bpkfMlLn),              // multi-line brackets pair
-        bpkMlLnBracketsLineStart    = (bpkfBr | bpkfMlLn | bpkfLnSt),   // multi-line brackets pair that starts at the beginning of the line
-        bpkSgLnQuotes               = (bpkfQt),                         // single-line quotes pair
-        bpkSgLnQuotesNoInnerSpace   = (bpkfQt | bpkfNoInSp),            // single-line quotes pair that can't contain a space
-        bpkMlLnQuotes               = (bpkfQt | bpkfMlLn),              // multi-line quotes pair
-        bpkMlLnQuotesLineStart      = (bpkfQt | bpkfMlLn | bpkfLnSt),   // multi-line quotes pair that starts at the beginning of the line
-        bpkSgLnComm                 = (bpkfComm),                       // single-line comment
-        bpkSgLnCommLineStart        = (bpkfComm | bpkfLnSt),            // single-line comment that starts at the beginning of the line
-        bpkMlLnComm                 = (bpkfComm | bpkfMlLn),            // multi-line comment pair
-        bpkMlLnCommLineStart        = (bpkfComm | bpkfMlLn | bpkfLnSt), // multi-line comment pair that starts at the beginning of the line
-        bpkQtEsqChar                = (bpkfEsqCh)                       // escape character in quotes
-    };
-
-    static inline bool isBrKind(eBrPairKind kind)
+    static inline bool isBrKind(unsigned int kind)
     {
         return ((kind & bpkfBr) != 0);
     }
 
-    static inline bool isQtKind(eBrPairKind kind)
+    static inline bool isQtKind(unsigned int kind)
     {
         return ((kind & bpkfQt) != 0);
     }
 
-    static inline bool isSgLnBrKind(eBrPairKind kind)
+    static inline bool isSgLnBrKind(unsigned int kind)
     {
         return ((kind & (bpkfBr | bpkfMlLn)) == bpkfBr);
     }
 
-    static inline bool isMlLnBrKind(eBrPairKind kind)
+    static inline bool isMlLnBrKind(unsigned int kind)
     {
         return ((kind & (bpkfBr | bpkfMlLn)) == (bpkfBr | bpkfMlLn));
     }
 
-    static inline bool isSgLnQtKind(eBrPairKind kind)
+    static inline bool isSgLnQtKind(unsigned int kind)
     {
         return ((kind & (bpkfQt | bpkfMlLn)) == bpkfQt);
     }
 
-    static inline bool isMlLnQtKind(eBrPairKind kind)
+    static inline bool isMlLnQtKind(unsigned int kind)
     {
         return ((kind & (bpkfQt | bpkfMlLn)) == (bpkfQt | bpkfMlLn));
     }
 
-    static inline bool isSgLnBrQtKind(eBrPairKind kind)
+    static inline bool isSgLnBrQtKind(unsigned int kind)
     {
         return ((kind & (bpkfBr | bpkfQt)) != 0 && (kind & bpkfMlLn) == 0);
     }
 
-    static inline bool isMlLnBrQtKind(eBrPairKind kind)
+    static inline bool isMlLnBrQtKind(unsigned int kind)
     {
         return ((kind & (bpkfBr | bpkfQt)) != 0 && (kind & bpkfMlLn) != 0);
     }
 
-    static inline bool isSgLnCommKind(eBrPairKind kind)
+    static inline bool isSgLnCommKind(unsigned int kind)
     {
         return ((kind & (bpkfComm | bpkfMlLn)) == bpkfComm);
     }
 
-    static inline bool isMlLnCommKind(eBrPairKind kind)
+    static inline bool isMlLnCommKind(unsigned int kind)
     {
         return ((kind & (bpkfComm | bpkfMlLn)) == (bpkfComm | bpkfMlLn));
     }
 
-    static inline bool isNoInnerSpaceKind(eBrPairKind kind)
+    static inline bool isNoInSpKind(unsigned int kind)
     {
         return ((kind & bpkfNoInSp) != 0);
     }
 
-    static inline bool isLineStartKind(eBrPairKind kind)
+    static inline bool isOpnLnStKind(unsigned int kind)
     {
-        return ((kind & bpkfLnSt) != 0);
+        return ((kind & bpkfOpnLnSt) != 0);
+    }
+
+    static inline bool isClsLnStKind(unsigned int kind)
+    {
+        return ((kind & bpkfClsLnSt) != 0);
     }
 
     enum eConsts {
@@ -106,7 +95,7 @@ namespace XBrackets
     struct tBrPair { // brackets, quotes or multi-line comments pair
         std::string leftBr;
         std::string rightBr;
-        eBrPairKind kind{bpkNone};
+        unsigned int kind{0};
     };
 
     struct tBrPairItem

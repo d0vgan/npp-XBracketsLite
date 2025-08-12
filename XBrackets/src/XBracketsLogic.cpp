@@ -98,7 +98,7 @@ bool CBracketsTree::isTreeEmpty() const
     return m_bracketsTree.empty();
 }
 
-static void incIsQuoted(const eBrPairKind kind, unsigned int& isQuoted, unsigned int& isSgLnQuoted)
+static void incIsQuoted(const unsigned int kind, unsigned int& isQuoted, unsigned int& isSgLnQuoted)
 {
     const bool isSgLnQt = isSgLnQtKind(kind);
     if ( isSgLnQt )
@@ -111,7 +111,7 @@ static void incIsQuoted(const eBrPairKind kind, unsigned int& isQuoted, unsigned
     }
 }
 
-static void decIsQuoted(const eBrPairKind kind, unsigned int& isQuoted, unsigned int& isSgLnQuoted)
+static void decIsQuoted(const unsigned int kind, unsigned int& isQuoted, unsigned int& isSgLnQuoted)
 {
     const bool isSgLnQt = isSgLnQtKind(kind);
     if ( isSgLnQt )
@@ -337,8 +337,7 @@ void CBracketsTree::buildTree(CSciMessager& sciMsgr)
             if ( !bracketsTree.empty() )
             {
                 const tBrPairItem& item = bracketsTree.back();
-                if ( item.isOpenLeftBr() && 
-                     isNoInnerSpaceKind(item.pBrPair->kind) )
+                if ( item.isOpenLeftBr() && isNoInSpKind(item.pBrPair->kind) )
                 {
                     nCurrentParentIdx = getOpenParentIdx(item.nParentIdx);
                     if ( item.nLine != nCurrentLine )
@@ -358,7 +357,7 @@ void CBracketsTree::buildTree(CSciMessager& sciMsgr)
         if ( isQuoted == 0 || !isEscapedPos(vText.data(), nPos) )
         {
             pLeftBrPair = getLeftBrPair(p, nTextLen - nPos, isLineStart);
-            rightBrPairs = getRightBrPair(p, nTextLen - nPos, nPos);
+            rightBrPairs = getRightBrPair(p, nTextLen - nPos, nPos, isLineStart);
             if ( !rightBrPairs.empty() )
             {
                 pRightBrPair = rightBrPairs.front();
@@ -468,7 +467,7 @@ void CBracketsTree::buildTree(CSciMessager& sciMsgr)
                     for ( Sci_Position nItemIdx = nCurrentParentIdx; nItemIdx != -1; )
                     {
                         const tBrPairItem& item = bracketsTree[nItemIdx];
-                        const eBrPairKind itemKind = item.pBrPair->kind;
+                        const unsigned int itemKind = item.pBrPair->kind;
                         if ( isMlLnQtKind(itemKind) || (isMlLnCommKind(itemKind) && item.pBrPair->leftBr == pBrPair->leftBr) )
                         {
                             nFoundItemIdx = nItemIdx;
@@ -703,7 +702,7 @@ void CBracketsTree::updateTree(const SCNotification* pscn)
                 if ( isWhiteSpaceOrNulChar(ch) )
                 {
                     // '\n' and '\r' can break single-line brackets and quotes
-                    // ' ' and '\t' are significant for isNoInnerSpaceKind()
+                    // ' ' and '\t' are significant for isNoInSpKind()
                     needsInvalidate = true;
                     break;
                 }
@@ -910,8 +909,8 @@ const tBrPair* CBracketsTree::getLeftBrPair(const char* p, size_t nLen, bool isL
         {
             if ( memcmp(p, brPair.leftBr.c_str(), nLeftBrLen*sizeof(char)) == 0 )
             {
-                if ( (isLineStart || !isLineStartKind(brPair.kind)) &&
-                     (!isNoInnerSpaceKind(brPair.kind) || (nLeftBrLen != nLen && !isWhiteSpaceOrNulChar(*(p + nLeftBrLen)))) )
+                if ( (isLineStart || !isOpnLnStKind(brPair.kind)) &&
+                     (!isNoInSpKind(brPair.kind) || (nLeftBrLen != nLen && !isWhiteSpaceOrNulChar(*(p + nLeftBrLen)))) )
                 {
                     return &brPair;
                 }
@@ -922,7 +921,7 @@ const tBrPair* CBracketsTree::getLeftBrPair(const char* p, size_t nLen, bool isL
     return nullptr;
 }
 
-std::vector<const tBrPair*> CBracketsTree::getRightBrPair(const char* p, size_t nLen, size_t nCurrentOffset) const
+std::vector<const tBrPair*> CBracketsTree::getRightBrPair(const char* p, size_t nLen, size_t nCurrentOffset, bool isLineStart) const
 {
     if ( m_pFileSyntax == nullptr )
         return {};
@@ -936,8 +935,8 @@ std::vector<const tBrPair*> CBracketsTree::getRightBrPair(const char* p, size_t 
         {
             if ( memcmp(p, brPair.rightBr.c_str(), nRightBrLen*sizeof(char)) == 0 )
             {
-                if ( !isNoInnerSpaceKind(brPair.kind) ||
-                     (nCurrentOffset != 0 && !isWhiteSpaceOrNulChar(*(p - 1))) )
+                if ( (isLineStart || !isClsLnStKind(brPair.kind)) &&
+                     (!isNoInSpKind(brPair.kind) || (nCurrentOffset != 0 && !isWhiteSpaceOrNulChar(*(p - 1)))) )
                 {
                     brPairs.push_back(&brPair);
                 }
