@@ -1109,109 +1109,125 @@ void CXBracketsLogic::PerformBracketsAction(eGetBracketsAction nBrAction)
     if ( sciMsgr.getSelections() > 1 )
         return; // multiple selections
 
-    tGetBracketsState state;
-    state.nSelStart = sciMsgr.getSelectionStart();
-    state.nSelEnd = sciMsgr.getSelectionEnd();
+    tBracketsJumpState state;
+    state.nSelStart = sciMsgr.getSelectionStart(); // current selection
+    state.nSelEnd = sciMsgr.getSelectionEnd();     // current selection
     if ( state.nSelStart != state.nSelEnd )
     {
         // something is selected: inverting the selection positions
-        if ( sciMsgr.getCurrentPos() == state.nSelEnd )
-            sciMsgr.setSel(state.nSelEnd, state.nSelStart);
+        if ( state.nSelStart < state.nSelEnd )
+        {
+            state.nLeftBrPos = state.nSelStart;
+            state.nRightBrPos = state.nSelEnd;
+        }
         else
-            sciMsgr.setSel(state.nSelStart, state.nSelEnd);
+        {
+            state.nLeftBrPos = state.nSelEnd;
+            state.nRightBrPos = state.nSelStart;
+        }
+
+        if ( sciMsgr.getCurrentPos() == state.nSelEnd )
+        {
+            std::swap(state.nSelEnd, state.nSelStart); // new selection
+        }
+
+        jumpToPairBracket(sciMsgr, state, false);
         return;
     }
-
-    state.nCharPos = state.nSelStart;
 
     if ( m_bracketsTree.isTreeEmpty() )
     {
         m_bracketsTree.buildTree(sciMsgr);
     }
 
-    Sci_Position nStartPos = state.nCharPos;
-    bool isBrPairFound = false;
-
-    bool isExactPos = (nBrAction == baGoToMatching || nBrAction == baSelToMatching);
+    const bool isExactPos = (nBrAction == baGoToMatching || nBrAction == baSelToMatching);
     unsigned int uBrPosFlags = 0;
-    const auto pBrItem = m_bracketsTree.findPairByPos(nStartPos, isExactPos, &uBrPosFlags);
-    if ( pBrItem != nullptr && pBrItem->nRightBrPos != -1 )
+    const auto pBrItem = m_bracketsTree.findPairByPos(state.nSelStart, isExactPos, &uBrPosFlags);
+    if ( pBrItem == nullptr || pBrItem->nRightBrPos == -1 )
+        return;
+
+    state.nLeftBrPos = pBrItem->nLeftBrPos;
+    state.nRightBrPos = pBrItem->nRightBrPos;
+
+    if ( uBrPosFlags == (CBracketsTree::bpfLeftBr | CBracketsTree::bpfBeforeBr) ||
+         uBrPosFlags == (CBracketsTree::bpfRightBr | CBracketsTree::bpfAfterBr) )
     {
-        state.nLeftBrPos = pBrItem->nLeftBrPos;
-        state.nRightBrPos = pBrItem->nRightBrPos;
-
-        if ( uBrPosFlags == (CBracketsTree::bpfLeftBr | CBracketsTree::bpfBeforeBr) ||
-             uBrPosFlags == (CBracketsTree::bpfRightBr | CBracketsTree::bpfAfterBr) )
-        {
-            state.nRightBrPos += static_cast<Sci_Position>(pBrItem->pBrPair->rightBr.length()); //  |)  ->  )|
-            state.nLeftBrPos -= static_cast<Sci_Position>(pBrItem->pBrPair->leftBr.length());  //  (|  ->  |(
-        }
-
-        isBrPairFound = true;
+        state.nRightBrPos += static_cast<Sci_Position>(pBrItem->pBrPair->rightBr.length()); //  |)  ->  )|
+        state.nLeftBrPos -= static_cast<Sci_Position>(pBrItem->pBrPair->leftBr.length());  //  (|  ->  |(
     }
 
-    if ( isBrPairFound )
+    const bool isGoTo = (nBrAction == baGoToMatching || nBrAction == baGoToNearest);
+    if ( isGoTo )
     {
-        Sci_Position nTargetSelStart(-1), nTargetSelEnd(-1);
-
-        if ( nBrAction == baGoToMatching || nBrAction == baGoToNearest )
+        if ( state.nSelStart == state.nLeftBrPos )
         {
-            if ( state.nSelStart == state.nLeftBrPos )
-            {
-                nTargetSelStart = state.nRightBrPos;
-                nTargetSelEnd = state.nRightBrPos;
-            }
-            else
-            {
-                nTargetSelStart = state.nLeftBrPos;
-                nTargetSelEnd = state.nLeftBrPos;
-            }
+            // new selection
+            state.nSelStart = state.nRightBrPos;
+            state.nSelEnd = state.nRightBrPos;
         }
         else
         {
-            if ( state.nSelStart == state.nLeftBrPos )
+            // new selection
+            state.nSelStart = state.nLeftBrPos;
+            state.nSelEnd = state.nLeftBrPos;
+        }
+    }
+    else
+    {
+        if ( state.nSelStart == state.nLeftBrPos )
+        {
+            // new selection
+            state.nSelStart = state.nLeftBrPos;
+            state.nSelEnd = state.nRightBrPos;
+        }
+        else
+        {
+            // new selection
+            state.nSelStart = state.nRightBrPos;
+            state.nSelEnd = state.nLeftBrPos;
+        }
+    }
+
+    jumpToPairBracket(sciMsgr, state, isGoTo);
+}
+
+void CXBracketsLogic::jumpToPairBracket(CSciMessager& sciMsgr, const tBracketsJumpState& state, bool isGoTo)
+{
+    sciMsgr.setSel(state.nSelStart, state.nSelEnd);
+
+    if ( g_opt.getJumpPairLineDiff() < 0 || (g_opt.getJumpLinesVisUp() <= 0 && g_opt.getJumpLinesVisDown() <= 0) )
+        return;
+
+    const Sci_Position nLeftBrLine = sciMsgr.getLineFromPosition(state.nLeftBrPos);
+    const Sci_Position nRightBrLine = sciMsgr.getLineFromPosition(state.nRightBrPos);
+    if ( nRightBrLine - nLeftBrLine < g_opt.getJumpPairLineDiff() )
+        return;
+
+    const Sci_Position nFirstVisibleLine = sciMsgr.getFirstVisibleLine();
+    if ( (state.nSelStart == state.nLeftBrPos && isGoTo) || (state.nSelStart == state.nRightBrPos && !isGoTo) )
+    {
+        //  {|  <--
+        if ( g_opt.getJumpLinesVisUp() > 0 )
+        {
+            const Sci_Position nVisLeftBrLine = sciMsgr.getVisibleFromDocLine(nLeftBrLine);
+            const Sci_Position nWantLeftBrLine = (nVisLeftBrLine > g_opt.getJumpLinesVisUp()) ? (nVisLeftBrLine - g_opt.getJumpLinesVisUp()) : 0;
+            if ( nWantLeftBrLine < nFirstVisibleLine )
             {
-                nTargetSelStart = state.nLeftBrPos;
-                nTargetSelEnd = state.nRightBrPos;
-            }
-            else
-            {
-                nTargetSelStart = state.nRightBrPos;
-                nTargetSelEnd = state.nLeftBrPos;
+                sciMsgr.setFirstVisibleLine(nWantLeftBrLine);
             }
         }
-
-        sciMsgr.setSel(nTargetSelStart, nTargetSelEnd);
-
-        if ( g_opt.getJumpPairLineDiff() >= 0 &&
-             (g_opt.getJumpLinesVisUp() > 0 || g_opt.getJumpLinesVisDown() > 0) )
+    }
+    else
+    {
+        //  -->  |}
+        if ( g_opt.getJumpLinesVisDown() > 0 )
         {
-            const Sci_Position nLeftBrLine = sciMsgr.getLineFromPosition(state.nLeftBrPos);
-            const Sci_Position nRightBrLine = sciMsgr.getLineFromPosition(state.nRightBrPos);
-            if ( nRightBrLine - nLeftBrLine >= g_opt.getJumpPairLineDiff() )
+            const Sci_Position nWantRightBrLine = sciMsgr.getVisibleFromDocLine(nRightBrLine) + g_opt.getJumpLinesVisDown();
+            const Sci_Position nLastVisibleLine = nFirstVisibleLine + sciMsgr.getLinesOnScreen();
+            const Sci_Position nLineDiff = nWantRightBrLine - nLastVisibleLine;
+            if ( nLineDiff > 0 )
             {
-                const Sci_Position nFirstVisibleLine = sciMsgr.getFirstVisibleLine();
-                if ( nTargetSelStart == state.nLeftBrPos && g_opt.getJumpLinesVisUp() > 0 )
-                {
-                    // {|
-                    const Sci_Position nVisLeftBrLine = sciMsgr.getVisibleFromDocLine(nLeftBrLine);
-                    const Sci_Position nWantLeftBrLine = (nVisLeftBrLine > g_opt.getJumpLinesVisUp()) ? (nVisLeftBrLine - g_opt.getJumpLinesVisUp()) : 0;
-                    if ( nWantLeftBrLine < nFirstVisibleLine )
-                    {
-                        sciMsgr.setFirstVisibleLine(nWantLeftBrLine);
-                    }
-                }
-                else if ( g_opt.getJumpLinesVisDown() > 0 )
-                {
-                    // |}
-                    const Sci_Position nWantRightBrLine = sciMsgr.getVisibleFromDocLine(nRightBrLine) + g_opt.getJumpLinesVisDown();
-                    const Sci_Position nLastVisibleLine = nFirstVisibleLine + sciMsgr.getLinesOnScreen();
-                    const Sci_Position nLineDiff = nWantRightBrLine - nLastVisibleLine;
-                    if ( nLineDiff > 0 )
-                    {
-                        sciMsgr.setFirstVisibleLine(nFirstVisibleLine + nLineDiff);
-                    }
-                }
+                sciMsgr.setFirstVisibleLine(nFirstVisibleLine + nLineDiff);
             }
         }
     }

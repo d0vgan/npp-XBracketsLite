@@ -84,11 +84,10 @@ public:
     void PerformBracketsAction(eGetBracketsAction nBrAction);
 
 private:
-    struct tGetBracketsState
+    struct tBracketsJumpState
     {
         Sci_Position nSelStart{-1};
         Sci_Position nSelEnd{-1};
-        Sci_Position nCharPos{-1};
         Sci_Position nLeftBrPos{-1};
         Sci_Position nRightBrPos{-1};
     };
@@ -113,6 +112,7 @@ private:
     unsigned int detectFileType(tstr* pFileExt = nullptr);
     bool isSkipEscapedSupported() const;
     bool isEscapedPos(const CSciMessager& sciMsgr, const Sci_Position nCharPos) const;
+    void jumpToPairBracket(CSciMessager& sciMsgr, const tBracketsJumpState& state, bool isGoTo);
 };
 
 //---------------------------------------------------------------------------
