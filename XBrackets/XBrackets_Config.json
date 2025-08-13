@@ -5,6 +5,9 @@
     "Sel_AutoBr": 4,
     "Next_Char_OK": ".,!?:;</",
     "Prev_Char_OK": "([{<=",
+    "Lines_Vis_Up": 1,
+    "Lines_Vis_Down": 0,
+    "Pair_Line_Diff": 1,
     "FileExtsRule": ""
   },
   "fileSyntax": [

@@ -82,6 +82,21 @@ class CXBracketsOptions
             return m_uSelAutoBr;
         }
 
+        int getLinesVisUp() const
+        {
+            return m_nLinesVisUp;
+        }
+
+        int getLinesVisDown() const
+        {
+            return m_nLinesVisDown;
+        }
+
+        int getPairLineDiff() const
+        {
+            return m_nPairLineDiff;
+        }
+
         const tstr& getNextCharOK() const
         {
             return m_sNextCharOK;
@@ -102,7 +117,7 @@ class CXBracketsOptions
             return m_pDefaultFileSyntax;
         }
 
-        const bool getUpdateTreeAllowed() const
+        bool getUpdateTreeAllowed() const
         {
             // buildTree() takes less than a second for a 1 MB file even on a
             // 10-years old notebook.
@@ -117,10 +132,12 @@ class CXBracketsOptions
     protected:
         UINT  m_uFlags;
         UINT  m_uSelAutoBr; // one of eSelAutoBr
+        int   m_nLinesVisUp;
+        int   m_nLinesVisDown;
+        int   m_nPairLineDiff;
         tstr  m_sFileExtsRule;
         tstr  m_sNextCharOK;
         tstr  m_sPrevCharOK;
-
         std::list<tFileSyntax> m_fileSyntaxes;
         const tFileSyntax* m_pDefaultFileSyntax;
 };

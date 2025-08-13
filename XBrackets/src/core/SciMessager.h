@@ -18,15 +18,19 @@ class CSciMessager
         
         void          beginUndoAction();
         void          endUndoAction();
+        void          ensureVisible(Sci_Position line); // deals with the folding and does NOT scroll lines
         unsigned char getCharAt(Sci_Position pos) const;
         unsigned int  getCodePage() const; // 0 (non-Unicode), SC_CP_UTF8, DBCS etc.
         Sci_Position  getCurrentPos() const;
+        Sci_Position  getDocLineFromVisible(Sci_Position displayLine) const; // returns an unwrapped line number
         LRESULT       getDocPointer() const; // identifies the document
+        Sci_Position  getFirstVisibleLine() const; // returns a word-wrapped line number
         Sci_Position  getLine(Sci_Position line, char* pText) const; // returns the number of characters copied to the buffer
         Sci_Position  getLineCount() const; // number of lines in the document
         Sci_Position  getLineEndPos(Sci_Position line) const;
         Sci_Position  getLineFromPosition(Sci_Position pos) const;
         Sci_Position  getLineLength(Sci_Position line) const;
+        Sci_Position  getLinesOnScreen() const; // a number of word-wrapped lines
         Sci_Position  getPositionFromLine(Sci_Position line) const; // start of the line
         HWND          getSciWnd() const  { return m_hSciWnd; }
         int           getSelectionMode() const; // SC_SEL_STREAM, SC_SEL_RECTANGLE, SC_SEL_LINES
@@ -38,11 +42,13 @@ class CSciMessager
         Sci_Position  getText(Sci_Position len, char* pText) const;
         Sci_Position  getTextLength() const;
         Sci_Position  getTextRange(Sci_Position pos1, Sci_Position pos2, char* pText) const;
+        Sci_Position  getVisibleFromDocLine(Sci_Position docLine) const; // returns a word-wrapped line number
         void          goToPos(Sci_Position pos);
         bool          isModified() const;
         bool          isSelectionRectangle() const;
         void          replaceSelText(const char* pText);
         void          setCodePage(unsigned int codePage);
+        void          setFirstVisibleLine(Sci_Position displayLine); // displayLine is a word-wrapped line number
         void          setSciWnd(HWND hSciWnd)  { m_hSciWnd = hSciWnd; }
         void          setSel(Sci_Position anchorPos, Sci_Position currentPos);
         void          setSelectionMode(int mode); // SC_SEL_STREAM, SC_SEL_RECTANGLE, SC_SEL_LINES

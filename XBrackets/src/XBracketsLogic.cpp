@@ -885,7 +885,7 @@ const tBrPairItem* CBracketsTree::findParent(const tBrPairItem* pBrPair) const
     if ( pBrPair == nullptr )
         return nullptr;
 
-    for ( int nParentIdx = pBrPair->nParentIdx; nParentIdx != -1; )
+    for ( Sci_Position nParentIdx = pBrPair->nParentIdx; nParentIdx != -1; )
     {
         const tBrPairItem& item = m_bracketsTree[nParentIdx];
         if ( item.isComplete() )
@@ -1182,6 +1182,38 @@ void CXBracketsLogic::PerformBracketsAction(eGetBracketsAction nBrAction)
         }
 
         sciMsgr.setSel(nTargetSelStart, nTargetSelEnd);
+
+        if ( g_opt.getPairLineDiff() >= 0 &&
+             (g_opt.getLinesVisUp() > 0 || g_opt.getLinesVisDown() > 0) )
+        {
+            const Sci_Position nLeftBrLine = sciMsgr.getLineFromPosition(state.nLeftBrPos);
+            const Sci_Position nRightBrLine = sciMsgr.getLineFromPosition(state.nRightBrPos);
+            if ( nRightBrLine - nLeftBrLine >= g_opt.getPairLineDiff() )
+            {
+                const Sci_Position nFirstVisibleLine = sciMsgr.getFirstVisibleLine();
+                if ( nTargetSelStart == state.nLeftBrPos && g_opt.getLinesVisUp() > 0 )
+                {
+                    // {|
+                    const Sci_Position nVisLeftBrLine = sciMsgr.getVisibleFromDocLine(nLeftBrLine);
+                    const Sci_Position nWantLeftBrLine = (nVisLeftBrLine > g_opt.getLinesVisUp()) ? (nVisLeftBrLine - g_opt.getLinesVisUp()) : 0;
+                    if ( nWantLeftBrLine < nFirstVisibleLine )
+                    {
+                        sciMsgr.setFirstVisibleLine(nWantLeftBrLine);
+                    }
+                }
+                else if ( g_opt.getLinesVisDown() > 0 )
+                {
+                    // |}
+                    const Sci_Position nWantRightBrLine = sciMsgr.getVisibleFromDocLine(nRightBrLine) + g_opt.getLinesVisDown();
+                    const Sci_Position nLastVisibleLine = nFirstVisibleLine + sciMsgr.getLinesOnScreen();
+                    const Sci_Position nLineDiff = nWantRightBrLine - nLastVisibleLine;
+                    if ( nLineDiff > 0 )
+                    {
+                        sciMsgr.setFirstVisibleLine(nFirstVisibleLine + nLineDiff);
+                    }
+                }
+            }
+        }
     }
 }
 

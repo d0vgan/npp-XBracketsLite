@@ -144,6 +144,25 @@ The plugin's settings under the "settings" node:
   Example:
     // auto-complete after ([{<= and '\0', '\r', '\n', ' ', '\t'
     "Prev_Char_OK": "([{<="
+* "Lines_Vis_Up": specifies a number of lines that will be visible above the left
+  (opening) bracket right after the "Go To" or "Sel To" function has jumped to that
+  bracket. See also: 'Pair_Line_Diff'.
+* "Lines_Vis_Down": specifies a number of lines that will be visible below the right
+  (closing) bracket right after the "Go To" or "Sel To" function has jumped to that
+  bracket. (Note: since Scintilla treats a partially visible line at the bottom of
+  the view as a visible line, you may want to increase this number by 1).
+  See also: 'Pair_Line_Diff'.
+* "Pair_Line_Diff": specifies a minimal line difference between the opening and the
+  closing bracket to apply the 'Lines_Vis_Up' and 'Lines_Vis_Down' settings.
+  Example:
+    "Pair_Line_Diff": 0  // the opening and the closing brackets can be on the same line.
+    "Pair_Line_Diff": 1  // the opening and the closing brackets should not be on the same line.
+    "Pair_Line_Diff": 2  // there must be at least 1 line between the opening and the closing brackets.
+    "Pair_Line_Diff": 3  // there must be at least 2 lines between the opening and the closing brackets.
+    And so on.
+  If the actual line difference between the opening and the closing bracket is less
+  than the specified value, 'Lines_Vis_Up' and 'Lines_Vis_Down' are ignored and no
+  additional scrolling happens.
 * "FileExtsRule": specifies file extensions which will be supported or ignored
   by XBrackets.
   Examples:
@@ -169,8 +188,8 @@ The plugin's settings under the "settings" node:
 v2.0 - Aug 2025
 ---------------
 * Glory to Ukraine! Glory to the heroes!
-+ new functions: Go To Matching Bracket, Sel to Matching Bracket
-+ new functions: Go To Nearest Bracket, Sel to Nearest Brackets
++ new functions: Go To Matching Bracket, Sel To Matching Bracket
++ new functions: Go To Nearest Bracket, Sel To Nearest Brackets
 + now the configuration is stored in JSON format
 + file type-specific (language-specific) rules are allowed
 + multi-character brackets and quotes are supported
