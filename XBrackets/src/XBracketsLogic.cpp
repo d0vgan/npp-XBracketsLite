@@ -1183,28 +1183,28 @@ void CXBracketsLogic::PerformBracketsAction(eGetBracketsAction nBrAction)
 
         sciMsgr.setSel(nTargetSelStart, nTargetSelEnd);
 
-        if ( g_opt.getPairLineDiff() >= 0 &&
-             (g_opt.getLinesVisUp() > 0 || g_opt.getLinesVisDown() > 0) )
+        if ( g_opt.getJumpPairLineDiff() >= 0 &&
+             (g_opt.getJumpLinesVisUp() > 0 || g_opt.getJumpLinesVisDown() > 0) )
         {
             const Sci_Position nLeftBrLine = sciMsgr.getLineFromPosition(state.nLeftBrPos);
             const Sci_Position nRightBrLine = sciMsgr.getLineFromPosition(state.nRightBrPos);
-            if ( nRightBrLine - nLeftBrLine >= g_opt.getPairLineDiff() )
+            if ( nRightBrLine - nLeftBrLine >= g_opt.getJumpPairLineDiff() )
             {
                 const Sci_Position nFirstVisibleLine = sciMsgr.getFirstVisibleLine();
-                if ( nTargetSelStart == state.nLeftBrPos && g_opt.getLinesVisUp() > 0 )
+                if ( nTargetSelStart == state.nLeftBrPos && g_opt.getJumpLinesVisUp() > 0 )
                 {
                     // {|
                     const Sci_Position nVisLeftBrLine = sciMsgr.getVisibleFromDocLine(nLeftBrLine);
-                    const Sci_Position nWantLeftBrLine = (nVisLeftBrLine > g_opt.getLinesVisUp()) ? (nVisLeftBrLine - g_opt.getLinesVisUp()) : 0;
+                    const Sci_Position nWantLeftBrLine = (nVisLeftBrLine > g_opt.getJumpLinesVisUp()) ? (nVisLeftBrLine - g_opt.getJumpLinesVisUp()) : 0;
                     if ( nWantLeftBrLine < nFirstVisibleLine )
                     {
                         sciMsgr.setFirstVisibleLine(nWantLeftBrLine);
                     }
                 }
-                else if ( g_opt.getLinesVisDown() > 0 )
+                else if ( g_opt.getJumpLinesVisDown() > 0 )
                 {
                     // |}
-                    const Sci_Position nWantRightBrLine = sciMsgr.getVisibleFromDocLine(nRightBrLine) + g_opt.getLinesVisDown();
+                    const Sci_Position nWantRightBrLine = sciMsgr.getVisibleFromDocLine(nRightBrLine) + g_opt.getJumpLinesVisDown();
                     const Sci_Position nLastVisibleLine = nFirstVisibleLine + sciMsgr.getLinesOnScreen();
                     const Sci_Position nLineDiff = nWantRightBrLine - nLastVisibleLine;
                     if ( nLineDiff > 0 )

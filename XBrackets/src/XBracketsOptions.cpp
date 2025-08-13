@@ -98,9 +98,9 @@ CXBracketsOptions::CXBracketsOptions() :
   // default values:
   m_uFlags(OPTF_AUTOCOMPLETE),
   m_uSelAutoBr(sabNone),
-  m_nLinesVisUp(1),
-  m_nLinesVisDown(0),
-  m_nPairLineDiff(1),
+  m_nJumpLinesVisUp(1),
+  m_nJumpLinesVisDown(0),
+  m_nJumpPairLineDiff(1),
   m_sNextCharOK(_T(".,!?:;</")),
   m_sPrevCharOK(_T("([{<=")),
   m_pDefaultFileSyntax(nullptr)
@@ -398,20 +398,20 @@ void CXBracketsOptions::readConfigSettingsItem(const void* pContext)
             if ( settingVal.is_number() )
                 m_uSelAutoBr = settingVal.int_value();
         }
-        else if ( settingName == "Lines_Vis_Up" )
+        else if ( settingName == "Jump_Lines_Vis_Up" )
         {
             if ( settingVal.is_number() )
-                m_nLinesVisUp = settingVal.int_value();
+                m_nJumpLinesVisUp = settingVal.int_value();
         }
-        else if ( settingName == "Lines_Vis_Down" )
+        else if ( settingName == "Jump_Lines_Vis_Down" )
         {
             if ( settingVal.is_number() )
-                m_nLinesVisDown = settingVal.int_value();
+                m_nJumpLinesVisDown = settingVal.int_value();
         }
-        else if ( settingName == "Pair_Line_Diff" )
+        else if ( settingName == "Jump_Pair_Line_Diff" )
         {
             if ( settingVal.is_number() )
-                m_nPairLineDiff = settingVal.int_value();
+                m_nJumpPairLineDiff = settingVal.int_value();
         }
         else if ( settingName == "Next_Char_OK" )
         {

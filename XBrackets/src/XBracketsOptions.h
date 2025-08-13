@@ -82,19 +82,19 @@ class CXBracketsOptions
             return m_uSelAutoBr;
         }
 
-        int getLinesVisUp() const
+        int getJumpLinesVisUp() const
         {
-            return m_nLinesVisUp;
+            return m_nJumpLinesVisUp;
         }
 
-        int getLinesVisDown() const
+        int getJumpLinesVisDown() const
         {
-            return m_nLinesVisDown;
+            return m_nJumpLinesVisDown;
         }
 
-        int getPairLineDiff() const
+        int getJumpPairLineDiff() const
         {
-            return m_nPairLineDiff;
+            return m_nJumpPairLineDiff;
         }
 
         const tstr& getNextCharOK() const
@@ -132,9 +132,9 @@ class CXBracketsOptions
     protected:
         UINT  m_uFlags;
         UINT  m_uSelAutoBr; // one of eSelAutoBr
-        int   m_nLinesVisUp;
-        int   m_nLinesVisDown;
-        int   m_nPairLineDiff;
+        int   m_nJumpLinesVisUp;
+        int   m_nJumpLinesVisDown;
+        int   m_nJumpPairLineDiff;
         tstr  m_sFileExtsRule;
         tstr  m_sNextCharOK;
         tstr  m_sPrevCharOK;
