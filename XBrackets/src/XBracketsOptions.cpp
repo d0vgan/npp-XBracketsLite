@@ -319,7 +319,7 @@ static void postprocessSyntaxes(std::list<tFileSyntax>& fileSyntaxes, const tFil
 
     for ( auto& fileSyntax : fileSyntaxes )
     {
-        if ( fileSyntax.fileExtensions.empty() )
+        if ( *ppDefaultFileSyntax == nullptr && (fileSyntax.uFlags & fsfNullFileExt) == 0 && fileSyntax.fileExtensions.empty() )
             *ppDefaultFileSyntax = &fileSyntax;
 
         if ( fileSyntax.parent.empty() )
