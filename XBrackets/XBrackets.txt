@@ -1,86 +1,122 @@
-***********************************************
+****************************************************************
 * XBrackets Lite for Notepad++ 8.x.x (and above)
 * by DV, Jan 2009 - Aug 2025
-***********************************************
+* https://github.com/d0vgan/npp-XBracketsLite
+*
+* Powered by json11: https://github.com/dropbox/json11
+****************************************************************
 
 XBrackets Lite allows to auto-complete brackets ([{<"">}]) i.e. it inserts the
 corresponding right (closing) bracket when a left (opening) bracket is typed.
-Starting from the version 2.0, multi-character brackets and quotes are supported.
+Starting from the version 2.0, user-defined multi-character brackets and quotes
+are supported.
 The plugin uses "smart" auto-completion:
 - next character is analysed for ([{< brackets;
 - next & previous characters are analysed for " and ' quotes.
 
 XBrackets Lite, starting from the version 2.0, adds the following functions:
-* Go To Matching Bracket: when the caret is at a bracket or quote character,
-  jumps to the pair bracket or quote, e.g. |( ) becomes ( )|
-* Sel To Matching Brackets: when the caret is at a bracket or quote character,
-  selects the pair of the barckets or quotes, e.g. |( ) becomes |( )|
-* Go To Nearest Bracket: when the caret is between bracket or quote characters,
-  jumps to the nearest surrounding bracket or quote, e.g. "ab|c" becomes "|abc"
-* Sel To Nearest Brackets: when the caret is between bracket or quote characters,
-  selects the text within the surrounding brackets or quotes, e.g. "ab|c" becomes
-  "|abc|"
+* Go To Matching Bracket
+    when the caret is at a bracket or quote character, jumps to the pair bracket
+    or quote, e.g. |( ) becomes ( )|
+* Sel To Matching Brackets
+    when the caret is at a bracket or quote character, selects the pair of the
+    brackets or quotes, e.g. |( ) becomes |( )|
+* Go To Nearest Bracket
+    when the caret is between bracket or quote characters, jumps to the nearest
+    surrounding bracket or quote, e.g. "ab|c" becomes "|abc"
+* Sel To Nearest Brackets
+    when the caret is between bracket or quote characters, selects the text within
+    the surrounding brackets or quotes, e.g. "ab|c" becomes "|abc|"
 
 The "Go To" and "Sel To" functions are based on a brackets tree which is built by
 user-defined rules specified in the file "plugins\XBrackets\XBrackets_Config.json".
 This file is a static configuration file similar to Notepad++'s "stylers.model.xml"
 and "langs.model.xml".
+
 Once you call Plugins -> XBrackets Lite -> Settings, the "XBrackets_Config.json"
 file is overridden by a newly created "plugins\Config\XBrackets_UserConfig.json".
 From that moment, XBrackets Lite always reads its configuration from the file
 "plugins\Config\XBrackets_UserConfig.json".
+
 If your configuration file "XBrackets_UserConfig.json" is corrupted or you want to
 return to the default configuration, just delete this file, and XBrackets Lite will
 use the "plugins\XBrackets\XBrackets_Config.json" again.
 
-The file "XBrackets_Config.json" contains the following nodes:
-* "settings": the plugin's settings, see below;
-* "fileSyntax": file type-specific (language-specific) syntax and rules.
 
-Each item under the "fileSyntax" is a JSON object with the following properties:
-* "name": identifies the internal name of the item. This name can be used as a
-  parent of the items below.
-* "parent" (optional): identifies the parent item. The current item inherits all the
-  properties of its parent and can override only the pair kinds under its "syntax"
-  array.
-* "fileExtensions": array of file extensions associated with this item.
-  An empty array means this item applies to any file extension that is not explicitly
-  specified by any other item.
-  The value of `null` means this item is not associated with any file extension,
-  this item will be used only as a parent of other items.
-* "syntax": array of brackets or quotes pairs and their kinds. See "pair kinds"
-  below.
-* "autocomplete": array of brackets or quotes pairs to auto-complete.
+The file "XBrackets_Config.json" contains the following nodes:
+
+  "settings": { ... }
+    the plugin's settings, see "plugin's settings" below;
+
+  "fileSyntax": [ ... ]
+    an array of file type-specific (language-specific) syntaxes and rules, see below.
+
+
+Each item in the "fileSyntax" array is a JSON object with the following properties:
+
+  "name": "Item Name"
+    identifies the internal name of the item. This name can be used as a parent of
+    the other items.
+
+  "parent": "Parent Item Name" (optional)
+    identifies the parent item. The current item inherits all the properties of
+    its parent and can override only the pair kinds under its "syntax" array.
+
+  "fileExtensions": [ "ext1", "ext2", ... ]
+  "fileExtensions": []
+  "fileExtensions": null
+    an array of file extensions associated with this item.
+    An empty array means this item applies to any file extension that is not
+    explicitly specified by any other item.
+    The value of `null` means this item is not associated with any file extension,
+    this item will be used only as a parent of other items.
+
+  "syntax": [ ... ]
+    an array of brackets or quotes pairs and their kinds. See "pair kinds" below.
+
+  "autocomplete": [ ... ]
+    an array of brackets or quotes pairs to auto-complete.
+
 
 The following pair kinds are supported in the "syntax" array:
-* "single-line-brackets": single-line brackets pair;
-* "multi-line-brackets": multi-line brackets pair;
-* "single-line-quotes": single-line quotes pair;
-* "multi-line-quotes": multi-line quotes pair;
-* "single-line-comment": single-line comment;
-* "multi-line-comment": multi-line comment pair;
-* "quote-escape-char": escape character in quotes.
+  "single-line-brackets" - single-line brackets pair;
+  "multi-line-brackets"  - multi-line brackets pair;
+  "single-line-quotes"   - single-line quotes pair;
+  "multi-line-quotes"    - multi-line quotes pair;
+  "single-line-comment"  - single-line comment;
+  "multi-line-comment"   - multi-line comment pair;
+  "quote-escape-char"    - escape character in quotes.
 
-While specifying a pair kind, an optional integer value may specify additional
-attributes. This integer value will be a sum of the following values, depending
-on the desired behavior:
-* 1: a given pair can't contain a space;
-* 2: a left (opening) bracket should start at the beginning of a line;
-* 4: a right (closing) bracket should start at the beginning of a line.
+  While specifying a pair kind, an optional integer value may specify additional
+  attributes. This integer value will be a sum of the following values, depending
+  on the desired behavior:
+    1 - a given pair can't contain a space;
+    2 - a left (opening) bracket should start at the beginning of a line;
+    4 - a right (closing) bracket should start at the beginning of a line;
+    8 - together with 2 - leading spaces are allowed before a left bracket;
+    16 - together with 4 - leading spaces are allowed before a right bracket.
 
-The difference between the "brackets" and "quotes" is the following:
-The "brackets" can not enquote other characters, so e.g. `%a"b%` and `%a)b%`
-will not be a %% pair in case of "single-line-brackets" and "multi-line-brackets".
-The "quotes" can enquote other characters, so e.g. `%a"b%` and `%a)b%` will be
-a %% pair in case of "single-line-quotes" and "multi-line-quotes".
+  The difference between the "brackets" and "quotes" is the following:
+    The "brackets" can not enquote other characters, so e.g. `%a"b%` and `%a)b%`
+    will not be a %% pair in case of "single-line-brackets" and "multi-line-brackets".
+
+    The "quotes" can enquote other characters, so e.g. `%a"b%` and `%a)b%` will be
+    a %% pair in case of "single-line-quotes" and "multi-line-quotes".
+
 
 The plugin's settings under the "settings" node:
-* "AutoComplete": specifies whether brackets auto-completion is enabled.
-* "AutoComplete_WhenRightBrExists": specifies whether to add the corresponding
-  closing (right) bracket when such a bracket already exists after the caret.
-* "Sel_AutoBr": specifies what to do with the selected text when a left (opening)
-  bracket has been typed.
-  The following values are supported:
+
+  "AutoComplete": true
+    specifies whether brackets auto-completion is enabled.
+
+  "AutoComplete_WhenRightBrExists": false
+    specifies whether to add the corresponding closing (right) bracket when such
+    a bracket already exists after the caret.
+
+  "Sel_AutoBr": 4
+    specifies what to do with the selected text when a left (opening) bracket has
+    been typed.
+    The following values are supported:
     "Sel_AutoBr": 0
       When a left (opening) bracket is typed, the selected text is removed
       (replaced with the bracket).
@@ -123,61 +159,73 @@ The plugin's settings under the "settings" node:
         |abc| + {    results in  {|abc|}
         |{abc}| + {  results in  |abc|
         {|abc|} + {  results in  |abc|
-* "Next_Char_OK": defines a set of characters which are OK for brackets
-  auto-completion when you type an opening bracket _before_ a character from
-  this set.
-  Also, brackets are auto-completed before the supported right brackets from
-  the following set: )]}>"' .
-  Additionally, brackets are auto-completed before the following white-space
-  characters: '\0', '\r', '\n', ' ' and '\t'.
-  Otherwise a bracket is not auto-completed.
-  Example:
-    // auto-complete before .,!?:;</ and )]}>"' and '\0', '\r', '\n', ' ', '\t'
-    "Next_Char_OK": ".,!?:;</"
-* "Prev_Char_OK": defines a set of characters which are OK for brackets
-  auto-completion when you type a bracket _after_ such character.
-  This rule is applied only to those bracket pairs which have identical opening
-  and closing characters (such as "" and '').
-  Additionally, such brackets are auto-completed after the following white-space
-  characters: '\0', '\r', '\n', ' ' and '\t'.
-  Otherwise a quote is not auto-completed.
-  Example:
-    // auto-complete after ([{<= and '\0', '\r', '\n', ' ', '\t'
-    "Prev_Char_OK": "([{<="
-* "Jump_Lines_Vis_Up": specifies a number of lines that will be visible above the
-  left (opening) bracket right after the "Go To" or "Sel To" function has jumped to
-  that bracket. See also: 'Jump_Pair_Line_Diff'.
-* "Jump_Lines_Vis_Down": specifies a number of lines that will be visible below the
-  right (closing) bracket right after the "Go To" or "Sel To" function has jumped to
-  that bracket. (Note: since Scintilla treats a partially visible line at the bottom
-  of the view as a visible line, you may want to increase this number by 1).
-  See also: 'Jump_Pair_Line_Diff'.
-* "Jump_Pair_Line_Diff": specifies a minimal line difference between the opening and the
-  closing bracket to apply the 'Jump_Lines_Vis_Up' and 'Jump_Lines_Vis_Down' settings.
-  Example:
-    "Jump_Pair_Line_Diff": 0  // the opening and the closing brackets can be on the same line.
-    "Jump_Pair_Line_Diff": 1  // the opening and the closing brackets should not be on the same line.
-    "Jump_Pair_Line_Diff": 2  // there must be at least 1 line between the opening and the closing brackets.
-    "Jump_Pair_Line_Diff": 3  // there must be at least 2 lines between the opening and the closing brackets.
-    And so on.
-  If the actual line difference between the opening and the closing bracket is less
-  than the specified value, 'Jump_Lines_Vis_Up' and 'Jump_Lines_Vis_Down' are ignored
-  and no additional scrolling happens.
-* "FileExtsRule": specifies file extensions which will be supported or ignored
-  by XBrackets.
-  Examples:
-    // tells XBrackets to support ANY file (by default)
-    "FileExtsRule": ""
-    // the same
-    "FileExtsRule": "+"
-    // the same
-    "FileExtsRule": "-"
 
-    // tells XBrackets to support ONLY .txt .ini .htm .html .xml files
-    "FileExtsRule": "+txt ini htm html xml"
+  "Next_Char_OK": ".,!?:;</"
+    defines a set of characters which are OK for brackets auto-completion when
+    you type an opening bracket _before_ a character from this set.
+    Also, brackets are auto-completed before the supported right brackets from
+    the following set: )]}>"' .
+    Additionally, brackets are auto-completed before the following white-space
+    characters: '\0', '\r', '\n', ' ' and '\t'.
+    Otherwise a bracket is not auto-completed.
+    Example:
+      // auto-complete before .,!?:;</ and )]}>"' and '\0', '\r', '\n', ' ', '\t'
+      "Next_Char_OK": ".,!?:;</"
 
-    // tells XBrackets to support ANY file EXCEPT .c .cpp .cxx .h .hpp .hxx
-    "FileExtsRule": "-c cpp cxx h hpp hxx"
+  "Prev_Char_OK": "([{<="
+    defines a set of characters which are OK for brackets auto-completion when
+    you type a bracket _after_ such character.
+    This rule is applied only to those bracket pairs which have identical opening
+    and closing characters (such as "" and '').
+    Additionally, such brackets are auto-completed after the following white-space
+    characters: '\0', '\r', '\n', ' ' and '\t'.
+    Otherwise a quote is not auto-completed.
+    Example:
+      // auto-complete after ([{<= and '\0', '\r', '\n', ' ', '\t'
+      "Prev_Char_OK": "([{<="
+
+  "Jump_Lines_Vis_Up": 1
+    specifies a number of lines that will be visible above the left (opening)
+    bracket right after the "Go To" or "Sel To" function has jumped to that
+    bracket. See also: 'Jump_Pair_Line_Diff'.
+
+  "Jump_Lines_Vis_Down": 0
+    specifies a number of lines that will be visible below the right (closing)
+    bracket right after the "Go To" or "Sel To" function has jumped to that
+    bracket. (Note: since Scintilla treats a partially visible line at the bottom
+    of the view as a visible line, you may want to increase this number by 1).
+    See also: 'Jump_Pair_Line_Diff'.
+
+  "Jump_Pair_Line_Diff": 1
+    specifies a minimal line difference between the opening and the closing
+    bracket to apply the 'Jump_Lines_Vis_Up' and 'Jump_Lines_Vis_Down' settings.
+    Examples:
+      "Jump_Pair_Line_Diff": 0
+        the opening and the closing brackets can be on the same line.
+      "Jump_Pair_Line_Diff": 1
+        the opening and the closing brackets should not be on the same line.
+      "Jump_Pair_Line_Diff": 2
+        there must be at least 1 line between the opening and the closing brackets.
+      "Jump_Pair_Line_Diff": 3
+        there must be at least 2 lines between the opening and the closing brackets.
+      And so on.
+    If the actual line difference between the opening and the closing bracket is
+    less than the specified value, 'Jump_Lines_Vis_Up' and 'Jump_Lines_Vis_Down'
+    are ignored and no additional scrolling happens.
+
+  "FileExtsRule": ""
+    specifies file extensions which will be supported or ignored by XBrackets.
+    Examples:
+      "FileExtsRule": ""
+        tells XBrackets to support ANY file (by default)
+      "FileExtsRule": "+"
+        the same as above
+      "FileExtsRule": "-"
+        the same as above
+      "FileExtsRule": "+txt ini htm html xml"
+        tells XBrackets to support ONLY .txt .ini .htm .html .xml files
+      "FileExtsRule": "-c cpp cxx h hpp hxx"
+        tells XBrackets to support ANY file EXCEPT .c .cpp .cxx .h .hpp .hxx
 
 
 
@@ -194,6 +242,7 @@ v2.0 - Aug 2025
 + file type-specific (language-specific) rules are allowed
 + multi-character brackets and quotes are supported
 * "XBrackets.ini" is no more used
+* thanks to astewart77 for testing and suggestions during the development
 
 
 v1.4.0 - Jul 2025
