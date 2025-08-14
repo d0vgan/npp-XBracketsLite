@@ -1164,6 +1164,7 @@ void CXBracketsLogic::PerformBracketsAction(eGetBracketsAction nBrAction)
     const bool isGoTo = (nBrAction == baGoToMatching || nBrAction == baGoToNearest);
     if ( isGoTo )
     {
+        // TODO: in case of baGoToNearest, use getGoToNearestFlags()
         if ( state.nSelStart == state.nLeftBrPos )
         {
             // new selection
@@ -1179,6 +1180,7 @@ void CXBracketsLogic::PerformBracketsAction(eGetBracketsAction nBrAction)
     }
     else
     {
+        // TODO: in case of baSelToNearest, use getSelToNearestFlags()
         if ( state.nSelStart == state.nLeftBrPos )
         {
             // new selection

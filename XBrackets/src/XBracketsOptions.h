@@ -82,6 +82,16 @@ class CXBracketsOptions
             return m_uSelAutoBr;
         }
 
+        UINT getGoToNearestFlags() const
+        {
+            return m_uGoToNearestFlags;
+        }
+
+        UINT getSelToNearestFlags() const
+        {
+            return m_uSelToNearestFlags;
+        }
+
         int getJumpLinesVisUp() const
         {
             return m_nJumpLinesVisUp;
@@ -132,6 +142,8 @@ class CXBracketsOptions
     protected:
         UINT  m_uFlags;
         UINT  m_uSelAutoBr; // one of eSelAutoBr
+        UINT  m_uGoToNearestFlags;
+        UINT  m_uSelToNearestFlags;
         int   m_nJumpLinesVisUp;
         int   m_nJumpLinesVisDown;
         int   m_nJumpPairLineDiff;

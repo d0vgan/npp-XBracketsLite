@@ -98,6 +98,8 @@ CXBracketsOptions::CXBracketsOptions() :
   // default values:
   m_uFlags(OPTF_AUTOCOMPLETE),
   m_uSelAutoBr(sabNone),
+  m_uGoToNearestFlags(0),
+  m_uSelToNearestFlags(0),
   m_nJumpLinesVisUp(1),
   m_nJumpLinesVisDown(0),
   m_nJumpPairLineDiff(1),
@@ -401,6 +403,16 @@ void CXBracketsOptions::readConfigSettingsItem(const void* pContext)
         {
             if ( settingVal.is_number() )
                 m_uSelAutoBr = settingVal.int_value();
+        }
+        else if ( settingName == "GoToNearest_Flags" )
+        {
+            if ( settingVal.is_number() )
+                m_uGoToNearestFlags = settingVal.int_value();
+        }
+        else if ( settingName == "SelToNearest_Flags" )
+        {
+            if ( settingVal.is_number() )
+                m_uSelToNearestFlags = settingVal.int_value();
         }
         else if ( settingName == "Jump_Lines_Vis_Up" )
         {
