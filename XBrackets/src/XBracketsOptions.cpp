@@ -196,12 +196,16 @@ static tBrPair readBrPairItem(const json11::Json& pairItem, bool isKindRequired)
         else if ( elem.is_number() )
         {
             const unsigned int val = elem.int_value();
-            if ( val & 0x01 )
+            if ( val & 0x0001 )
                 brPair.kind |= bpkfNoInSp;
-            if ( val & 0x02 )
+            if ( val & 0x0002 )
                 brPair.kind |= bpkfOpnLnSt;
-            if ( val & 0x04 )
+            if ( val & 0x0004 )
                 brPair.kind |= bpkfClsLnSt;
+            if ( val & 0x0008 )
+                brPair.kind |= bpkfOpnLdSp;
+            if ( val & 0x0010 )
+                brPair.kind |= bpkfClsLdSp;
         }
     }
 

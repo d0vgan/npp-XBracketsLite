@@ -18,6 +18,8 @@ namespace XBrackets
         bpkfComm    = 0x0004, // (kind) a comment
         bpkfEscCh   = 0x0008, // (kind) an escape character in quotes
         bpkfMlLn    = 0x0100, // (attr) multiline
+        bpkfOpnLdSp = 0x0200, // (attr) leading spaces are allowed for bpkfOpnLnSt
+        bpkfClsLdSp = 0x0400, // (attr) leading spaces are allowed for bpkfClsLnSt
         bpkfNoInSp  = 0x1000, // (attr) can't contain a space
         bpkfOpnLnSt = 0x2000, // (attr) the left (opening) bracket starts at the beginning of the line
         bpkfClsLnSt = 0x4000  // (attr) the right (closing) bracket starts at the beginning of the line
@@ -83,9 +85,19 @@ namespace XBrackets
         return ((kind & bpkfOpnLnSt) != 0);
     }
 
+    static inline bool isOpnLdSpKind(unsigned int kind)
+    {
+        return ((kind & bpkfOpnLdSp) != 0);
+    }
+
     static inline bool isClsLnStKind(unsigned int kind)
     {
         return ((kind & bpkfClsLnSt) != 0);
+    }
+
+    static inline bool isClsLdSpKind(unsigned int kind)
+    {
+        return ((kind & bpkfClsLdSp) != 0);
     }
 
     enum eConsts {

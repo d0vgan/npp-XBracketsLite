@@ -337,7 +337,7 @@
         [ "'", "'", "single-line-quotes" ],
         [ "%", "%", "single-line-brackets", 1 ],
         [ ";", "", "single-line-comment" ],
-        [ "/*", "*/", "multi-line-comment", 6 ]
+        [ "/*", "*/", "multi-line-comment", 30 ]
       ],
       "autocomplete": [
         [ "(", ")" ],

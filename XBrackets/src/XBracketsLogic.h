@@ -22,6 +22,13 @@ public:
         bpfInsideBr = 0x40  // (|(
     };
 
+private:
+    enum eGetBrFlags
+    {
+        gbfLnSt = 0x01, // is line start
+        gbfLdSp = 0x02  // is leading spaces
+    };
+
 public:
     CBracketsTree();
 
@@ -36,8 +43,8 @@ public:
     const tBrPairItem* findParent(const tBrPairItem* pBrPair) const;
 
 private:
-    const tBrPair* getLeftBrPair(const char* p, size_t nLen, bool isLineStart) const;
-    std::vector<const tBrPair*> getRightBrPair(const char* p, size_t nLen, size_t nCurrentOffset, bool isLineStart) const;
+    const tBrPair* getLeftBrPair(const char* p, size_t nLen, unsigned int uGetBrFlags) const;
+    std::vector<const tBrPair*> getRightBrPair(const char* p, size_t nLen, size_t nCurrentOffset, unsigned int uGetBrFlags) const;
     bool isEscapedPos(const char* pTextBegin, const Sci_Position nPos) const;
 
 private:

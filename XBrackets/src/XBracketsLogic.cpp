@@ -186,7 +186,7 @@ void CBracketsTree::buildTree(CSciMessager& sciMsgr)
     Sci_Position nPrevLineTreeSize = 0;
     unsigned int isQuoted = 0;
     unsigned int isSgLnQuoted = 0;
-    bool isLineStart = true;
+    unsigned int uGetBrFlags = gbfLnSt;
 
     auto invalidateChildIncompleteBrackets = [&bracketsTree](Sci_Position nFoundItemIdx)
     {
@@ -316,7 +316,7 @@ void CBracketsTree::buildTree(CSciMessager& sciMsgr)
         #endif
             isQuoted -= isSgLnQuoted;
             isSgLnQuoted = 0;
-            isLineStart = true;
+            uGetBrFlags = gbfLnSt;
             nPrevLineTreeSize = bracketsTree.size();
             ++nCurrentLine;
             continue;
@@ -324,6 +324,7 @@ void CBracketsTree::buildTree(CSciMessager& sciMsgr)
 
         if ( isTabSpace(*p) )
         {
+            uGetBrFlags |= gbfLdSp;
             for ( const char* pNext = p + 1; pNext < pEnd; ++pNext )
             {
                 if ( isTabSpace(*pNext) )
@@ -356,8 +357,8 @@ void CBracketsTree::buildTree(CSciMessager& sciMsgr)
         const tBrPair* pBrPair = nullptr;
         if ( isQuoted == 0 || !isEscapedPos(vText.data(), nPos) )
         {
-            pLeftBrPair = getLeftBrPair(p, nTextLen - nPos, isLineStart);
-            rightBrPairs = getRightBrPair(p, nTextLen - nPos, nPos, isLineStart);
+            pLeftBrPair = getLeftBrPair(p, nTextLen - nPos, uGetBrFlags);
+            rightBrPairs = getRightBrPair(p, nTextLen - nPos, nPos, uGetBrFlags);
             if ( !rightBrPairs.empty() )
             {
                 pRightBrPair = rightBrPairs.front();
@@ -365,7 +366,11 @@ void CBracketsTree::buildTree(CSciMessager& sciMsgr)
             pBrPair = (pLeftBrPair != nullptr && (pRightBrPair == nullptr || pRightBrPair->rightBr.length() <= pLeftBrPair->leftBr.length())) ? pLeftBrPair : pRightBrPair;
         }
 
-        isLineStart = false; // the line's leading tabs and spaces are ignored
+        if ( (uGetBrFlags & gbfLnSt) != 0 )
+            uGetBrFlags ^= gbfLnSt;
+
+        if ( (uGetBrFlags & gbfLdSp) != 0 )
+            uGetBrFlags ^= gbfLdSp;
 
         if ( pBrPair == nullptr )
             continue;
@@ -897,7 +902,7 @@ const tBrPairItem* CBracketsTree::findParent(const tBrPairItem* pBrPair) const
     return nullptr;
 }
 
-const tBrPair* CBracketsTree::getLeftBrPair(const char* p, size_t nLen, bool isLineStart) const
+const tBrPair* CBracketsTree::getLeftBrPair(const char* p, size_t nLen, unsigned int uGetBrFlags) const
 {
     if ( m_pFileSyntax == nullptr )
         return nullptr;
@@ -909,7 +914,7 @@ const tBrPair* CBracketsTree::getLeftBrPair(const char* p, size_t nLen, bool isL
         {
             if ( memcmp(p, brPair.leftBr.c_str(), nLeftBrLen*sizeof(char)) == 0 )
             {
-                if ( (isLineStart || !isOpnLnStKind(brPair.kind)) &&
+                if ( (!isOpnLnStKind(brPair.kind) || ((uGetBrFlags & gbfLnSt) != 0 && ((uGetBrFlags & gbfLdSp) == 0 || isOpnLdSpKind(brPair.kind)))) &&
                      (!isNoInSpKind(brPair.kind) || (nLeftBrLen != nLen && !isWhiteSpaceOrNulChar(*(p + nLeftBrLen)))) )
                 {
                     return &brPair;
@@ -921,7 +926,7 @@ const tBrPair* CBracketsTree::getLeftBrPair(const char* p, size_t nLen, bool isL
     return nullptr;
 }
 
-std::vector<const tBrPair*> CBracketsTree::getRightBrPair(const char* p, size_t nLen, size_t nCurrentOffset, bool isLineStart) const
+std::vector<const tBrPair*> CBracketsTree::getRightBrPair(const char* p, size_t nLen, size_t nCurrentOffset, unsigned int uGetBrFlags) const
 {
     if ( m_pFileSyntax == nullptr )
         return {};
@@ -935,7 +940,7 @@ std::vector<const tBrPair*> CBracketsTree::getRightBrPair(const char* p, size_t 
         {
             if ( memcmp(p, brPair.rightBr.c_str(), nRightBrLen*sizeof(char)) == 0 )
             {
-                if ( (isLineStart || !isClsLnStKind(brPair.kind)) &&
+                if ( (!isClsLnStKind(brPair.kind) || ((uGetBrFlags & gbfLnSt) != 0 && ((uGetBrFlags & gbfLdSp) == 0 || isClsLdSpKind(brPair.kind)))) &&
                      (!isNoInSpKind(brPair.kind) || (nCurrentOffset != 0 && !isWhiteSpaceOrNulChar(*(p - 1)))) )
                 {
                     brPairs.push_back(&brPair);
