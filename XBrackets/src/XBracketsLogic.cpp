@@ -49,10 +49,10 @@ namespace
         switch ( ch )
         {
         case '\x00':
-        case '\x0D':
-        case '\x0A':
-        case ' ':
-        case '\t':
+        case '\t': // 0x09
+        case '\n': // 0x0A
+        case '\r': // 0x0D
+        case ' ':  // 0x20
             return true;
         }
 
@@ -62,23 +62,6 @@ namespace
     inline bool isTabSpace(const char ch)
     {
         return (ch == ' ' || ch == '\t');
-    }
-
-    bool isSepOrOneOf(const char ch, const char* pChars)
-    {
-        return ( isWhiteSpaceOrNulChar(ch) || strchr(pChars, ch) != NULL );
-    }
-
-    bool isSentenceEndChar(const char ch)
-    {
-        switch ( ch )
-        {
-        case '.':
-        case '?':
-        case '!':
-            return true;
-        }
-        return false;
     }
 }
 
@@ -1497,18 +1480,33 @@ CXBracketsLogic::eCharProcessingResult CXBracketsLogic::autoBracketsFunc(int nBr
     }
 
     const tBrPair* pBrPair = getAutoCompleteBrPair(nBracketType);
-    if ( bNextCharOK && pBrPair->leftBr == pBrPair->rightBr )
+    if ( bNextCharOK )
     {
-        bPrevCharOK = false;
+        const bool isCheckingDupPair = (pBrPair->leftBr == pBrPair->rightBr);
+        const bool isCheckingFlags = ((pBrPair->kind & (bpakfWtSp | bpakfDelim)) != 0);
 
-        // previous character
-        const Sci_Position nLeftBrLen = static_cast<Sci_Position>(pBrPair->leftBr.length());
-        const char prev_ch = (nEditPos >= nLeftBrLen) ? sciMsgr.getCharAt(nEditPos - nLeftBrLen) : 0;
-
-        if ( isWhiteSpaceOrNulChar(prev_ch) ||
-             g_opt.getPrevCharOK().find(static_cast<TCHAR>(prev_ch)) != tstr::npos )
+        if ( isCheckingDupPair || isCheckingFlags )
         {
-            bPrevCharOK = true;
+            bool bDupPairOK = true;
+            bool bFlagsOK = true;
+
+            // previous character
+            const Sci_Position nLeftBrLen = static_cast<Sci_Position>(pBrPair->leftBr.length());
+            const char prev_ch = (nEditPos >= nLeftBrLen) ? sciMsgr.getCharAt(nEditPos - nLeftBrLen) : 0;
+
+            if ( isCheckingDupPair )
+            {
+                bDupPairOK = ( isWhiteSpaceOrNulChar(prev_ch) ||
+                    g_opt.getPrevCharOK().find(static_cast<TCHAR>(prev_ch)) != tstr::npos );
+            }
+
+            if ( isCheckingFlags && prev_ch != 0 )
+            {
+                bFlagsOK = ( ((pBrPair->kind & bpakfWtSp) != 0 && isWhiteSpaceOrNulChar(prev_ch)) ||
+                     ((pBrPair->kind & bpakfDelim) != 0 && g_opt.getDelimiters().find(static_cast<TCHAR>(prev_ch)) != tstr::npos) );
+            }
+
+            bPrevCharOK = (bDupPairOK && bFlagsOK);
         }
     }
 

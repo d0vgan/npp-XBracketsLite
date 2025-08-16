@@ -76,6 +76,12 @@ Each item in the "fileSyntax" array is a JSON object with the following properti
 
   "autocomplete": [ ... ]
     an array of brackets or quotes pairs to auto-complete.
+    While specifying these pairs, an optional integer value may specify additional
+    attributes. This integer value will be a sum of the following values, depending
+    on the desired behavior:
+      1 - a white-space must be present before a left (opening) bracket;
+      2 - a word delimiter must be present before a left (opening) bracket
+          (see "Delimiters" below).
 
 
 The following pair kinds are supported in the "syntax" array:
@@ -183,6 +189,9 @@ The plugin's settings under the "settings" node:
     Example:
       // auto-complete after ([{<= and '\0', '\r', '\n', ' ', '\t'
       "Prev_Char_OK": "([{<="
+
+  "Delimiters": "'`\"\\|[](){}<>,.;:+-=~!@#$%^&*/?"
+    defines word delimiters for the "autocomplete" items (see above).
 
   "GoToNearest_Flags": 0
     controls the behavior of the GoToNearestBracket function.

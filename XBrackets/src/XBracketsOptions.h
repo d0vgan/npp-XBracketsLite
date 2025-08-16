@@ -130,6 +130,11 @@ class CXBracketsOptions
             return m_sPrevCharOK;
         }
 
+        const tstr& getDelimiters() const
+        {
+            return m_sDelimiters;
+        }
+
         const std::list<tFileSyntax>& getFileSyntaxes() const
         {
             return m_fileSyntaxes;
@@ -163,6 +168,7 @@ class CXBracketsOptions
         tstr  m_sFileExtsRule;
         tstr  m_sNextCharOK;
         tstr  m_sPrevCharOK;
+        tstr  m_sDelimiters;
         std::list<tFileSyntax> m_fileSyntaxes;
         const tFileSyntax* m_pDefaultFileSyntax;
 };

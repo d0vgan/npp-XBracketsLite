@@ -25,6 +25,11 @@ namespace XBrackets
         bpkfClsLnSt = 0x4000  // (attr) the right (closing) bracket starts at the beginning of the line
     };
 
+    enum eBrPairAutoKindFlags {
+        bpakfWtSp  = 0x0001, // white-space is needed before an opening bracket
+        bpakfDelim = 0x0002, // delimiter is needed before an opening bracket
+    };
+
     static inline bool isBrKind(unsigned int kind)
     {
         return ((kind & bpkfBr) != 0);

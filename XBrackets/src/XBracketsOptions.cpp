@@ -105,6 +105,7 @@ CXBracketsOptions::CXBracketsOptions() :
   m_nJumpPairLineDiff(1),
   m_sNextCharOK(_T(".,!?:;</")),
   m_sPrevCharOK(_T("([{<=")),
+  m_sDelimiters(_T("'`\"\\|[](){}<>,.;:+-=~!@#$%^&*/?")),
   m_pDefaultFileSyntax(nullptr)
 {
 }
@@ -156,7 +157,7 @@ bool CXBracketsOptions::IsSupportedFile(const TCHAR* szExt) const
     return bExclude;
 }
 
-static tBrPair readBrPairItem(const json11::Json& pairItem, bool isKindRequired)
+static tBrPair readBrPairItem(const json11::Json& pairItem, bool isAutoComplete)
 {
     tBrPair brPair;
 
@@ -167,7 +168,7 @@ static tBrPair readBrPairItem(const json11::Json& pairItem, bool isKindRequired)
             const std::string& val = elem.string_value();
 
             unsigned int kind = 0;
-            if ( isKindRequired )
+            if ( !isAutoComplete )
             {
                 if ( brPair.kind == 0 )
                 {
@@ -198,16 +199,23 @@ static tBrPair readBrPairItem(const json11::Json& pairItem, bool isKindRequired)
         else if ( elem.is_number() )
         {
             const unsigned int val = elem.int_value();
-            if ( val & 0x0001 )
-                brPair.kind |= bpkfNoInSp;
-            if ( val & 0x0002 )
-                brPair.kind |= bpkfOpnLnSt;
-            if ( val & 0x0004 )
-                brPair.kind |= bpkfClsLnSt;
-            if ( val & 0x0008 )
-                brPair.kind |= bpkfOpnLdSp;
-            if ( val & 0x0010 )
-                brPair.kind |= bpkfClsLdSp;
+            if ( !isAutoComplete )
+            {
+                if ( val & 0x0001 )
+                    brPair.kind |= bpkfNoInSp;
+                if ( val & 0x0002 )
+                    brPair.kind |= bpkfOpnLnSt;
+                if ( val & 0x0004 )
+                    brPair.kind |= bpkfClsLnSt;
+                if ( val & 0x0008 )
+                    brPair.kind |= bpkfOpnLdSp;
+                if ( val & 0x0010 )
+                    brPair.kind |= bpkfClsLdSp;
+            }
+            else
+            {
+                brPair.kind = val;
+            }
         }
     }
 
@@ -277,7 +285,7 @@ static tFileSyntax readFileSyntaxItem(const json11::Json& syntaxItem)
                 {
                     if ( elementItem.is_array() )
                     {
-                        tBrPair brPair = readBrPairItem(elementItem, true);
+                        tBrPair brPair = readBrPairItem(elementItem, false);
 
                         if ( brPair.kind != 0 )
                         {
@@ -299,7 +307,7 @@ static tFileSyntax readFileSyntaxItem(const json11::Json& syntaxItem)
                 {
                     if ( autocomplItem.is_array() )
                     {
-                        tBrPair brPair = readBrPairItem(autocomplItem, false);
+                        tBrPair brPair = readBrPairItem(autocomplItem, true);
 
                         if ( !brPair.leftBr.empty() && !brPair.rightBr.empty() )
                         {
@@ -438,6 +446,11 @@ void CXBracketsOptions::readConfigSettingsItem(const void* pContext)
         {
             if ( settingVal.is_string() )
                 m_sPrevCharOK = string_to_tstr(settingVal.string_value());
+        }
+        else if ( settingName == "Delimiters" )
+        {
+            if ( settingVal.is_string() )
+                m_sDelimiters = string_to_tstr(settingVal.string_value());
         }
         else if ( settingName == "FileExtsRule" )
         {

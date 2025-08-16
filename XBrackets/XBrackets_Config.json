@@ -5,6 +5,7 @@
     "Sel_AutoBr": 4,
     "Next_Char_OK": ".,!?:;</",
     "Prev_Char_OK": "([{<=",
+    "Delimiters": "'`\"\\|[](){}<>,.;:+-=~!@#$%^&*/?",
     "GoToNearest_Flags": 0,
     "SelToNearest_Flags": 2,
     "Jump_Lines_Vis_Up": 1,
