@@ -1119,21 +1119,37 @@ void CXBracketsLogic::PerformBracketsAction(eGetBracketsAction nBrAction)
     state.nSelEnd = sciMsgr.getSelectionEnd();     // current selection
     if ( state.nSelStart != state.nSelEnd )
     {
-        // something is selected: inverting the selection positions
-        if ( state.nSelStart < state.nSelEnd )
+        // something is selected
+        state.nLeftBrPos = state.nSelStart;
+        state.nRightBrPos = state.nSelEnd;
+
+        bool isWidened = false;
+        if ( nBrAction == baSelToNearest && (g_opt.getSelToNearestFlags() & CXBracketsOptions::snbfWiden) != 0 )
         {
-            state.nLeftBrPos = state.nSelStart;
-            state.nRightBrPos = state.nSelEnd;
-        }
-        else
-        {
-            state.nLeftBrPos = state.nSelEnd;
-            state.nRightBrPos = state.nSelStart;
+            unsigned int uBrPosFlags = 0;
+            const auto pBrItem = m_bracketsTree.findPairByPos(state.nLeftBrPos, true, &uBrPosFlags);
+            if ( pBrItem != nullptr &&
+                 pBrItem->nLeftBrPos == state.nLeftBrPos &&
+                 pBrItem->nRightBrPos == state.nRightBrPos )
+            {
+                state.nSelStart -= static_cast<Sci_Position>(pBrItem->pBrPair->leftBr.length());  //  (|  ->  |(
+                state.nSelEnd += static_cast<Sci_Position>(pBrItem->pBrPair->rightBr.length()); //  |)  ->  )|
+                if ( sciMsgr.getCurrentPos() == state.nLeftBrPos )
+                {
+                    // preserving the selection direction
+                    std::swap(state.nSelEnd, state.nSelStart); // new selection
+                }
+                isWidened = true;
+            }
         }
 
-        if ( sciMsgr.getCurrentPos() == state.nSelEnd )
+        if ( !isWidened )
         {
-            std::swap(state.nSelEnd, state.nSelStart); // new selection
+            if ( sciMsgr.getCurrentPos() == state.nSelEnd )
+            {
+                // inverting the selection direction
+                std::swap(state.nSelEnd, state.nSelStart); // new selection
+            }
         }
 
         jumpToPairBracket(sciMsgr, state, false);
@@ -1151,47 +1167,88 @@ void CXBracketsLogic::PerformBracketsAction(eGetBracketsAction nBrAction)
     if ( pBrItem == nullptr || pBrItem->nRightBrPos == -1 )
         return;
 
-    state.nLeftBrPos = pBrItem->nLeftBrPos;
-    state.nRightBrPos = pBrItem->nRightBrPos;
+    state.nLeftBrPos = pBrItem->nLeftBrPos; // always (|
+    state.nRightBrPos = pBrItem->nRightBrPos; // always |)
+
+    Sci_Position nLeftBrPosToSet = state.nLeftBrPos;
+    Sci_Position nRightBrPosToSet = state.nRightBrPos;
 
     if ( uBrPosFlags == (CBracketsTree::bpfLeftBr | CBracketsTree::bpfBeforeBr) ||
          uBrPosFlags == (CBracketsTree::bpfRightBr | CBracketsTree::bpfAfterBr) )
     {
-        state.nRightBrPos += static_cast<Sci_Position>(pBrItem->pBrPair->rightBr.length()); //  |)  ->  )|
+        // real position
         state.nLeftBrPos -= static_cast<Sci_Position>(pBrItem->pBrPair->leftBr.length());  //  (|  ->  |(
+        state.nRightBrPos += static_cast<Sci_Position>(pBrItem->pBrPair->rightBr.length()); //  |)  ->  )|
+        nLeftBrPosToSet = state.nLeftBrPos;
+        nRightBrPosToSet = state.nRightBrPos;
+    }
+    else if ( (nBrAction == baGoToNearest && (g_opt.getGoToNearestFlags() & CXBracketsOptions::gnbfOuterPos) != 0) ||
+              (nBrAction == baSelToNearest && (g_opt.getSelToNearestFlags() & CXBracketsOptions::snbfOuterPos) != 0) )
+    {
+        // position to set
+        nLeftBrPosToSet -= static_cast<Sci_Position>(pBrItem->pBrPair->leftBr.length());  //  (|  ->  |(
+        nRightBrPosToSet += static_cast<Sci_Position>(pBrItem->pBrPair->rightBr.length()); //  |)  ->  )|
     }
 
     const bool isGoTo = (nBrAction == baGoToMatching || nBrAction == baGoToNearest);
     if ( isGoTo )
     {
-        // TODO: in case of baGoToNearest, use getGoToNearestFlags()
         if ( state.nSelStart == state.nLeftBrPos )
         {
             // new selection
-            state.nSelStart = state.nRightBrPos;
-            state.nSelEnd = state.nRightBrPos;
+            state.nSelStart = nRightBrPosToSet;
+            state.nSelEnd = nRightBrPosToSet;
         }
-        else
+        else if ( state.nSelStart == state.nRightBrPos )
         {
             // new selection
-            state.nSelStart = state.nLeftBrPos;
-            state.nSelEnd = state.nLeftBrPos;
+            state.nSelStart = nLeftBrPosToSet;
+            state.nSelEnd = nLeftBrPosToSet;
+        }
+        else if ( nBrAction == baGoToNearest )
+        {
+            if ( (g_opt.getGoToNearestFlags() & CXBracketsOptions::gnbfLeftBr) != 0 )
+            {
+                // new selection
+                state.nSelStart = nLeftBrPosToSet;
+                state.nSelEnd = nLeftBrPosToSet;
+            }
+            else if ( (g_opt.getGoToNearestFlags() & CXBracketsOptions::gnbfRightBr) != 0 )
+            {
+                // new selection
+                state.nSelStart = nRightBrPosToSet;
+                state.nSelEnd = nRightBrPosToSet;
+            }
+            else // CXBracketsOptions::gnbfAutoPos
+            {
+                if ( state.nSelStart - state.nLeftBrPos <= state.nRightBrPos - state.nSelStart )
+                {
+                    // new selection
+                    state.nSelStart = nLeftBrPosToSet;
+                    state.nSelEnd = nLeftBrPosToSet;
+                }
+                else
+                {
+                    // new selection
+                    state.nSelStart = nRightBrPosToSet;
+                    state.nSelEnd = nRightBrPosToSet;
+                }
+            }
         }
     }
-    else
+    else // baSelToMatching || baSelToNearest
     {
-        // TODO: in case of baSelToNearest, use getSelToNearestFlags()
-        if ( state.nSelStart == state.nLeftBrPos )
+        if ( state.nSelStart == state.nRightBrPos )
         {
             // new selection
-            state.nSelStart = state.nLeftBrPos;
-            state.nSelEnd = state.nRightBrPos;
+            state.nSelStart = nRightBrPosToSet;
+            state.nSelEnd = nLeftBrPosToSet;
         }
         else
         {
             // new selection
-            state.nSelStart = state.nRightBrPos;
-            state.nSelEnd = state.nLeftBrPos;
+            state.nSelStart = nLeftBrPosToSet;
+            state.nSelEnd = nRightBrPosToSet;
         }
     }
 

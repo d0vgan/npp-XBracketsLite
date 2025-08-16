@@ -34,8 +34,8 @@ class CSciMessager
         Sci_Position  getPositionFromLine(Sci_Position line) const; // start of the line
         HWND          getSciWnd() const  { return m_hSciWnd; }
         int           getSelectionMode() const; // SC_SEL_STREAM, SC_SEL_RECTANGLE, SC_SEL_LINES
-        Sci_Position  getSelectionEnd() const;
-        Sci_Position  getSelectionStart() const;
+        Sci_Position  getSelectionEnd() const; // larger position of selection
+        Sci_Position  getSelectionStart() const; // smaller position of selection
         int           getSelections() const; // number of selections, there's always at least 1
         Sci_Position  getSelText(char* pText) const;
         int           getStyleIndexAt(Sci_Position pos) const;

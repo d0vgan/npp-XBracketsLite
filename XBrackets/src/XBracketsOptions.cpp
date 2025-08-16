@@ -98,8 +98,8 @@ CXBracketsOptions::CXBracketsOptions() :
   // default values:
   m_uFlags(OPTF_AUTOCOMPLETE),
   m_uSelAutoBr(sabNone),
-  m_uGoToNearestFlags(0),
-  m_uSelToNearestFlags(0),
+  m_uGoToNearestFlags(gnbfAutoPos),
+  m_uSelToNearestFlags(snbfAutoPos),
   m_nJumpLinesVisUp(1),
   m_nJumpLinesVisDown(0),
   m_nJumpPairLineDiff(1),

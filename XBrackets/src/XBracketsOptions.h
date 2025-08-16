@@ -57,6 +57,19 @@ class CXBracketsOptions
             sabEncloseRemoveOuter
         };
 
+        enum eGoToNearestBrFlags {
+            gnbfAutoPos  = 0x00,
+            gnbfOuterPos = 0x01,
+            gnbfLeftBr   = 0x10,
+            gnbfRightBr  = 0x20
+        };
+
+        enum eSelToNearestBrFlags {
+            snbfAutoPos  = 0x00,
+            snbfOuterPos = 0x01,
+            snbfWiden    = 0x02
+        };
+
         bool getBracketsAutoComplete() const
         {
             return getBoolFlag(OPTF_AUTOCOMPLETE);
@@ -142,8 +155,8 @@ class CXBracketsOptions
     protected:
         UINT  m_uFlags;
         UINT  m_uSelAutoBr; // one of eSelAutoBr
-        UINT  m_uGoToNearestFlags;
-        UINT  m_uSelToNearestFlags;
+        UINT  m_uGoToNearestFlags; // see eGoToNearestBrFlags
+        UINT  m_uSelToNearestFlags; // see eSelToNearestBrFlags
         int   m_nJumpLinesVisUp;
         int   m_nJumpLinesVisDown;
         int   m_nJumpPairLineDiff;
