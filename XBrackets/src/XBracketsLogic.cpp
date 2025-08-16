@@ -1126,18 +1126,29 @@ void CXBracketsLogic::PerformBracketsAction(eGetBracketsAction nBrAction)
         bool isWidened = false;
         if ( nBrAction == baSelToNearest && (g_opt.getSelToNearestFlags() & CXBracketsOptions::snbfWiden) != 0 )
         {
-            unsigned int uBrPosFlags = 0;
-            const auto pBrItem = m_bracketsTree.findPairByPos(state.nLeftBrPos, true, &uBrPosFlags);
-            if ( pBrItem != nullptr &&
-                 pBrItem->nLeftBrPos == state.nLeftBrPos &&
-                 pBrItem->nRightBrPos == state.nRightBrPos )
+            if ( m_bracketsTree.isTreeEmpty() )
             {
-                state.nSelStart -= static_cast<Sci_Position>(pBrItem->pBrPair->leftBr.length());  //  (|  ->  |(
-                state.nSelEnd += static_cast<Sci_Position>(pBrItem->pBrPair->rightBr.length()); //  |)  ->  )|
+                m_bracketsTree.buildTree(sciMsgr);
+            }
+
+            unsigned int uBrPosFlags = 0;
+            const auto pBrItem = m_bracketsTree.findPairByPos(state.nLeftBrPos, false, &uBrPosFlags);
+            if ( pBrItem != nullptr &&
+                 pBrItem->nLeftBrPos <= state.nLeftBrPos &&
+                 pBrItem->nRightBrPos >= state.nRightBrPos )
+            {
+                // new selection
+                state.nSelStart = pBrItem->nLeftBrPos;
+                state.nSelEnd = pBrItem->nRightBrPos;
+                if ( state.nSelStart == state.nLeftBrPos && state.nSelEnd == state.nRightBrPos )
+                {
+                    state.nSelStart -= static_cast<Sci_Position>(pBrItem->pBrPair->leftBr.length());  //  (|  ->  |(
+                    state.nSelEnd += static_cast<Sci_Position>(pBrItem->pBrPair->rightBr.length()); //  |)  ->  )|
+                }
                 if ( sciMsgr.getCurrentPos() == state.nLeftBrPos )
                 {
                     // preserving the selection direction
-                    std::swap(state.nSelEnd, state.nSelStart); // new selection
+                    std::swap(state.nSelEnd, state.nSelStart);
                 }
                 isWidened = true;
             }

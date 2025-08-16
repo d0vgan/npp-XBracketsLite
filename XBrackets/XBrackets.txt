@@ -184,6 +184,52 @@ The plugin's settings under the "settings" node:
       // auto-complete after ([{<= and '\0', '\r', '\n', ' ', '\t'
       "Prev_Char_OK": "([{<="
 
+  "GoToNearest_Flags": 0
+    controls the behavior of the GoToNearestBracket function.
+    The value of this setting will be the sum of the following numbers:
+    0 - the caret jumps to the nearest bracket (either left or right one), staying
+        inside these brackets (either after the left bracket or before the right
+        bracket).
+        Examples:
+          {a|bc} becomes {|abc}
+          {ab|c} becomes {abc|}
+    1 - the caret jumps outside of the brackets (either before the left bracket or
+        after the right bracket).
+        Examples:
+          {a|bc} becomes |{abc}
+          {ab|c} becomes {abc}|
+    16 - the caret always jumps to the left bracket.
+         Examples:
+          {a|bc} becomes {|abc}
+          {ab|c} becomes {|abc}
+    32 - the caret always jumps to the right bracket.
+         Note: when the sum of (16 + 32) is used, it is treated as 16.
+         Examples:
+          {a|bc} becomes {abc|}
+          {ab|c} becomes {abc|}
+
+  "SelToNearest_Flags": 2
+    controls the behavior of the SelToNearestBrackets function.
+    The value of this setting will be the sum of the following numbers:
+    0 - the surrounding brackets themselves are either included or not
+        included in the selection, depending on the position of the caret.
+        Examples:
+          {a|bc} becomes {|abc|}
+          |{abc} becomes |{abc}|
+    1 - the surrounding brackets are always included in the selection.
+        Examples:
+          {a|bc} becomes |{abc}|
+          |{abc} becomes |{abc}|
+    2 - widens the selection within the surrounding brackets to include everything
+        within the brackets. When the inner selection already includes everything
+        within the surrounding brackets, SelToNearestBrackets widens the selection
+        to include the surrounding brackets themselves.
+        Examples:
+          {a|b|c} becomes {|abc|}
+          {|a|bc} becomes {|abc|}
+          {a|bc|} becomes {|abc|}
+          {|abc|} becomes |{abc}|
+
   "Jump_Lines_Vis_Up": 1
     specifies a number of lines that will be visible above the left (opening)
     bracket right after the "Go To" or "Sel To" function has jumped to that
