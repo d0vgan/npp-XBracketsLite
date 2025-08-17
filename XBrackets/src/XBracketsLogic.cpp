@@ -1482,7 +1482,7 @@ CXBracketsLogic::eCharProcessingResult CXBracketsLogic::autoBracketsFunc(int nBr
     const tBrPair* pBrPair = getAutoCompleteBrPair(nBracketType);
     if ( bNextCharOK )
     {
-        const bool isCheckingDupPair = (pBrPair->leftBr == pBrPair->rightBr);
+        const bool isCheckingDupPair = ((pBrPair->kind & bpakfNoDup) == 0 && pBrPair->leftBr == pBrPair->rightBr);
         const bool isCheckingFlags = ((pBrPair->kind & (bpakfWtSp | bpakfDelim)) != 0);
 
         if ( isCheckingDupPair || isCheckingFlags )

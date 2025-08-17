@@ -26,8 +26,9 @@ namespace XBrackets
     };
 
     enum eBrPairAutoKindFlags {
-        bpakfWtSp  = 0x0001, // white-space is needed before an opening bracket
-        bpakfDelim = 0x0002, // delimiter is needed before an opening bracket
+        bpakfNoDup = 0x0001, // ignore Prev_Char_OK when left bracket is the same as right bracket
+        bpakfWtSp  = 0x0002, // white-space is needed before an opening bracket
+        bpakfDelim = 0x0004  // delimiter is needed before an opening bracket
     };
 
     static inline bool isBrKind(unsigned int kind)
