@@ -72,7 +72,31 @@ Each item in the "fileSyntax" array is a JSON object with the following properti
     this item will be used only as a parent of other items.
 
   "syntax": [ ... ]
-    an array of brackets or quotes pairs and their kinds. See "pair kinds" below.
+    an array of brackets or quotes pairs and their kinds.
+    The following pair kinds are supported here:
+      "single-line-brackets" - single-line brackets pair;
+      "multi-line-brackets"  - multi-line brackets pair;
+      "single-line-quotes"   - single-line quotes pair;
+      "multi-line-quotes"    - multi-line quotes pair;
+      "single-line-comment"  - single-line comment;
+      "multi-line-comment"   - multi-line comment pair;
+      "quote-escape-char"    - escape character in quotes.
+
+    While specifying a pair kind, an optional integer value may specify additional
+    attributes. This integer value will be a sum of the following values, depending
+    on the desired behavior:
+      1 - a given pair can't contain a space;
+      2 - a left (opening) bracket should start at the beginning of a line;
+      4 - a right (closing) bracket should start at the beginning of a line;
+      8 - together with 2 - leading spaces are allowed before a left bracket;
+      16 - together with 4 - leading spaces are allowed before a right bracket.
+
+    The difference between the "brackets" and "quotes" is the following:
+      The "brackets" can not enquote other characters, so e.g. `%a"b%` and `%a)b%`
+      will not be a `%%` pair in case of "single-line-brackets" and "multi-line-brackets".
+
+      The "quotes" can enquote other characters, so e.g. `%a"b%` and `%a)b%` will be
+      a `%%` pair in case of "single-line-quotes" and "multi-line-quotes".
 
   "autocomplete": [ ... ]
     an array of brackets or quotes pairs to auto-complete.
@@ -87,32 +111,6 @@ Each item in the "fileSyntax" array is a JSON object with the following properti
       4 - a delimiter must be present before a left (opening) bracket (see "Delimiters" below).
           Note: when a given pair consists of identical left and right bracket, the
           "Prev_Char_OK" characters are additionally checked, unless 1 is specified.
-
-
-The following pair kinds are supported in the "syntax" array:
-  "single-line-brackets" - single-line brackets pair;
-  "multi-line-brackets"  - multi-line brackets pair;
-  "single-line-quotes"   - single-line quotes pair;
-  "multi-line-quotes"    - multi-line quotes pair;
-  "single-line-comment"  - single-line comment;
-  "multi-line-comment"   - multi-line comment pair;
-  "quote-escape-char"    - escape character in quotes.
-
-  While specifying a pair kind, an optional integer value may specify additional
-  attributes. This integer value will be a sum of the following values, depending
-  on the desired behavior:
-    1 - a given pair can't contain a space;
-    2 - a left (opening) bracket should start at the beginning of a line;
-    4 - a right (closing) bracket should start at the beginning of a line;
-    8 - together with 2 - leading spaces are allowed before a left bracket;
-    16 - together with 4 - leading spaces are allowed before a right bracket.
-
-  The difference between the "brackets" and "quotes" is the following:
-    The "brackets" can not enquote other characters, so e.g. `%a"b%` and `%a)b%`
-    will not be a %% pair in case of "single-line-brackets" and "multi-line-brackets".
-
-    The "quotes" can enquote other characters, so e.g. `%a"b%` and `%a)b%` will be
-    a %% pair in case of "single-line-quotes" and "multi-line-quotes".
 
 
 The plugin's settings under the "settings" node:
