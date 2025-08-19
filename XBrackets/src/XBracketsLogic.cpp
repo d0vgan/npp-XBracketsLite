@@ -1002,8 +1002,18 @@ void CXBracketsLogic::InvalidateCachedBrackets(unsigned int uInvalidateFlags, SC
     }
 }
 
-CXBracketsLogic::eCharProcessingResult CXBracketsLogic::OnChar(const int ch)
+CXBracketsLogic::eCharProcessingResult CXBracketsLogic::OnCharPress(const int ch)
 {
+    if ( m_nAutoRightBracketType >= 0 && (m_nAutoRightBracketType & abtfTextJustAutoCompleted) != 0 )
+    {
+        m_nAutoRightBracketType ^= abtfTextJustAutoCompleted;
+        if ( ch == VK_RETURN )
+        {
+            // the auto-completed text has just been accepted by pressing Enter
+            return cprNone;
+        }
+    }
+
     const Sci_Position nAutoRightBrPos = m_nAutoRightBracketPos;
     const int nAutoRightBrType = m_nAutoRightBracketType;
     const int nAutoRightBrOffset = m_nAutoRightBracketOffset; // will be used below
@@ -1060,7 +1070,32 @@ CXBracketsLogic::eCharProcessingResult CXBracketsLogic::OnChar(const int ch)
         return cprNone;
 
     // a typed character is a bracket
-    return autoBracketsFunc(nLeftBracketType);
+    return autoBracketsFunc(nLeftBracketType, aboCharPress);
+}
+
+CXBracketsLogic::eCharProcessingResult CXBracketsLogic::OnTextAutoCompleted(const char* text, Sci_Position pos)
+{
+    (pos); // unused
+
+    if ( text == nullptr || m_pFileSyntax == nullptr )
+        return cprNone;
+
+    int nLeftBrType = -1;
+    int idx = 0;
+    for ( const tBrPair& item : m_pFileSyntax->autocomplete )
+    {
+        if ( item.leftBr == text )
+        {
+            nLeftBrType = idx;
+            break;
+        }
+        ++idx;
+    }
+
+    if ( nLeftBrType == -1 )
+        return cprNone;
+
+    return autoBracketsFunc(nLeftBrType, aboTextAutoCompleted);
 }
 
 bool CXBracketsLogic::isSkipEscapedSupported() const
@@ -1078,7 +1113,7 @@ bool CXBracketsLogic::isSkipEscapedSupported() const
 
 bool CXBracketsLogic::isEscapedPos(const CSciMessager& sciMsgr, const Sci_Position nCharPos) const
 {
-    if ( !isSkipEscapedSupported() )
+    if ( !isSkipEscapedSupported() || nCharPos <= 0 )
         return false;
 
     char szPrefix[MAX_ESCAPED_PREFIX + 2];
@@ -1432,7 +1467,7 @@ const tBrPair* CXBracketsLogic::getAutoCompleteBrPair(int nBracketType) const
     return &m_pFileSyntax->autocomplete[nBracketType];
 }
 
-CXBracketsLogic::eCharProcessingResult CXBracketsLogic::autoBracketsFunc(int nBracketType)
+CXBracketsLogic::eCharProcessingResult CXBracketsLogic::autoBracketsFunc(int nBracketType, eAutoBracketOrigin origin)
 {
     if ( autoBracketsOverSelectionFunc(nBracketType) )
         return cprSelAutoCompl;
@@ -1485,14 +1520,19 @@ CXBracketsLogic::eCharProcessingResult CXBracketsLogic::autoBracketsFunc(int nBr
         const bool isCheckingDupPair = ((pBrPair->kind & bpakfNoDup) == 0 && pBrPair->leftBr == pBrPair->rightBr);
         const bool isCheckingFlags = ((pBrPair->kind & (bpakfWtSp | bpakfDelim)) != 0);
 
+        Sci_Position nPrevCharPos = nEditPos - static_cast<Sci_Position>(pBrPair->leftBr.length());
+        if ( origin == aboTextAutoCompleted )
+        {
+            nPrevCharPos -= 1;
+        }
+
         if ( isCheckingDupPair || isCheckingFlags )
         {
             bool bDupPairOK = true;
             bool bFlagsOK = true;
 
             // previous character
-            const Sci_Position nLeftBrLen = static_cast<Sci_Position>(pBrPair->leftBr.length());
-            const char prev_ch = (nEditPos >= nLeftBrLen) ? sciMsgr.getCharAt(nEditPos - nLeftBrLen) : 0;
+            const char prev_ch = (nPrevCharPos >= 0) ? sciMsgr.getCharAt(nPrevCharPos) : 0;
 
             if ( isCheckingDupPair )
             {
@@ -1508,11 +1548,8 @@ CXBracketsLogic::eCharProcessingResult CXBracketsLogic::autoBracketsFunc(int nBr
 
             bPrevCharOK = (bDupPairOK && bFlagsOK);
         }
-    }
 
-    if ( bPrevCharOK && bNextCharOK )
-    {
-        if ( isEscapedPos(sciMsgr, nEditPos) )
+        if ( bPrevCharOK && isEscapedPos(sciMsgr, nPrevCharPos + 1) )
             bPrevCharOK = false;
     }
 
@@ -1526,18 +1563,29 @@ CXBracketsLogic::eCharProcessingResult CXBracketsLogic::autoBracketsFunc(int nBr
 
         sciMsgr.beginUndoAction();
         // inserting the brackets pair
-        std::string brPair;
-        brPair.reserve(1 + pBrPair->rightBr.length());
-        brPair += pBrPair->leftBr.back();
-        brPair += pBrPair->rightBr;
-        sciMsgr.replaceSelText(brPair.c_str());
-        // placing the caret between brackets
-        ++nEditPos;
+        if ( origin == aboCharPress )
+        {
+            std::string brPair;
+            brPair.reserve(1 + pBrPair->rightBr.length());
+            brPair += pBrPair->leftBr.back();
+            brPair += pBrPair->rightBr;
+            sciMsgr.replaceSelText(brPair.c_str());
+            // placing the caret between brackets
+            ++nEditPos;
+        }
+        else // aboTextAutoCompleted
+        {
+            sciMsgr.replaceSelText(pBrPair->rightBr.c_str());
+        }
         sciMsgr.setSel(nEditPos, nEditPos);
         sciMsgr.endUndoAction();
 
         m_nAutoRightBracketPos = nEditPos;
         m_nAutoRightBracketType = nBracketType;
+        if ( origin == aboTextAutoCompleted )
+        {
+            m_nAutoRightBracketType |= abtfTextJustAutoCompleted;
+        }
         m_nAutoRightBracketOffset = 0;
         return cprBrAutoCompl;
     }

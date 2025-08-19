@@ -176,6 +176,10 @@ void CXBracketsPlugin::nppBeNotified(SCNotification* pscn)
             case SCN_MODIFIED:
                 OnSciModified(pscn);
                 break;
+
+            case SCN_AUTOCCOMPLETED:
+                OnSciAutoCompleted(pscn);
+                break;
         }
         // <<< notifications from Scintilla
     }
@@ -301,7 +305,7 @@ void CXBracketsPlugin::OnNppMacro(int nMacroState)
 
 CXBracketsLogic::eCharProcessingResult CXBracketsPlugin::OnSciChar(const int ch)
 {
-    return m_BracketsLogic.OnChar(ch);
+    return m_BracketsLogic.OnCharPress(ch);
 }
 
 void CXBracketsPlugin::OnSciModified(SCNotification* pscn)
@@ -312,6 +316,11 @@ void CXBracketsPlugin::OnSciModified(SCNotification* pscn)
     }
 }
 
+void CXBracketsPlugin::OnSciAutoCompleted(SCNotification* pscn)
+{
+    m_BracketsLogic.OnTextAutoCompleted(pscn->text, pscn->position);
+}
+
 void CXBracketsPlugin::OnSciTextChanged(SCNotification* pscn)
 {
     unsigned int uInvalidateFlags = CXBracketsLogic::icbfAutoRightBr;
@@ -320,26 +329,6 @@ void CXBracketsPlugin::OnSciTextChanged(SCNotification* pscn)
         uInvalidateFlags |= CXBracketsLogic::icbfAll;
     }
     m_BracketsLogic.InvalidateCachedBrackets(uInvalidateFlags, pscn);
-
-    /*
-    if ( (pscn->modificationType & SC_MOD_INSERTTEXT) != 0 && (pscn->modificationType & SC_PERFORMED_UNDO) == 0 )
-    {
-        if ( pscn->length > 1 && pscn->text != nullptr )
-        {
-            // TODO:
-            // We may handle text insertions here by comparing each `m_pFileSyntax->autocomplete[i].leftBr`
-            // against the trailing part (right part) of pscn->text.
-            // However, it's not clear whether we can distinguish between Notepad++'s word auto-completion
-            // and a regular pasting (Ctrl+V).
-            // We may want to auto-complete a bracket in case of Notepad++'s word auto-completion and
-            // _not_ want to do that in case of Ctrl+V.
-
-            // just for the testing purpose:
-            //const char ch = pscn->text[pscn->length - 1];
-            //m_BracketsLogic.OnChar(ch);
-        }
-    }
-    */
 }
 
 void CXBracketsPlugin::GoToMatchingBracket()

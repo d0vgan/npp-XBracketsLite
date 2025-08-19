@@ -87,10 +87,20 @@ public:
     void SetNppData(const NppData& nppd);
     void UpdateFileType(unsigned int uInvalidateFlags = icbfAll);
     void InvalidateCachedBrackets(unsigned int uInvalidateFlags, SCNotification* pscn = nullptr);
-    eCharProcessingResult OnChar(const int ch);
+    eCharProcessingResult OnCharPress(const int ch);
+    eCharProcessingResult OnTextAutoCompleted(const char* text, Sci_Position pos);
     void PerformBracketsAction(eGetBracketsAction nBrAction);
 
 private:
+    enum eAutoBracketOrigin {
+        aboCharPress = 0,
+        aboTextAutoCompleted
+    };
+
+    enum eAutoBracketTypeFlags {
+        abtfTextJustAutoCompleted = 0x020000
+    };
+
     struct tBracketsJumpState
     {
         Sci_Position nSelStart{-1};
@@ -113,7 +123,7 @@ private:
     int getAutocompleteLeftBracketType(CSciMessager& sciMsgr, const char ch) const;
     int getAutocompleteRightBracketType(CSciMessager& sciMsgr, const char ch) const;
     const tBrPair* getAutoCompleteBrPair(int nBracketType) const;
-    eCharProcessingResult autoBracketsFunc(int nBracketType);
+    eCharProcessingResult autoBracketsFunc(int nBracketType, eAutoBracketOrigin origin);
     bool autoBracketsOverSelectionFunc(int nBracketType);
     bool isEnclosedInBrackets(const char* pszTextLeft, const char* pszTextRight, int* pnBracketType, bool bInSelection);
     unsigned int detectFileType(tstr* pFileExt = nullptr);

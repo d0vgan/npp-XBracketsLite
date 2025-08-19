@@ -45,6 +45,7 @@ class CXBracketsPlugin : public CNppPlugin
         // custom scintilla notifications
         CXBracketsLogic::eCharProcessingResult OnSciChar(const int ch);
         void OnSciModified(SCNotification* pscn);
+        void OnSciAutoCompleted(SCNotification* pscn);
         void OnSciTextChanged(SCNotification* pscn);
 
         // custom functions
