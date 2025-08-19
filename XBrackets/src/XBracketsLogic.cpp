@@ -15,7 +15,6 @@ using namespace XBrackets;
 // can be _T(x), but _T(x) may be incompatible with ANSI mode
 #define _TCH(x)  (x)
 
-extern CXBracketsOptions g_opt;
 
 namespace
 {
@@ -989,7 +988,7 @@ void CXBracketsLogic::InvalidateCachedBrackets(unsigned int uInvalidateFlags, SC
     }
     if ( uInvalidateFlags & icbfTree )
     {
-        if ( !g_opt.getUpdateTreeAllowed() ||
+        if ( !GetOptions().getUpdateTreeAllowed() ||
              pscn == nullptr || 
              (pscn->modificationType & (SC_MOD_INSERTTEXT | SC_MOD_DELETETEXT | SC_MOD_BEFOREINSERT | SC_MOD_BEFOREDELETE)) == 0 )
         {
@@ -1020,7 +1019,7 @@ CXBracketsLogic::eCharProcessingResult CXBracketsLogic::OnCharPress(const int ch
 
     InvalidateCachedBrackets(icbfAutoRightBr);
 
-    if ( !g_opt.getBracketsAutoComplete() )
+    if ( !GetOptions().getBracketsAutoComplete() )
         return cprNone;
 
     if ( (m_uFileType & tfmIsSupported) == 0 )
@@ -1142,7 +1141,7 @@ void CXBracketsLogic::PerformBracketsAction(eGetBracketsAction nBrAction)
         state.nRightBrPos = state.nSelEnd;
 
         bool isWidened = false;
-        if ( nBrAction == baSelToNearest && (g_opt.getSelToNearestFlags() & CXBracketsOptions::snbfWiden) != 0 )
+        if ( nBrAction == baSelToNearest && (GetOptions().getSelToNearestFlags() & CXBracketsOptions::snbfWiden) != 0 )
         {
             if ( m_bracketsTree.isTreeEmpty() )
             {
@@ -1211,8 +1210,8 @@ void CXBracketsLogic::PerformBracketsAction(eGetBracketsAction nBrAction)
         nLeftBrPosToSet = state.nLeftBrPos;
         nRightBrPosToSet = state.nRightBrPos;
     }
-    else if ( (nBrAction == baGoToNearest && (g_opt.getGoToNearestFlags() & CXBracketsOptions::gnbfOuterPos) != 0) ||
-              (nBrAction == baSelToNearest && (g_opt.getSelToNearestFlags() & CXBracketsOptions::snbfOuterPos) != 0) )
+    else if ( (nBrAction == baGoToNearest && (GetOptions().getGoToNearestFlags() & CXBracketsOptions::gnbfOuterPos) != 0) ||
+              (nBrAction == baSelToNearest && (GetOptions().getSelToNearestFlags() & CXBracketsOptions::snbfOuterPos) != 0) )
     {
         // position to set
         nLeftBrPosToSet -= static_cast<Sci_Position>(pBrItem->pBrPair->leftBr.length());  //  (|  ->  |(
@@ -1236,13 +1235,13 @@ void CXBracketsLogic::PerformBracketsAction(eGetBracketsAction nBrAction)
         }
         else if ( nBrAction == baGoToNearest )
         {
-            if ( (g_opt.getGoToNearestFlags() & CXBracketsOptions::gnbfLeftBr) != 0 )
+            if ( (GetOptions().getGoToNearestFlags() & CXBracketsOptions::gnbfLeftBr) != 0 )
             {
                 // new selection
                 state.nSelStart = nLeftBrPosToSet;
                 state.nSelEnd = nLeftBrPosToSet;
             }
-            else if ( (g_opt.getGoToNearestFlags() & CXBracketsOptions::gnbfRightBr) != 0 )
+            else if ( (GetOptions().getGoToNearestFlags() & CXBracketsOptions::gnbfRightBr) != 0 )
             {
                 // new selection
                 state.nSelStart = nRightBrPosToSet;
@@ -1300,22 +1299,22 @@ void CXBracketsLogic::jumpToPairBracket(CSciMessager& sciMsgr, const tBracketsJu
 {
     sciMsgr.setSel(state.nSelStart, state.nSelEnd);
 
-    if ( g_opt.getJumpPairLineDiff() < 0 || (g_opt.getJumpLinesVisUp() <= 0 && g_opt.getJumpLinesVisDown() <= 0) )
+    if ( GetOptions().getJumpPairLineDiff() < 0 || (GetOptions().getJumpLinesVisUp() <= 0 && GetOptions().getJumpLinesVisDown() <= 0) )
         return;
 
     const Sci_Position nLeftBrLine = sciMsgr.getLineFromPosition(state.nLeftBrPos);
     const Sci_Position nRightBrLine = sciMsgr.getLineFromPosition(state.nRightBrPos);
-    if ( nRightBrLine - nLeftBrLine < g_opt.getJumpPairLineDiff() )
+    if ( nRightBrLine - nLeftBrLine < GetOptions().getJumpPairLineDiff() )
         return;
 
     const Sci_Position nFirstVisibleLine = sciMsgr.getFirstVisibleLine();
     if ( (state.nSelStart == state.nLeftBrPos && isGoTo) || (state.nSelStart == state.nRightBrPos && !isGoTo) )
     {
         //  {|  <--
-        if ( g_opt.getJumpLinesVisUp() > 0 )
+        if ( GetOptions().getJumpLinesVisUp() > 0 )
         {
             const Sci_Position nVisLeftBrLine = sciMsgr.getVisibleFromDocLine(nLeftBrLine);
-            const Sci_Position nWantLeftBrLine = (nVisLeftBrLine > g_opt.getJumpLinesVisUp()) ? (nVisLeftBrLine - g_opt.getJumpLinesVisUp()) : 0;
+            const Sci_Position nWantLeftBrLine = (nVisLeftBrLine > GetOptions().getJumpLinesVisUp()) ? (nVisLeftBrLine - GetOptions().getJumpLinesVisUp()) : 0;
             if ( nWantLeftBrLine < nFirstVisibleLine )
             {
                 sciMsgr.setFirstVisibleLine(nWantLeftBrLine);
@@ -1325,9 +1324,9 @@ void CXBracketsLogic::jumpToPairBracket(CSciMessager& sciMsgr, const tBracketsJu
     else
     {
         //  -->  |}
-        if ( g_opt.getJumpLinesVisDown() > 0 )
+        if ( GetOptions().getJumpLinesVisDown() > 0 )
         {
-            const Sci_Position nWantRightBrLine = sciMsgr.getVisibleFromDocLine(nRightBrLine) + g_opt.getJumpLinesVisDown();
+            const Sci_Position nWantRightBrLine = sciMsgr.getVisibleFromDocLine(nRightBrLine) + GetOptions().getJumpLinesVisDown();
             const Sci_Position nLastVisibleLine = nFirstVisibleLine + sciMsgr.getLinesOnScreen();
             const Sci_Position nLineDiff = nWantRightBrLine - nLastVisibleLine;
             if ( nLineDiff > 0 )
@@ -1347,7 +1346,7 @@ void CXBracketsLogic::UpdateFileType(unsigned int uInvalidateFlags)
 
     if ( m_uFileType & tfmIsSupported )
     {
-        for ( const auto& syntax : g_opt.getFileSyntaxes() )
+        for ( const auto& syntax : GetOptions().getFileSyntaxes() )
         {
             if ( (syntax.uFlags & fsfNullFileExt) == 0 &&
                  syntax.fileExtensions.find(fileExtension) != syntax.fileExtensions.end() )
@@ -1357,7 +1356,7 @@ void CXBracketsLogic::UpdateFileType(unsigned int uInvalidateFlags)
             }
         }
         if ( m_pFileSyntax == nullptr )
-            m_pFileSyntax = g_opt.getDefaultFileSyntax();
+            m_pFileSyntax = GetOptions().getDefaultFileSyntax();
     }
 
     m_bracketsTree.setFileSyntax(m_pFileSyntax);
@@ -1515,7 +1514,7 @@ CXBracketsLogic::eCharProcessingResult CXBracketsLogic::autoBracketsFunc(int nBr
     const char next_ch = sciMsgr.getCharAt(nEditPos);
 
     if ( isWhiteSpaceOrNulChar(next_ch) ||
-         g_opt.getNextCharOK().find(static_cast<TCHAR>(next_ch)) != tstr::npos )
+         GetOptions().getNextCharOK().find(static_cast<TCHAR>(next_ch)) != tstr::npos )
     {
         bNextCharOK = true;
     }
@@ -1523,7 +1522,7 @@ CXBracketsLogic::eCharProcessingResult CXBracketsLogic::autoBracketsFunc(int nBr
     int nRightBracketType = getAutocompleteRightBracketType(sciMsgr, next_ch);
     if ( nRightBracketType != -1 )
     {
-        bNextCharOK = (nRightBracketType != nBracketType || g_opt.getBracketsRightExistsOK());
+        bNextCharOK = (nRightBracketType != nBracketType || GetOptions().getBracketsRightExistsOK());
     }
 
     const tBrPair* pBrPair = getAutoCompleteBrPair(nBracketType);
@@ -1549,13 +1548,13 @@ CXBracketsLogic::eCharProcessingResult CXBracketsLogic::autoBracketsFunc(int nBr
             if ( isCheckingDupPair )
             {
                 bDupPairOK = ( isWhiteSpaceOrNulChar(prev_ch) ||
-                    g_opt.getPrevCharOK().find(static_cast<TCHAR>(prev_ch)) != tstr::npos );
+                    GetOptions().getPrevCharOK().find(static_cast<TCHAR>(prev_ch)) != tstr::npos );
             }
 
             if ( isCheckingFlags && prev_ch != 0 )
             {
                 bFlagsOK = ( ((pBrPair->kind & bpakfWtSp) != 0 && isWhiteSpaceOrNulChar(prev_ch)) ||
-                     ((pBrPair->kind & bpakfDelim) != 0 && g_opt.getDelimiters().find(static_cast<TCHAR>(prev_ch)) != tstr::npos) );
+                     ((pBrPair->kind & bpakfDelim) != 0 && GetOptions().getDelimiters().find(static_cast<TCHAR>(prev_ch)) != tstr::npos) );
             }
 
             bPrevCharOK = (bDupPairOK && bFlagsOK);
@@ -1567,12 +1566,6 @@ CXBracketsLogic::eCharProcessingResult CXBracketsLogic::autoBracketsFunc(int nBr
 
     if ( bPrevCharOK && bNextCharOK )
     {
-        //if ( nBracketType == tbtTag )
-        //{
-        //    if ( g_opt.getBracketsDoTag2() )
-        //        nBracketType = tbtTag2;
-        //}
-
         sciMsgr.beginUndoAction();
         // inserting the brackets pair
         if ( origin == aboCharPress )
@@ -1618,7 +1611,7 @@ bool CXBracketsLogic::isEnclosedInBrackets(const char* pszTextLeft, const char* 
 
 bool CXBracketsLogic::autoBracketsOverSelectionFunc(int nBracketType)
 {
-    const UINT uSelAutoBr = g_opt.getBracketsSelAutoBr();
+    const UINT uSelAutoBr = GetOptions().getBracketsSelAutoBr();
     if ( uSelAutoBr == CXBracketsOptions::sabNone )
         return false; // nothing to do - not processed
 
@@ -1765,7 +1758,7 @@ unsigned int CXBracketsLogic::detectFileType(tstr* pFileExt)
 
         ::CharLower(pszExt);
 
-        if ( g_opt.IsSupportedFile(pszExt) )
+        if ( GetOptions().IsSupportedFile(pszExt) )
             uType |= tfmIsSupported;
         else if ( (uType & tfmIsSupported) != 0 )
             uType ^= tfmIsSupported;

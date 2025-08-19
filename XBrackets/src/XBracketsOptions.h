@@ -173,5 +173,7 @@ class CXBracketsOptions
         const tFileSyntax* m_pDefaultFileSyntax;
 };
 
+CXBracketsOptions& GetOptions();
+
 //---------------------------------------------------------------------------
 #endif

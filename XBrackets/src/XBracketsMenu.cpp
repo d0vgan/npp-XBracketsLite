@@ -5,10 +5,6 @@
 #include "resource.h"
 
 
-extern CXBracketsPlugin  thePlugin;
-extern CXBracketsOptions g_opt;
-
-
 FuncItem CXBracketsMenu::arrFuncItems[N_NBFUNCITEMS] = {
     { _T("Autocomplete brackets"),      funcAutocomplete,         0, false, NULL },
     { _T("Settings..."),                funcSettings,             0, false, NULL },
@@ -23,38 +19,38 @@ FuncItem CXBracketsMenu::arrFuncItems[N_NBFUNCITEMS] = {
 
 void CXBracketsMenu::funcAutocomplete()
 {
-    g_opt.setBracketsAutoComplete( !g_opt.getBracketsAutoComplete() );
+    GetOptions().setBracketsAutoComplete( !GetOptions().getBracketsAutoComplete() );
     UpdateMenuState();
 }
 
 void CXBracketsMenu::funcSettings()
 {
-    thePlugin.OnSettings();
+    GetPlugin().OnSettings();
 }
 
 void CXBracketsMenu::funcGoToMatchingBracket()
 {
-    thePlugin.GoToMatchingBracket();
+    GetPlugin().GoToMatchingBracket();
 }
 
 void CXBracketsMenu::funcGoToNearestBracket()
 {
-    thePlugin.GoToNearestBracket();
+    GetPlugin().GoToNearestBracket();
 }
 
 void CXBracketsMenu::funcSelToMatchingBracket()
 {
-    thePlugin.SelToMatchingBracket();
+    GetPlugin().SelToMatchingBracket();
 }
 
 void CXBracketsMenu::funcSelToNearestBrackets()
 {
-    thePlugin.SelToNearestBrackets();
+    GetPlugin().SelToNearestBrackets();
 }
 
 void CXBracketsMenu::funcAbout()
 {
-    thePlugin.PluginMessageBox(
+    GetPlugin().PluginMessageBox(
         _T("XBrackets Lite ver. 2.0.0\r\n") \
         _T("(C) Vitaliy Dovgan aka DV, Jan 2009 - Aug 2025\r\n") \
         _T("(C) Vitaliy Dovgan aka DV, Oct 2006 (original idea)"),
@@ -64,8 +60,8 @@ void CXBracketsMenu::funcAbout()
 
 INT_PTR CXBracketsMenu::PluginDialogBox(WORD idDlg, DLGPROC lpDlgFunc)
 {
-    // static function uses static (global) variable 'thePlugin'
-    return ::DialogBox( (HINSTANCE) thePlugin.getDllModule(),
+    // static function uses the static getter 'GetPlugin()'
+    return ::DialogBox( (HINSTANCE) GetPlugin().getDllModule(),
                MAKEINTRESOURCE(idDlg), m_nppMsgr.getNppWnd(), lpDlgFunc );
 }
 
@@ -73,11 +69,11 @@ void CXBracketsMenu::UpdateMenuState()
 {
     HMENU hMenu = ::GetMenu( m_nppMsgr.getNppWnd() );
     ::CheckMenuItem(hMenu, arrFuncItems[N_AUTOCOMPLETE]._cmdID,
-        MF_BYCOMMAND | (g_opt.getBracketsAutoComplete() ? MF_CHECKED : MF_UNCHECKED));
+        MF_BYCOMMAND | (GetOptions().getBracketsAutoComplete() ? MF_CHECKED : MF_UNCHECKED));
 
-    if ( g_opt.getBracketsAutoComplete() )
+    if ( GetOptions().getBracketsAutoComplete() )
     {
-        thePlugin.OnNppBufferActivated();
+        GetPlugin().OnNppBufferActivated();
     }
 }
 

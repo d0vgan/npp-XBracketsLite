@@ -63,7 +63,7 @@ typedef struct sXBracketsPairStruct {
   tXBracketsPairStruct brPair{};
   brPair.nPos = ::SendMessage(hSciWnd, SCI_GETCURRENTPOS, 0, 0);
   CommunicationInfo ci = { XBRM_GETMATCHINGBRACKETS, cszMyPlugin, (void *) &brPair };
-  BOOL bResult = (BOOL) ::SendMessage( hNppWnd, NPPM_MSGTOPLUGIN, (WPARAM) _T("XBrackets.dll"), (LPARAM) &ci );
+  ::SendMessage( hNppWnd, NPPM_MSGTOPLUGIN, (WPARAM) _T("XBrackets.dll"), (LPARAM) &ci );
 
   Possible results:
   1) brPair.pszLeftBr is not nullptr - matching brackets found;
@@ -95,7 +95,7 @@ typedef struct sXBracketsPairStruct {
   tXBracketsPairStruct brPair{};
   brPair.nPos = ::SendMessage(hSciWnd, SCI_GETCURRENTPOS, 0, 0);
   CommunicationInfo ci = { XBRM_GETNEARESTBRACKETS, cszMyPlugin, (void *) &brPair };
-  BOOL bResult = (BOOL) ::SendMessage( hNppWnd, NPPM_MSGTOPLUGIN, (WPARAM) _T("XBrackets.dll"), (LPARAM) &ci );
+  ::SendMessage( hNppWnd, NPPM_MSGTOPLUGIN, (WPARAM) _T("XBrackets.dll"), (LPARAM) &ci );
 
   Possible results:
   1) brPair.pszLeftBr is not nullptr - nearest brackets found;

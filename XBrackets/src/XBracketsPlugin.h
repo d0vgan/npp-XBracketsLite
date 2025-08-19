@@ -95,5 +95,7 @@ class CXBracketsPlugin : public CNppPlugin
         static LRESULT CALLBACK sciNewWndProc(HWND, UINT, WPARAM, LPARAM);
 };
 
+CXBracketsPlugin& GetPlugin();
+
 //---------------------------------------------------------------------------
 #endif

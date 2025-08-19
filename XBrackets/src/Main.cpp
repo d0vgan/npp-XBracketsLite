@@ -5,9 +5,6 @@
 #include "XBracketsPlugin.h"
 
 
-CXBracketsPlugin thePlugin;
-
-
 extern "C" BOOL APIENTRY DllMain( 
                         HINSTANCE hInstance, 
                         DWORD     dwReason, 
@@ -17,11 +14,11 @@ extern "C" BOOL APIENTRY DllMain(
     switch ( dwReason )
     {
         case DLL_PROCESS_ATTACH:
-            thePlugin.OnDllProcessAttach(hInstance);
+            GetPlugin().OnDllProcessAttach(hInstance);
             break;
 
         case DLL_PROCESS_DETACH:
-            thePlugin.OnDllProcessDetach();
+            GetPlugin().OnDllProcessDetach();
             break;
 
         case DLL_THREAD_ATTACH:
@@ -39,27 +36,27 @@ extern "C" BOOL APIENTRY DllMain(
 
 extern "C" __declspec(dllexport) void setInfo(NppData nppd)
 {
-    thePlugin.nppSetInfo(nppd);
+    GetPlugin().nppSetInfo(nppd);
 }
 
 extern "C" __declspec(dllexport) const TCHAR * getName()
 {
-    return thePlugin.nppGetName();
+    return GetPlugin().nppGetName();
 }
 
 extern "C" __declspec(dllexport) void beNotified(SCNotification* pscn)
 {
-    thePlugin.nppBeNotified(pscn);
+    GetPlugin().nppBeNotified(pscn);
 }
 
 extern "C" __declspec(dllexport) LRESULT messageProc(UINT Message, WPARAM wParam, LPARAM lParam)
 {
-    return thePlugin.nppMessageProc(Message, wParam, lParam);
+    return GetPlugin().nppMessageProc(Message, wParam, lParam);
 }
 
 extern "C" __declspec(dllexport) FuncItem * getFuncsArray(int* pnbFuncItems)
 {
-    return thePlugin.nppGetFuncsArray(pnbFuncItems);
+    return GetPlugin().nppGetFuncsArray(pnbFuncItems);
 }
 
 #ifdef UNICODE

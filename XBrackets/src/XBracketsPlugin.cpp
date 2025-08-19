@@ -3,8 +3,6 @@
 #include "core/npp_files/resource.h"
 #include "PluginCommunication/xbrackets_msgs.h"
 
-extern CXBracketsPlugin thePlugin;
-CXBracketsOptions g_opt;
 
 const TCHAR* CXBracketsPlugin::PLUGIN_NAME = _T("XBrackets Lite");
 
@@ -38,7 +36,7 @@ LRESULT CXBracketsPlugin::nppCallWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LP
 
 LRESULT CXBracketsPlugin::sciCallWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
-    WNDPROC pSciWndProc = thePlugin.getNppMsgr().getSciMainWnd() == hWnd ? sciOriginalWndProc1 : sciOriginalWndProc2;
+    WNDPROC pSciWndProc = GetPlugin().getNppMsgr().getSciMainWnd() == hWnd ? sciOriginalWndProc1 : sciOriginalWndProc2;
     auto pCallWindowProc = isNppWndUnicode ? CallWindowProcW : CallWindowProcA;
     return pCallWindowProc(pSciWndProc, hWnd, uMsg, wParam, lParam);
 }
@@ -51,26 +49,26 @@ LRESULT CALLBACK CXBracketsPlugin::nppNewWndProc(HWND hWnd, UINT uMsg, WPARAM wP
         switch ( id )
         {
             case IDM_FILE_RELOAD:
-                thePlugin.OnNppFileReload();
+                GetPlugin().OnNppFileReload();
                 break;
 
             case IDM_MACRO_STARTRECORDINGMACRO:
-                thePlugin.OnNppMacro(MACRO_START);
+                GetPlugin().OnNppMacro(MACRO_START);
                 break;
 
             case IDM_MACRO_STOPRECORDINGMACRO:
-                thePlugin.OnNppMacro(MACRO_STOP);
+                GetPlugin().OnNppMacro(MACRO_STOP);
                 break;
 
             case IDC_EDIT_TOGGLEMACRORECORDING:
-                thePlugin.OnNppMacro(MACRO_TOGGLE);
+                GetPlugin().OnNppMacro(MACRO_TOGGLE);
                 break;
 
             case IDM_MACRO_PLAYBACKRECORDEDMACRO:
                 {
-                    thePlugin.OnNppMacro(MACRO_START);
+                    GetPlugin().OnNppMacro(MACRO_START);
                     LRESULT lResult = nppCallWndProc(hWnd, uMsg, wParam, lParam);
-                    thePlugin.OnNppMacro(MACRO_STOP);
+                    GetPlugin().OnNppMacro(MACRO_STOP);
                     return lResult;
                 }
                 break;
@@ -78,9 +76,9 @@ LRESULT CALLBACK CXBracketsPlugin::nppNewWndProc(HWND hWnd, UINT uMsg, WPARAM wP
             default:
                 if ( (id >= ID_MACRO) && (id < ID_MACRO_LIMIT) )
                 {
-                    thePlugin.OnNppMacro(MACRO_START);
+                    GetPlugin().OnNppMacro(MACRO_START);
                     LRESULT lResult = nppCallWndProc(hWnd, uMsg, wParam, lParam);
-                    thePlugin.OnNppMacro(MACRO_STOP);
+                    GetPlugin().OnNppMacro(MACRO_STOP);
                     return lResult;
                 }
                 break;
@@ -88,17 +86,17 @@ LRESULT CALLBACK CXBracketsPlugin::nppNewWndProc(HWND hWnd, UINT uMsg, WPARAM wP
     }
     else if ( uMsg == NPPM_RELOADFILE )
     {
-        thePlugin.OnNppFileReload();
+        GetPlugin().OnNppFileReload();
     }
     else if ( uMsg == NPPM_RELOADBUFFERID )
     {
-        thePlugin.OnNppBufferReload();
+        GetPlugin().OnNppBufferReload();
     }
     else if ( uMsg == WM_MACRODLGRUNMACRO )
     {
-        thePlugin.OnNppMacro(MACRO_START);
+        GetPlugin().OnNppMacro(MACRO_START);
         LRESULT lResult = nppCallWndProc(hWnd, uMsg, wParam, lParam);
-        thePlugin.OnNppMacro(MACRO_STOP);
+        GetPlugin().OnNppMacro(MACRO_STOP);
         return lResult;
     }
 
@@ -110,7 +108,7 @@ LRESULT CALLBACK CXBracketsPlugin::sciNewWndProc(HWND hWnd, UINT uMsg, WPARAM wP
     if ( uMsg == WM_CHAR )
     {
         // this happens _before_ the character is processed by Scintilla
-        if ( thePlugin.OnSciChar(static_cast<int>(wParam)) != CXBracketsLogic::cprNone )
+        if ( GetPlugin().OnSciChar(static_cast<int>(wParam)) != CXBracketsLogic::cprNone )
         {
             return 0; // processed by XBrackets, don't forward to Scintilla
         }
@@ -119,7 +117,7 @@ LRESULT CALLBACK CXBracketsPlugin::sciNewWndProc(HWND hWnd, UINT uMsg, WPARAM wP
     {
         if ( wParam == VK_DELETE || wParam == VK_BACK )
         {
-            thePlugin.OnSciTextChanged(nullptr);
+            GetPlugin().OnSciTextChanged(nullptr);
         }
     }
 
@@ -237,7 +235,7 @@ void CXBracketsPlugin::OnNppReady()
     m_BracketsLogic.UpdateFileType();
 
     unsigned int uSciFlags = (SC_MOD_INSERTTEXT | SC_MOD_DELETETEXT);
-    if ( g_opt.getUpdateTreeAllowed() )
+    if ( GetOptions().getUpdateTreeAllowed() )
     {
         uSciFlags |= (SC_MOD_BEFOREINSERT | SC_MOD_BEFOREDELETE);
     }
@@ -298,16 +296,16 @@ void CXBracketsPlugin::OnNppMacro(int nMacroState)
 
     if ( isNppMacroStarted )
     {
-        nPrevAutoComplete = g_opt.getBracketsAutoComplete() ? 1 : 0;
-        g_opt.setBracketsAutoComplete(false);
+        nPrevAutoComplete = GetOptions().getBracketsAutoComplete() ? 1 : 0;
+        GetOptions().setBracketsAutoComplete(false);
         m_BracketsLogic.InvalidateCachedBrackets(CXBracketsLogic::icbfAll);
     }
     else
     {
         if ( nPrevAutoComplete < 0 ) // initialize now
-            nPrevAutoComplete = g_opt.getBracketsAutoComplete() ? 1 : 0;
+            nPrevAutoComplete = GetOptions().getBracketsAutoComplete() ? 1 : 0;
 
-        g_opt.setBracketsAutoComplete(nPrevAutoComplete > 0);
+        GetOptions().setBracketsAutoComplete(nPrevAutoComplete > 0);
         m_BracketsLogic.UpdateFileType();
     }
 
@@ -415,7 +413,7 @@ void CXBracketsPlugin::ReadOptions()
     m_sUserConfigFilePath += _T("XBrackets_UserConfig.json");
     m_sIniFilePath += m_sIniFileName;
 
-    g_opt.ReadOptions(m_sIniFilePath.c_str());
+    GetOptions().ReadOptions(m_sIniFilePath.c_str());
 
     m_sConfigFilePath = getDllDir();
     m_sConfigFilePath.append(_T("\\XBrackets_Config.json"));
@@ -432,12 +430,12 @@ void CXBracketsPlugin::ReadOptions()
         }
     }
 
-    const tstr err = g_opt.ReadConfig(isUserConfig ? m_sUserConfigFilePath : m_sConfigFilePath);
+    const tstr err = GetOptions().ReadConfig(isUserConfig ? m_sUserConfigFilePath : m_sConfigFilePath);
     if ( !err.empty() )
     {
         if ( isUserConfig )
         {
-            g_opt.ReadConfig(m_sConfigFilePath);
+            GetOptions().ReadConfig(m_sConfigFilePath);
             onConfigFileError(m_sUserConfigFilePath, err);
         }
         else
@@ -453,9 +451,9 @@ void CXBracketsPlugin::ReadOptions()
 
 void CXBracketsPlugin::SaveOptions()
 {
-    if ( g_opt.MustBeSaved() )
+    if ( GetOptions().MustBeSaved() )
     {
-        g_opt.SaveOptions(m_sIniFilePath.c_str());
+        GetOptions().SaveOptions(m_sIniFilePath.c_str());
     }
 }
 
@@ -474,7 +472,7 @@ void CXBracketsPlugin::OnSettings()
 
 void CXBracketsPlugin::OnConfigFileChanged(const tstr& configFilePath)
 {
-    const tstr err = g_opt.ReadConfig(configFilePath);
+    const tstr err = GetOptions().ReadConfig(configFilePath);
     if ( !err.empty() )
     {
         onConfigFileError(configFilePath, err);
@@ -509,4 +507,11 @@ void CXBracketsPlugin::PluginMessageBox(const TCHAR* szMessageText, UINT uType)
         PLUGIN_NAME,
         uType
       );
+}
+
+CXBracketsPlugin& GetPlugin()
+{
+    static CXBracketsPlugin thePlugin;
+
+    return thePlugin;
 }

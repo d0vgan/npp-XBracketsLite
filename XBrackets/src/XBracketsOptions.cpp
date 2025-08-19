@@ -526,3 +526,10 @@ void CXBracketsOptions::SaveOptions(const TCHAR* szIniFilePath)
 {
     (szIniFilePath);
 }
+
+CXBracketsOptions& GetOptions()
+{
+    static CXBracketsOptions theOptions;
+
+    return theOptions;
+}
