@@ -58,6 +58,7 @@ class CXBracketsLogic
 public:
     using tstr = XBrackets::tstr;
     using tBrPair = XBrackets::tBrPair;
+    using tBrPairItem = XBrackets::tBrPairItem;
     using tFileSyntax = XBrackets::tFileSyntax;
 
     enum eCharProcessingResult {
@@ -90,6 +91,7 @@ public:
     eCharProcessingResult OnCharPress(const int ch);
     eCharProcessingResult OnTextAutoCompleted(const char* text, Sci_Position pos);
     void PerformBracketsAction(eGetBracketsAction nBrAction);
+    const tBrPairItem* FindBracketsByPos(Sci_Position pos, bool isExactPos);
 
 private:
     enum eAutoBracketOrigin {

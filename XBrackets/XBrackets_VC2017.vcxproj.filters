@@ -25,6 +25,9 @@
     <Filter Include="Source Files\core">
       <UniqueIdentifier>{11b4e237-096a-4a0d-9ec6-c74221e74d14}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\PluginCommunication">
+      <UniqueIdentifier>{f8ebace0-2dd5-4815-a6d5-d519e1053f5b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Main.cpp">
@@ -109,6 +112,9 @@
     </ClInclude>
     <ClInclude Include="src\core\SciMessager.h">
       <Filter>Header Files\core</Filter>
+    </ClInclude>
+    <ClInclude Include="src\PluginCommunication\xbrackets_msgs.h">
+      <Filter>Header Files\PluginCommunication</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

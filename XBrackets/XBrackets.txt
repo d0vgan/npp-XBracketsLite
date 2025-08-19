@@ -28,6 +28,11 @@ XBrackets Lite, starting from the version 2.0, adds the following functions:
     when the caret is between bracket or quote characters, selects the text within
     the surrounding brackets or quotes, e.g. "ab|c" becomes "|abc|"
 
+XBrackets Lite supports the plugins communication by means of NPPM_MSGTOPLUGIN.
+Refer to "XBrackets\src\PluginCommunication\xbrackets_msgs.h" for the available
+XBRM messages. Refer to "XBracketsPluginMsgTester\src\MsgTesterMenu.cpp" for the
+working example.
+
 The "Go To" and "Sel To" functions are based on a brackets tree which is built by
 user-defined rules specified in the file "plugins\XBrackets\XBrackets_Config.json".
 This file is a static configuration file similar to Notepad++'s "stylers.model.xml"
@@ -299,6 +304,7 @@ v2.0 - Aug 2025
 + now the configuration is stored in JSON format
 + file type-specific (language-specific) rules are allowed
 + multi-character brackets and quotes are supported
++ plugins communication by means of NPPM_MSGTOPLUGIN added
 * "XBrackets.ini" is no more used
 * thanks to astewart77 for testing and suggestions during the development
 

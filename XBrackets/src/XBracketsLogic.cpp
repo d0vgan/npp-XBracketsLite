@@ -1284,6 +1284,18 @@ void CXBracketsLogic::PerformBracketsAction(eGetBracketsAction nBrAction)
     jumpToPairBracket(sciMsgr, state, isGoTo);
 }
 
+const tBrPairItem* CXBracketsLogic::FindBracketsByPos(Sci_Position pos, bool isExactPos)
+{
+    if ( m_bracketsTree.isTreeEmpty() )
+    {
+        CSciMessager sciMsgr(m_nppMsgr.getCurrentScintillaWnd());
+        m_bracketsTree.buildTree(sciMsgr);
+    }
+
+    unsigned int uBrPosFlags = 0;
+    return m_bracketsTree.findPairByPos(pos, isExactPos, &uBrPosFlags);
+}
+
 void CXBracketsLogic::jumpToPairBracket(CSciMessager& sciMsgr, const tBracketsJumpState& state, bool isGoTo)
 {
     sciMsgr.setSel(state.nSelStart, state.nSelEnd);

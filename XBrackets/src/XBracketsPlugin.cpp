@@ -1,6 +1,7 @@
 #include "XBracketsPlugin.h"
 #include "XBracketsOptions.h"
 #include "core/npp_files/resource.h"
+#include "PluginCommunication/xbrackets_msgs.h"
 
 extern CXBracketsPlugin thePlugin;
 CXBracketsOptions g_opt;
@@ -134,6 +135,16 @@ FuncItem* CXBracketsPlugin::nppGetFuncsArray(int* pnbFuncItems)
 const TCHAR* CXBracketsPlugin::nppGetName()
 {
     return PLUGIN_NAME;
+}
+
+LRESULT CXBracketsPlugin::nppMessageProc(UINT uMessage, WPARAM wParam, LPARAM lParam)
+{
+    if ( uMessage == NPPM_MSGTOPLUGIN )
+    {
+        return OnNppMsgToPlugin(reinterpret_cast<CommunicationInfo *>(lParam));
+    }
+
+    return 1;
 }
 
 void CXBracketsPlugin::nppBeNotified(SCNotification* pscn)
@@ -301,6 +312,41 @@ void CXBracketsPlugin::OnNppMacro(int nMacroState)
     }
 
     CXBracketsMenu::AllowAutocomplete(!isNppMacroStarted);
+}
+
+LRESULT CXBracketsPlugin::OnNppMsgToPlugin(CommunicationInfo* pInfo)
+{
+    if ( pInfo == nullptr || pInfo->info == nullptr )
+        return FALSE;
+
+    switch ( pInfo->internalMsg )
+    {
+        case XBRM_GETMATCHINGBRACKETS:
+        case XBRM_GETNEARESTBRACKETS:
+        {
+            tXBracketsPairStruct* pBrPair = reinterpret_cast<tXBracketsPairStruct *>(pInfo->info);
+            const Sci_Position nPos = pBrPair->nPos;
+            ::ZeroMemory(pBrPair, sizeof(tXBracketsPairStruct));
+            pBrPair->nPos = nPos;
+
+            const bool isExactPos = (pInfo->internalMsg == XBRM_GETMATCHINGBRACKETS);
+            const XBrackets::tBrPairItem* pItem = m_BracketsLogic.FindBracketsByPos(nPos, isExactPos);
+            if ( pItem != nullptr )
+            {
+                pBrPair->pszLeftBr = pItem->pBrPair->leftBr.c_str();
+                pBrPair->pszRightBr = pItem->pBrPair->rightBr.c_str();
+                pBrPair->nLeftBrLen = static_cast<Sci_Position>(pItem->pBrPair->leftBr.length());
+                pBrPair->nRightBrLen = static_cast<Sci_Position>(pItem->pBrPair->rightBr.length());
+                pBrPair->nLeftBrPos = pItem->nLeftBrPos;
+                pBrPair->nRightBrPos = pItem->nRightBrPos;
+                return TRUE;
+            }
+
+            break;
+        }
+    }
+
+    return FALSE;
 }
 
 CXBracketsLogic::eCharProcessingResult CXBracketsPlugin::OnSciChar(const int ch)

@@ -28,6 +28,7 @@ class CXBracketsPlugin : public CNppPlugin
         virtual void         nppBeNotified(SCNotification* pscn) override;
         virtual FuncItem*    nppGetFuncsArray(int* pnbFuncItems) override;
         virtual const TCHAR* nppGetName() override;
+        virtual LRESULT      nppMessageProc(UINT uMessage, WPARAM wParam, LPARAM lParam) override;
 
         // common n++ notification
         virtual void OnNppSetInfo(const NppData& nppd) override;
@@ -41,6 +42,7 @@ class CXBracketsPlugin : public CNppPlugin
         void OnNppReady();
         void OnNppShutdown();
         void OnNppMacro(int nMacroState);
+        LRESULT OnNppMsgToPlugin(CommunicationInfo* pInfo);
 
         // custom scintilla notifications
         CXBracketsLogic::eCharProcessingResult OnSciChar(const int ch);
