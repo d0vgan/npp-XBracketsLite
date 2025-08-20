@@ -1564,27 +1564,48 @@ CXBracketsLogic::eCharProcessingResult CXBracketsLogic::autoBracketsFunc(int nBr
             bPrevCharOK = false;
     }
 
-    if ( bPrevCharOK && bNextCharOK )
-    {
-        sciMsgr.beginUndoAction();
-        // inserting the brackets pair
-        if ( origin == aboCharPress )
-        {
-            std::string brPair;
-            brPair.reserve(1 + pBrPair->rightBr.length());
-            brPair += pBrPair->leftBr.back();
-            brPair += pBrPair->rightBr;
-            sciMsgr.replaceSelText(brPair.c_str());
-            // placing the caret between brackets
-            ++nEditPos;
-        }
-        else // aboTextAutoCompleted
-        {
-            sciMsgr.replaceSelText(pBrPair->rightBr.c_str());
-        }
-        sciMsgr.setSel(nEditPos, nEditPos);
-        sciMsgr.endUndoAction();
+    if ( !bPrevCharOK || !bNextCharOK )
+        return cprNone;
 
+    nEditEndPos = nEditPos;
+
+    size_t nBrLen = pBrPair->rightBr.length(); // the right bracket
+    if ( origin == aboCharPress )
+    {
+        ++nBrLen; // the last character of the left bracket
+        ++nEditPos; // placing the caret between the brackets
+        ++nEditEndPos;
+    }
+    if ( (pBrPair->kind & bpakfAddSpSel) != 0 )
+    {
+        ++nBrLen; // the additional space
+        ++nEditEndPos; // selecting the space between the brackets
+    }
+    else if ( (pBrPair->kind & bpakfAddTwoSp) != 0 )
+    {
+        nBrLen += 2; // two additional spaces
+        ++nEditPos; // between the two spaces
+        ++nEditEndPos;
+    }
+
+    std::string sBr;
+    sBr.reserve(nBrLen);
+    if ( origin == aboCharPress )
+        sBr += pBrPair->leftBr.back(); // the last character of the left bracket
+    if ( (pBrPair->kind & bpakfAddSpSel) != 0 )
+        sBr += ' '; // the additional space
+    else if ( (pBrPair->kind & bpakfAddTwoSp) != 0 )
+        sBr += "  "; // two additional spaces
+    sBr += pBrPair->rightBr; // the right bracket
+
+    sciMsgr.beginUndoAction();
+    // inserting the right bracket
+    sciMsgr.replaceSelText(sBr.c_str());
+    sciMsgr.setSel(nEditPos, nEditEndPos);
+    sciMsgr.endUndoAction();
+
+    if ( (pBrPair->kind & (bpakfAddSpSel | bpakfAddTwoSp)) == 0 )
+    {
         m_nAutoRightBracketPos = nEditPos;
         m_nAutoRightBracketType = nBracketType;
         if ( origin == aboTextAutoCompleted )
@@ -1592,10 +1613,9 @@ CXBracketsLogic::eCharProcessingResult CXBracketsLogic::autoBracketsFunc(int nBr
             m_nAutoRightBracketType |= abtfTextJustAutoCompleted;
         }
         m_nAutoRightBracketOffset = 0;
-        return cprBrAutoCompl;
     }
 
-    return cprNone;
+    return cprBrAutoCompl;
 }
 
 bool CXBracketsLogic::isEnclosedInBrackets(const char* pszTextLeft, const char* pszTextRight, int* pnBracketType, bool bInSelection)

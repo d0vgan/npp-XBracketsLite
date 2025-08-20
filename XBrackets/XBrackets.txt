@@ -23,10 +23,10 @@ XBrackets Lite, starting from the version 2.0, adds the following functions:
     brackets or quotes, e.g. |( ) becomes |( )|
 * Go To Nearest Bracket
     when the caret is between bracket or quote characters, jumps to the nearest
-    surrounding bracket or quote, e.g. "ab|c" becomes "|abc"
+    surrounding bracket or quote, e.g. "ab|cd" becomes "|abcd"
 * Sel To Nearest Brackets
     when the caret is between bracket or quote characters, selects the text within
-    the surrounding brackets or quotes, e.g. "ab|c" becomes "|abc|"
+    the surrounding brackets or quotes, e.g. "ab|cd" becomes "|abcd|"
 
 XBrackets Lite supports the plugins communication by means of NPPM_MSGTOPLUGIN.
 Refer to "XBrackets\src\PluginCommunication\xbrackets_msgs.h" for the available
@@ -116,6 +116,13 @@ Each item in the "fileSyntax" array is a JSON object with the following properti
       4 - a delimiter must be present before a left (opening) bracket (see "Delimiters" below).
           Note: when a given pair consists of identical left and right bracket, the
           "Prev_Char_OK" characters are additionally checked, unless 1 is specified.
+      128 - a space character will be added between the brackets, and this character
+          will be selected. For example, `[ "begin", "end", 134 ]` in Pascal will
+          result in `begin| |end`.
+      256 - two space characters will be added between the brackets, and the caret
+          will be placed between them. For example, `[ "begin", "end", 262 ]` in
+          Pascal will result in `begin | end`.
+          Note: when the sum of (128 + 256) is used, it is treated as 128.
 
 
 The plugin's settings under the "settings" node:
