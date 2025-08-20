@@ -1149,25 +1149,38 @@ void CXBracketsLogic::PerformBracketsAction(eGetBracketsAction nBrAction)
             }
 
             unsigned int uBrPosFlags = 0;
-            const auto pBrItem = m_bracketsTree.findPairByPos(state.nLeftBrPos, false, &uBrPosFlags);
-            if ( pBrItem != nullptr &&
-                 pBrItem->nLeftBrPos <= state.nLeftBrPos &&
-                 pBrItem->nRightBrPos >= state.nRightBrPos )
+            auto pBrItem = m_bracketsTree.findPairByPos(state.nLeftBrPos, false, &uBrPosFlags);
+            auto pBrItem2 = m_bracketsTree.findPairByPos(state.nRightBrPos, false, &uBrPosFlags);
+            if ( pBrItem == nullptr ||
+                 (pBrItem2 != nullptr && pBrItem2->nRightBrPos - pBrItem2->nLeftBrPos > pBrItem->nRightBrPos - pBrItem->nLeftBrPos) )
             {
-                // new selection
-                state.nSelStart = pBrItem->nLeftBrPos;
-                state.nSelEnd = pBrItem->nRightBrPos;
-                if ( state.nSelStart == state.nLeftBrPos && state.nSelEnd == state.nRightBrPos )
+                pBrItem = pBrItem2;
+            }
+            if ( pBrItem != nullptr )
+            {
+                const Sci_Position nLeftBrLen = static_cast<Sci_Position>(pBrItem->pBrPair->leftBr.length());
+                const Sci_Position nRightBrLen = static_cast<Sci_Position>(pBrItem->pBrPair->rightBr.length());
+
+                if ( (pBrItem->nLeftBrPos - nLeftBrLen < state.nLeftBrPos && pBrItem->nRightBrPos + nRightBrLen >= state.nRightBrPos) ||
+                     (pBrItem->nLeftBrPos - nLeftBrLen <= state.nLeftBrPos && pBrItem->nRightBrPos + nRightBrLen > state.nRightBrPos) )
                 {
-                    state.nSelStart -= static_cast<Sci_Position>(pBrItem->pBrPair->leftBr.length());  //  (|  ->  |(
-                    state.nSelEnd += static_cast<Sci_Position>(pBrItem->pBrPair->rightBr.length()); //  |)  ->  )|
+                    // new selection
+                    state.nSelStart = pBrItem->nLeftBrPos;
+                    state.nSelEnd = pBrItem->nRightBrPos;
+                    if ( state.nLeftBrPos < state.nSelStart ||
+                         state.nRightBrPos > state.nSelEnd ||
+                         (state.nLeftBrPos == state.nSelStart && state.nRightBrPos == state.nSelEnd) )
+                    {
+                        state.nSelStart -= nLeftBrLen;  //  (|  ->  |(
+                        state.nSelEnd += nRightBrLen; //  |)  ->  )|
+                    }
+                    if ( sciMsgr.getCurrentPos() == state.nLeftBrPos )
+                    {
+                        // preserving the selection direction
+                        std::swap(state.nSelEnd, state.nSelStart);
+                    }
+                    isWidened = true;
                 }
-                if ( sciMsgr.getCurrentPos() == state.nLeftBrPos )
-                {
-                    // preserving the selection direction
-                    std::swap(state.nSelEnd, state.nSelStart);
-                }
-                isWidened = true;
             }
         }
 
@@ -1200,34 +1213,34 @@ void CXBracketsLogic::PerformBracketsAction(eGetBracketsAction nBrAction)
 
     Sci_Position nLeftBrPosToSet = state.nLeftBrPos;
     Sci_Position nRightBrPosToSet = state.nRightBrPos;
+    const Sci_Position nLeftBrLen = static_cast<Sci_Position>(pBrItem->pBrPair->leftBr.length());
+    const Sci_Position nRightBrLen = static_cast<Sci_Position>(pBrItem->pBrPair->rightBr.length());
 
-    if ( uBrPosFlags == (CBracketsTree::bpfLeftBr | CBracketsTree::bpfBeforeBr) ||
-         uBrPosFlags == (CBracketsTree::bpfRightBr | CBracketsTree::bpfAfterBr) )
+    if ( ((uBrPosFlags & CBracketsTree::bpfLeftBr) != 0 && state.nSelStart < nLeftBrPosToSet) ||
+         ((uBrPosFlags & CBracketsTree::bpfRightBr) != 0 && state.nSelStart > nRightBrPosToSet) )
     {
         // real position
-        state.nLeftBrPos -= static_cast<Sci_Position>(pBrItem->pBrPair->leftBr.length());  //  (|  ->  |(
-        state.nRightBrPos += static_cast<Sci_Position>(pBrItem->pBrPair->rightBr.length()); //  |)  ->  )|
-        nLeftBrPosToSet = state.nLeftBrPos;
-        nRightBrPosToSet = state.nRightBrPos;
+        nLeftBrPosToSet -= nLeftBrLen;  //  (|  ->  |(
+        nRightBrPosToSet += nRightBrLen; //  |)  ->  )|
     }
     else if ( (nBrAction == baGoToNearest && (GetOptions().getGoToNearestFlags() & CXBracketsOptions::gnbfOuterPos) != 0) ||
               (nBrAction == baSelToNearest && (GetOptions().getSelToNearestFlags() & CXBracketsOptions::snbfOuterPos) != 0) )
     {
         // position to set
-        nLeftBrPosToSet -= static_cast<Sci_Position>(pBrItem->pBrPair->leftBr.length());  //  (|  ->  |(
-        nRightBrPosToSet += static_cast<Sci_Position>(pBrItem->pBrPair->rightBr.length()); //  |)  ->  )|
+        nLeftBrPosToSet -= nLeftBrLen;  //  (|  ->  |(
+        nRightBrPosToSet += nRightBrLen; //  |)  ->  )|
     }
 
     const bool isGoTo = (nBrAction == baGoToMatching || nBrAction == baGoToNearest);
     if ( isGoTo )
     {
-        if ( state.nSelStart == state.nLeftBrPos )
+        if ( state.nSelStart <= state.nLeftBrPos && state.nSelStart >= state.nLeftBrPos - nLeftBrLen )
         {
             // new selection
             state.nSelStart = nRightBrPosToSet;
             state.nSelEnd = nRightBrPosToSet;
         }
-        else if ( state.nSelStart == state.nRightBrPos )
+        else if ( state.nSelStart >= state.nRightBrPos && state.nSelStart <= state.nRightBrPos + nRightBrLen )
         {
             // new selection
             state.nSelStart = nLeftBrPosToSet;
@@ -1266,7 +1279,7 @@ void CXBracketsLogic::PerformBracketsAction(eGetBracketsAction nBrAction)
     }
     else // baSelToMatching || baSelToNearest
     {
-        if ( state.nSelStart == state.nRightBrPos )
+        if ( state.nSelStart >= state.nRightBrPos && state.nSelStart <= state.nRightBrPos + nRightBrLen )
         {
             // new selection
             state.nSelStart = nRightBrPosToSet;
