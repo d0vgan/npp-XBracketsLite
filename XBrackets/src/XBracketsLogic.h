@@ -109,6 +109,8 @@ private:
         Sci_Position nSelEnd{-1};
         Sci_Position nLeftBrPos{-1};
         Sci_Position nRightBrPos{-1};
+        Sci_Position nLeftBrLen{1}; // default length
+        Sci_Position nRightBrLen{1}; // default length
     };
 
     // internal vars
