@@ -433,6 +433,25 @@
         [ "\"", "\"" ],
         [ "'", "'" ]
       ]
+    },
+    {
+      "name": "Markdown",
+      "fileExtensions": [ "md" ],
+      "syntax": [
+        [ "{", "}", "multi-line-brackets" ],
+        [ "(", ")", "multi-line-brackets" ],
+        [ "[", "]", "multi-line-brackets" ],
+        [ "\"", "\"", "single-line-quotes" ],
+        [ "`", "`", "single-line-quotes" ],
+        [ "``", "``", "multi-line-quotes" ]
+      ],
+      "autocomplete": [
+        [ "{", "}" ],
+        [ "(", ")" ],
+        [ "[", "]" ],
+        [ "\"", "\"" ],
+        [ "`", "`" ]
+      ]
     }
   ]
 }
