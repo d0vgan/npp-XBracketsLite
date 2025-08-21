@@ -65,7 +65,35 @@ Each item in the "fileSyntax" array is a JSON object with the following properti
 
   "parent": "Parent Item Name" (optional)
     identifies the parent item. The current item inherits all the properties of
-    its parent and can override only the pair kinds under its "syntax" array.
+    its parent (except the "fileExtensions") and can override only the pair kinds
+    under its "syntax" array.
+    To illustrate the last statement, let's assume we have a parent file syntax:
+      {
+        "name": "Parent Syntax",
+        "fileExtensions": [ "ext1", "ext2" ], // applies to "ext1" and "ext2"
+        "syntax": [
+          [ "{", "}", "single-line-brackets" ]
+        ],
+        "autocomplete": [
+          [ "{", "}" ]
+        ]
+      },
+    and a child file syntax:
+      {
+        "name": "Child Syntax",
+        "parent": "Parent Syntax",    // inherits everything from the parent
+        "fileExtensions": [ "ext3" ], // applies only to "ext3"
+        "syntax": [
+          [ "{", "}", "multi-line-brackets" ], // overrides the brackets kind
+          [ "(", ")", "multi-line-brackets" ]  // adds new brackets
+        ],
+        "autocomplete": [
+          [ "{", "}", 1 ], // overrides the optional attributes
+          [ "(", ")" ]     // adds new brackets
+        ]
+      }
+    As we can see, a child file syntax can add new items and override brackets' kinds
+    and optional attributes.
 
   "fileExtensions": [ "ext1", "ext2", ... ]
   "fileExtensions": []
