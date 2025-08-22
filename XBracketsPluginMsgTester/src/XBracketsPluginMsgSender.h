@@ -2,7 +2,7 @@
 #define _xbrackets_plugin_msg_sender_h_
 //---------------------------------------------------------------------------
 #include "core/NppPluginMsgSender.h"
-#include "xbrackets_msgs.h"
+#include "PluginCommunication/xbrackets_msgs.h"
 
 
 class CXBracketsPluginMsgSender : public CNppPluginMsgSender
@@ -23,19 +23,19 @@ class CXBracketsPluginMsgSender : public CNppPluginMsgSender
             m_destModuleName = destModuleName;
         }
 
-        BOOL SendNpeMsg(long internalMsg, void* info)
+        BOOL SendXbrMsg(long internalMsg, void* info)
         {
             return SendMsg( m_destModuleName.c_str(), internalMsg, info );
         }
 
         BOOL XBrGetMatchingBrackets(tXBracketsPairStruct* pBrPair)
         {
-            return SendNpeMsg( XBRM_GETMATCHINGBRACKETS, (void *) pBrPair );
+            return SendXbrMsg( XBRM_GETMATCHINGBRACKETS, (void *) pBrPair );
         }
 
         BOOL XBrGetNearestBrackets(tXBracketsPairStruct* pBrPair)
         {
-            return SendNpeMsg( XBRM_GETNEARESTBRACKETS, (void *) pBrPair );
+            return SendXbrMsg( XBRM_GETNEARESTBRACKETS, (void *) pBrPair );
         }
 };
 

@@ -1,5 +1,5 @@
 #include "MsgTester.h"
-#include "xbrackets_msgs.h"
+#include "PluginCommunication/xbrackets_msgs.h"
 #include "XBracketsPluginMsgSender.h"
 
 

@@ -19,6 +19,9 @@
     <Filter Include="Source Files\core">
       <UniqueIdentifier>{ac8c0d99-a88c-4e06-9955-df602ee06eb3}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\PluginCommunication">
+      <UniqueIdentifier>{92513950-975d-49a2-8a3c-53e87cb538fb}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Main.cpp">
@@ -30,16 +33,16 @@
     <ClCompile Include="src\MsgTesterMenu.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\core\NppMessager.cpp">
+    <ClCompile Include="..\XBrackets\src\core\NppMessager.cpp">
       <Filter>Source Files\core</Filter>
     </ClCompile>
-    <ClCompile Include="src\core\NppPlugin.cpp">
+    <ClCompile Include="..\XBrackets\src\core\NppPlugin.cpp">
       <Filter>Source Files\core</Filter>
     </ClCompile>
-    <ClCompile Include="src\core\NppPluginMenu.cpp">
+    <ClCompile Include="..\XBrackets\src\core\NppPluginMenu.cpp">
       <Filter>Source Files\core</Filter>
     </ClCompile>
-    <ClCompile Include="src\core\SciMessager.cpp">
+    <ClCompile Include="..\XBrackets\src\core\SciMessager.cpp">
       <Filter>Source Files\core</Filter>
     </ClCompile>
   </ItemGroup>
@@ -50,29 +53,29 @@
     <ClInclude Include="src\MsgTesterMenu.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\xbrackets_msgs.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\XBracketsPluginMsgSender.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\core\base.h">
+    <ClInclude Include="..\XBrackets\src\core\base.h">
       <Filter>Header Files\core</Filter>
     </ClInclude>
-    <ClInclude Include="src\core\NppMessager.h">
+    <ClInclude Include="..\XBrackets\src\core\NppMessager.h">
       <Filter>Header Files\core</Filter>
     </ClInclude>
-    <ClInclude Include="src\core\NppPlugin.h">
+    <ClInclude Include="..\XBrackets\src\core\NppPlugin.h">
       <Filter>Header Files\core</Filter>
     </ClInclude>
-    <ClInclude Include="src\core\NppPluginMenu.h">
+    <ClInclude Include="..\XBrackets\src\core\NppPluginMenu.h">
       <Filter>Header Files\core</Filter>
     </ClInclude>
-    <ClInclude Include="src\core\NppPluginMsgSender.h">
+    <ClInclude Include="..\XBrackets\src\core\NppPluginMsgSender.h">
       <Filter>Header Files\core</Filter>
     </ClInclude>
-    <ClInclude Include="src\core\SciMessager.h">
+    <ClInclude Include="..\XBrackets\src\core\SciMessager.h">
       <Filter>Header Files\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\XBrackets\src\PluginCommunication\xbrackets_msgs.h">
+      <Filter>Header Files\PluginCommunication</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

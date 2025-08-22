@@ -133,6 +133,7 @@
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
       <AdditionalOptions>/Zc:threadSafeInit- %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\XBrackets\src</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -152,6 +153,7 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\XBrackets\src</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -169,6 +171,7 @@
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <AdditionalOptions>/Zc:threadSafeInit- %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\XBrackets\src</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -188,6 +191,7 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\XBrackets\src</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -207,6 +211,7 @@
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <AdditionalOptions>/Zc:threadSafeInit- %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\XBrackets\src</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -226,6 +231,7 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\XBrackets\src</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -238,25 +244,25 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="src\core\NppMessager.cpp" />
-    <ClCompile Include="src\core\NppPlugin.cpp" />
-    <ClCompile Include="src\core\NppPluginMenu.cpp" />
-    <ClCompile Include="src\core\SciMessager.cpp" />
+    <ClCompile Include="..\XBrackets\src\core\NppMessager.cpp" />
+    <ClCompile Include="..\XBrackets\src\core\NppPlugin.cpp" />
+    <ClCompile Include="..\XBrackets\src\core\NppPluginMenu.cpp" />
+    <ClCompile Include="..\XBrackets\src\core\SciMessager.cpp" />
     <ClCompile Include="src\Main.cpp" />
     <ClCompile Include="src\MsgTester.cpp" />
     <ClCompile Include="src\MsgTesterMenu.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\core\base.h" />
-    <ClInclude Include="src\core\NppMessager.h" />
-    <ClInclude Include="src\core\NppPlugin.h" />
-    <ClInclude Include="src\core\NppPluginMenu.h" />
-    <ClInclude Include="src\core\NppPluginMsgSender.h" />
-    <ClInclude Include="src\core\SciMessager.h" />
+    <ClInclude Include="..\XBrackets\src\core\base.h" />
+    <ClInclude Include="..\XBrackets\src\core\NppMessager.h" />
+    <ClInclude Include="..\XBrackets\src\core\NppPlugin.h" />
+    <ClInclude Include="..\XBrackets\src\core\NppPluginMenu.h" />
+    <ClInclude Include="..\XBrackets\src\core\NppPluginMsgSender.h" />
+    <ClInclude Include="..\XBrackets\src\core\SciMessager.h" />
+    <ClInclude Include="..\XBrackets\src\PluginCommunication\xbrackets_msgs.h" />
     <ClInclude Include="src\MsgTester.h" />
     <ClInclude Include="src\MsgTesterMenu.h" />
     <ClInclude Include="src\XBracketsPluginMsgSender.h" />
-    <ClInclude Include="src\xbrackets_msgs.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
