@@ -86,7 +86,7 @@ public:
 
     // interaction with the plugin
     void SetNppData(const NppData& nppd);
-    void UpdateFileType(unsigned int uInvalidateFlags = icbfAll);
+    bool UpdateFileType(unsigned int uInvalidateFlags = icbfAll);
     void InvalidateCachedBrackets(unsigned int uInvalidateFlags, SCNotification* pscn = nullptr);
     eCharProcessingResult OnCharPress(const int ch);
     eCharProcessingResult OnTextAutoCompleted(const char* text, Sci_Position pos);
@@ -121,6 +121,7 @@ private:
     int          m_nAutoRightBracketType{-1};
     int          m_nAutoRightBracketOffset{-1};
     unsigned int m_uFileType{XBrackets::tfmIsSupported};
+    tstr         m_fileExtension;
 
 private:
     // custom functions

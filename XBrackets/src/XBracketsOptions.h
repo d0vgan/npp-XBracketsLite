@@ -120,6 +120,11 @@ class CXBracketsOptions
             return m_nJumpPairLineDiff;
         }
 
+        int getSciStyleInd() const
+        {
+            return m_nSciStyleInd;
+        }
+
         const tstr& getNextCharOK() const
         {
             return m_sNextCharOK;
@@ -165,6 +170,7 @@ class CXBracketsOptions
         int   m_nJumpLinesVisUp;
         int   m_nJumpLinesVisDown;
         int   m_nJumpPairLineDiff;
+        int   m_nSciStyleInd;
         tstr  m_sFileExtsRule;
         tstr  m_sNextCharOK;
         tstr  m_sPrevCharOK;

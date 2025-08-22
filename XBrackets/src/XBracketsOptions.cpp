@@ -332,6 +332,7 @@ CXBracketsOptions::CXBracketsOptions() :
   m_nJumpLinesVisUp(1),
   m_nJumpLinesVisDown(0),
   m_nJumpPairLineDiff(1),
+  m_nSciStyleInd(-1),
   m_sNextCharOK(_T(".,!?:;</")),
   m_sPrevCharOK(_T("([{<=")),
   m_sDelimiters(_T("'`\"\\|[](){}<>,.;:+-=~!@#$%^&*/?")),
@@ -450,6 +451,11 @@ void CXBracketsOptions::readConfigSettingsItem(const void* pContext)
         {
             if ( settingVal.is_string() )
                 m_sDelimiters = string_to_tstr(settingVal.string_value());
+        }
+        else if ( settingName == "SciStyleInd" )
+        {
+            if ( settingVal.is_number() )
+                m_nSciStyleInd = settingVal.int_value();
         }
         else if ( settingName == "FileExtsRule" )
         {

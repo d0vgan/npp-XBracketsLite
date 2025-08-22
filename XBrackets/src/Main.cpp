@@ -62,7 +62,6 @@ extern "C" __declspec(dllexport) FuncItem * getFuncsArray(int* pnbFuncItems)
 #ifdef UNICODE
 extern "C" __declspec(dllexport) BOOL isUnicode()
 {
-  
     return TRUE;
 }
 #endif

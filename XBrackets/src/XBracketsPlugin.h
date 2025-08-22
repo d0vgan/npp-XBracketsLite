@@ -28,7 +28,6 @@ class CXBracketsPlugin : public CNppPlugin
         virtual void         nppBeNotified(SCNotification* pscn) override;
         virtual FuncItem*    nppGetFuncsArray(int* pnbFuncItems) override;
         virtual const TCHAR* nppGetName() override;
-        virtual LRESULT      nppMessageProc(UINT uMessage, WPARAM wParam, LPARAM lParam) override;
 
         // common n++ notification
         virtual void OnNppSetInfo(const NppData& nppd) override;
@@ -48,6 +47,7 @@ class CXBracketsPlugin : public CNppPlugin
         CXBracketsLogic::eCharProcessingResult OnSciChar(const int ch);
         void OnSciModified(SCNotification* pscn);
         void OnSciAutoCompleted(SCNotification* pscn);
+        void OnSciUpdateUI(SCNotification* pscn);
         void OnSciTextChanged(SCNotification* pscn);
 
         // custom functions
@@ -63,9 +63,6 @@ class CXBracketsPlugin : public CNppPlugin
 
         void PluginMessageBox(const TCHAR* szMessageText, UINT uType);
 
-    private:
-        void onConfigFileError(const tstr& configFilePath, const tstr& err);
-
     public:
         static const TCHAR* PLUGIN_NAME;
 
@@ -76,6 +73,13 @@ class CXBracketsPlugin : public CNppPlugin
             MACRO_START  = 1   // true
         };
 
+        struct tHighlightBrPair {
+            Sci_Position nLeftBrPos{-1};
+            Sci_Position nRightBrPos{-1};
+            Sci_Position nLeftBrLen{0};
+            Sci_Position nRightBrLen{0};
+        };
+
         CXBracketsMenu m_PluginMenu;
         CXBracketsLogic m_BracketsLogic;
         CFileModificationWatcher m_FileWatcher;
@@ -83,9 +87,12 @@ class CXBracketsPlugin : public CNppPlugin
         tstr m_sIniFilePath;
         tstr m_sConfigFilePath;
         tstr m_sUserConfigFilePath;
+        tHighlightBrPair m_hlBrPair;
+        int m_nSciStyleInd;
 
         static bool    isNppMacroStarted;
         static bool    isNppWndUnicode;
+        static bool    isNppReady;
         static WNDPROC nppOriginalWndProc;
         static WNDPROC sciOriginalWndProc1;
         static WNDPROC sciOriginalWndProc2;
@@ -93,6 +100,10 @@ class CXBracketsPlugin : public CNppPlugin
         static LRESULT sciCallWndProc(HWND, UINT, WPARAM, LPARAM);
         static LRESULT CALLBACK nppNewWndProc(HWND, UINT, WPARAM, LPARAM);
         static LRESULT CALLBACK sciNewWndProc(HWND, UINT, WPARAM, LPARAM);
+
+        void onConfigFileError(const tstr& configFilePath, const tstr& err);
+        void onConfigFileHasBeenRead();
+        void clearSciStyleIndication();
 };
 
 CXBracketsPlugin& GetPlugin();

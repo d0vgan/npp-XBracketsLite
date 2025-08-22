@@ -8,6 +8,7 @@ const TCHAR* CXBracketsPlugin::PLUGIN_NAME = _T("XBrackets Lite");
 
 bool CXBracketsPlugin::isNppMacroStarted = false;
 bool CXBracketsPlugin::isNppWndUnicode = true;
+bool CXBracketsPlugin::isNppReady = false;
 WNDPROC CXBracketsPlugin::nppOriginalWndProc = NULL;
 WNDPROC CXBracketsPlugin::sciOriginalWndProc1 = NULL;
 WNDPROC CXBracketsPlugin::sciOriginalWndProc2 = NULL;
@@ -24,7 +25,7 @@ void CXBracketsPlugin::CConfigFileChangeListener::HandleFileChange(const FileInf
     m_pPlugin->OnConfigFileChanged(pFile->filePath);
 }
 
-CXBracketsPlugin::CXBracketsPlugin() : m_ConfigFileChangeListener(this)
+CXBracketsPlugin::CXBracketsPlugin() : m_ConfigFileChangeListener(this), m_nSciStyleInd(-1)
 {
 }
 
@@ -99,6 +100,10 @@ LRESULT CALLBACK CXBracketsPlugin::nppNewWndProc(HWND hWnd, UINT uMsg, WPARAM wP
         GetPlugin().OnNppMacro(MACRO_STOP);
         return lResult;
     }
+    else if ( uMsg == NPPM_MSGTOPLUGIN )
+    {
+        return GetPlugin().OnNppMsgToPlugin(reinterpret_cast<CommunicationInfo *>(lParam));
+    }
 
     return nppCallWndProc(hWnd, uMsg, wParam, lParam);
 }
@@ -111,13 +116,6 @@ LRESULT CALLBACK CXBracketsPlugin::sciNewWndProc(HWND hWnd, UINT uMsg, WPARAM wP
         if ( GetPlugin().OnSciChar(static_cast<int>(wParam)) != CXBracketsLogic::cprNone )
         {
             return 0; // processed by XBrackets, don't forward to Scintilla
-        }
-    }
-    else if ( uMsg == WM_KEYDOWN )
-    {
-        if ( wParam == VK_DELETE || wParam == VK_BACK )
-        {
-            GetPlugin().OnSciTextChanged(nullptr);
         }
     }
 
@@ -133,16 +131,6 @@ FuncItem* CXBracketsPlugin::nppGetFuncsArray(int* pnbFuncItems)
 const TCHAR* CXBracketsPlugin::nppGetName()
 {
     return PLUGIN_NAME;
-}
-
-LRESULT CXBracketsPlugin::nppMessageProc(UINT uMessage, WPARAM wParam, LPARAM lParam)
-{
-    if ( uMessage == NPPM_MSGTOPLUGIN )
-    {
-        return OnNppMsgToPlugin(reinterpret_cast<CommunicationInfo *>(lParam));
-    }
-
-    return 1;
 }
 
 void CXBracketsPlugin::nppBeNotified(SCNotification* pscn)
@@ -189,6 +177,10 @@ void CXBracketsPlugin::nppBeNotified(SCNotification* pscn)
             case SCN_AUTOCCOMPLETED:
                 OnSciAutoCompleted(pscn);
                 break;
+
+            case SCN_UPDATEUI:
+                OnSciUpdateUI(pscn);
+                break;
         }
         // <<< notifications from Scintilla
     }
@@ -203,11 +195,16 @@ void CXBracketsPlugin::OnNppSetInfo(const NppData& nppd)
 
 void CXBracketsPlugin::OnNppBufferActivated()
 {
+    if ( !isNppReady )
+        return;
+
+    clearSciStyleIndication();
     m_BracketsLogic.UpdateFileType();
 }
 
 void CXBracketsPlugin::OnNppBufferReload()
 {
+    clearSciStyleIndication();
     m_BracketsLogic.InvalidateCachedBrackets(CXBracketsLogic::icbfAll);
 }
 
@@ -219,13 +216,17 @@ void CXBracketsPlugin::OnNppFileOpened()
 
 void CXBracketsPlugin::OnNppFileReload()
 {
+    clearSciStyleIndication();
     m_BracketsLogic.InvalidateCachedBrackets(CXBracketsLogic::icbfAll);
 }
 
 void CXBracketsPlugin::OnNppFileSaved()
 {
     // AutoRightBr is still valid, but file type may be changed:
-    m_BracketsLogic.UpdateFileType(CXBracketsLogic::icbfTree);
+    if ( m_BracketsLogic.UpdateFileType(CXBracketsLogic::icbfTree) )
+    {
+        clearSciStyleIndication();
+    }
 }
 
 void CXBracketsPlugin::OnNppReady()
@@ -251,6 +252,8 @@ void CXBracketsPlugin::OnNppReady()
 
     sciOriginalWndProc2 = (WNDPROC) pSetWindowLongPtr(
         m_nppMsgr.getSciSecondWnd(), GWLP_WNDPROC, (LONG_PTR) sciNewWndProc );
+
+    isNppReady = true;
 }
 
 void CXBracketsPlugin::OnNppShutdown()
@@ -298,6 +301,7 @@ void CXBracketsPlugin::OnNppMacro(int nMacroState)
     {
         nPrevAutoComplete = GetOptions().getBracketsAutoComplete() ? 1 : 0;
         GetOptions().setBracketsAutoComplete(false);
+        clearSciStyleIndication();
         m_BracketsLogic.InvalidateCachedBrackets(CXBracketsLogic::icbfAll);
     }
     else
@@ -319,8 +323,8 @@ LRESULT CXBracketsPlugin::OnNppMsgToPlugin(CommunicationInfo* pInfo)
 
     switch ( pInfo->internalMsg )
     {
-        case XBRM_GETMATCHINGBRACKETS:
-        case XBRM_GETNEARESTBRACKETS:
+    case XBRM_GETMATCHINGBRACKETS:
+    case XBRM_GETNEARESTBRACKETS:
         {
             tXBracketsPairStruct* pBrPair = reinterpret_cast<tXBracketsPairStruct *>(pInfo->info);
             const Sci_Position nPos = pBrPair->nPos;
@@ -339,9 +343,8 @@ LRESULT CXBracketsPlugin::OnNppMsgToPlugin(CommunicationInfo* pInfo)
                 pBrPair->nRightBrPos = pItem->nRightBrPos;
                 return TRUE;
             }
-
-            break;
         }
+        break;
     }
 
     return FALSE;
@@ -362,17 +365,64 @@ void CXBracketsPlugin::OnSciModified(SCNotification* pscn)
 
 void CXBracketsPlugin::OnSciAutoCompleted(SCNotification* pscn)
 {
+    clearSciStyleIndication();
     m_BracketsLogic.OnTextAutoCompleted(pscn->text, pscn->position);
+}
+
+void CXBracketsPlugin::OnSciUpdateUI(SCNotification* pscn)
+{
+    if ( m_nSciStyleInd < 0 )
+        return;
+
+    CSciMessager sciMsgr(reinterpret_cast<HWND>(pscn->nmhdr.hwndFrom));
+    const Sci_Position pos = sciMsgr.getCurrentPos();
+
+    if ( m_hlBrPair.nLeftBrPos != -1 && m_hlBrPair.nRightBrPos != -1 )
+    {
+        if ( pos < m_hlBrPair.nLeftBrPos || pos > m_hlBrPair.nRightBrPos + m_hlBrPair.nRightBrLen ||
+             (pos > m_hlBrPair.nLeftBrPos + m_hlBrPair.nLeftBrLen && pos < m_hlBrPair.nRightBrPos) )
+        {
+            clearSciStyleIndication();
+        }
+    }
+
+    if ( m_hlBrPair.nLeftBrPos == -1 || m_hlBrPair.nRightBrPos == -1 )
+    {
+        const auto pBrItem = m_BracketsLogic.FindBracketsByPos(pos, true);
+        if ( pBrItem != nullptr )
+        {
+            // new positions for the "indication"
+            m_hlBrPair.nLeftBrLen = static_cast<Sci_Position>(pBrItem->pBrPair->leftBr.length());
+            m_hlBrPair.nLeftBrPos = pBrItem->nLeftBrPos - m_hlBrPair.nLeftBrLen;
+            m_hlBrPair.nRightBrLen = static_cast<Sci_Position>(pBrItem->pBrPair->rightBr.length());
+            m_hlBrPair.nRightBrPos = pBrItem->nRightBrPos;
+
+            // setting the brackets "indication"
+            sciMsgr.SendSciMsg(SCI_SETINDICATORCURRENT, m_nSciStyleInd);
+            sciMsgr.SendSciMsg(SCI_INDICATORFILLRANGE, m_hlBrPair.nLeftBrPos, m_hlBrPair.nLeftBrLen);
+            sciMsgr.SendSciMsg(SCI_INDICATORFILLRANGE, m_hlBrPair.nRightBrPos, m_hlBrPair.nRightBrLen);
+        }
+    }
+}
+
+void CXBracketsPlugin::clearSciStyleIndication()
+{
+    CSciMessager sciMsgr(m_nppMsgr.getCurrentScintillaWnd());
+
+    // clearing the brackets "indication"
+    sciMsgr.SendSciMsg(SCI_SETINDICATORCURRENT, m_nSciStyleInd);
+    sciMsgr.SendSciMsg(SCI_INDICATORCLEARRANGE, m_hlBrPair.nLeftBrPos, m_hlBrPair.nLeftBrLen);
+    sciMsgr.SendSciMsg(SCI_INDICATORCLEARRANGE, m_hlBrPair.nRightBrPos, m_hlBrPair.nRightBrLen);
+
+    // nothing is "indicated"
+    m_hlBrPair.nLeftBrPos = -1;
+    m_hlBrPair.nRightBrPos = -1;
 }
 
 void CXBracketsPlugin::OnSciTextChanged(SCNotification* pscn)
 {
-    unsigned int uInvalidateFlags = CXBracketsLogic::icbfAutoRightBr;
-    if ( pscn != nullptr )
-    {
-        uInvalidateFlags |= CXBracketsLogic::icbfAll;
-    }
-    m_BracketsLogic.InvalidateCachedBrackets(uInvalidateFlags, pscn);
+    clearSciStyleIndication();
+    m_BracketsLogic.InvalidateCachedBrackets(CXBracketsLogic::icbfAll, pscn);
 }
 
 void CXBracketsPlugin::GoToMatchingBracket()
@@ -442,6 +492,8 @@ void CXBracketsPlugin::ReadOptions()
             PluginMessageBox(err.c_str(), MB_OK | MB_ICONERROR);
     }
 
+    onConfigFileHasBeenRead();
+
     if ( isUserConfig )
     {
         m_FileWatcher.AddFile(m_sUserConfigFilePath.c_str(), &m_ConfigFileChangeListener);
@@ -479,6 +531,8 @@ void CXBracketsPlugin::OnConfigFileChanged(const tstr& configFilePath)
         return;
     }
 
+    clearSciStyleIndication(); // clear the existing style indication first
+    onConfigFileHasBeenRead(); // now read the new style, if any
     m_PluginMenu.UpdateMenuState();
     m_BracketsLogic.UpdateFileType();
 }
@@ -496,6 +550,17 @@ void CXBracketsPlugin::onConfigFileError(const tstr& configFilePath, const tstr&
             CSciMessager sciMsgr(m_nppMsgr.getCurrentScintillaWnd());
             sciMsgr.setSel(pos - 1, pos - 1);
         }
+    }
+}
+
+void CXBracketsPlugin::onConfigFileHasBeenRead()
+{
+    m_nSciStyleInd = GetOptions().getSciStyleInd();
+    if ( m_nSciStyleInd >= 0 )
+    {
+        CSciMessager sciMsgr(m_nppMsgr.getCurrentScintillaWnd());
+        sciMsgr.SendSciMsg(SCI_INDICSETSTYLE, m_nSciStyleInd, INDIC_TEXTFORE);
+        sciMsgr.SendSciMsg(SCI_INDICSETFORE, m_nSciStyleInd, RGB(255, 0, 0));
     }
 }
 

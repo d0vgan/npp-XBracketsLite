@@ -6,6 +6,7 @@
     "Next_Char_OK": ".,!?:;</",
     "Prev_Char_OK": "([{<=,;",
     "Delimiters": "'`\"\\|[](){}<>,.;:+-=~!@#$%^&*/?",
+    "SciStyleInd": 20,
     "GoToNearest_Flags": 0,
     "SelToNearest_Flags": 2,
     "Jump_Lines_Vis_Up": 1,
@@ -342,6 +343,7 @@
         [ "[", "]", "multi-line-brackets" ],
         [ "\"", "\"", "single-line-quotes" ],
         [ "'", "'", "single-line-quotes" ],
+        [ "`", "quote-escape-char" ],
         [ "%", "%", "single-line-brackets", 1 ],
         [ ";", "", "single-line-comment" ],
         [ "/*", "*/", "multi-line-comment", 30 ]

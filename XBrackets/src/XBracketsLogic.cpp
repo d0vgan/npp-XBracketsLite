@@ -1352,11 +1352,15 @@ void CXBracketsLogic::jumpToPairBracket(CSciMessager& sciMsgr, const tBracketsJu
     }
 }
 
-void CXBracketsLogic::UpdateFileType(unsigned int uInvalidateFlags)
+bool CXBracketsLogic::UpdateFileType(unsigned int uInvalidateFlags)
 {
     tstr fileExtension;
+    const unsigned int uFileType = detectFileType(&fileExtension);
+    if ( uFileType == m_uFileType && fileExtension == m_fileExtension )
+        return false; // file syntax remains the same
 
-    m_uFileType = detectFileType(&fileExtension);
+    m_uFileType = uFileType;
+    m_fileExtension = fileExtension;
     m_pFileSyntax = nullptr;
 
     if ( m_uFileType & tfmIsSupported )
@@ -1375,8 +1379,9 @@ void CXBracketsLogic::UpdateFileType(unsigned int uInvalidateFlags)
     }
 
     m_bracketsTree.setFileSyntax(m_pFileSyntax);
-
     InvalidateCachedBrackets(uInvalidateFlags);
+
+    return true; // file syntax changed
 }
 
 int CXBracketsLogic::getAutocompleteLeftBracketType(CSciMessager& sciMsgr, const char ch) const
