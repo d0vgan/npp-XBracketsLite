@@ -176,6 +176,57 @@ namespace XBrackets
     std::vector<char> readFile(const TCHAR* filePath);
     tstr string_to_tstr(const std::string& str);
     tstr string_to_tstr_changecase(const std::string& str, eStringCase strCase);
+
+    class CCriticalSection // <-- inspired by CCriticalSection from Win32++ (C) David Nash
+    {
+    public:
+        CCriticalSection() noexcept
+        {
+            ::InitializeCriticalSection(&m_cs);
+            m_isValid = true;
+        }
+
+        CCriticalSection(CCriticalSection&& other) noexcept
+        {
+            other.m_isValid = false;
+            m_cs = other.m_cs;
+            m_isValid = true;
+        }
+
+        ~CCriticalSection() noexcept
+        {
+            if ( m_isValid )
+                ::DeleteCriticalSection(&m_cs);
+        }
+
+        CCriticalSection& operator=(CCriticalSection&& other) noexcept
+        {
+            other.m_isValid = false;
+            m_cs = other.m_cs;
+            m_isValid = true;
+            return *this;
+        }
+
+        CCriticalSection(const CCriticalSection&) = delete;
+        CCriticalSection& operator=(const CCriticalSection&) = delete;
+
+        void Lock() noexcept
+        {
+            if ( m_isValid )
+                ::EnterCriticalSection(&m_cs);
+        }
+
+        void Unlock() noexcept
+        {
+            if ( m_isValid )
+                ::LeaveCriticalSection(&m_cs);
+        }
+
+    private:
+        CRITICAL_SECTION m_cs;
+        bool m_isValid;
+    };
+
 };
 
 //---------------------------------------------------------------------------

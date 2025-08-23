@@ -332,7 +332,9 @@ CXBracketsOptions::CXBracketsOptions() :
   m_nJumpLinesVisUp(1),
   m_nJumpLinesVisDown(0),
   m_nJumpPairLineDiff(1),
-  m_nSciStyleInd(-1),
+  m_nHighlightSciStyleIndIdx(-1),
+  m_nHighlightSciStyleIndType(INDIC_TEXTFORE),
+  m_nHighlightTypingDelayMs(1200),
   m_sNextCharOK(_T(".,!?:;</")),
   m_sPrevCharOK(_T("([{<=")),
   m_sDelimiters(_T("'`\"\\|[](){}<>,.;:+-=~!@#$%^&*/?")),
@@ -452,10 +454,20 @@ void CXBracketsOptions::readConfigSettingsItem(const void* pContext)
             if ( settingVal.is_string() )
                 m_sDelimiters = string_to_tstr(settingVal.string_value());
         }
-        else if ( settingName == "SciStyleInd" )
+        else if ( settingName == "Highlight_SciStyleIndIdx" )
         {
             if ( settingVal.is_number() )
-                m_nSciStyleInd = settingVal.int_value();
+                m_nHighlightSciStyleIndIdx = settingVal.int_value();
+        }
+        else if ( settingName == "Highlight_SciStyleIndType" )
+        {
+            if ( settingVal.is_number() )
+                m_nHighlightSciStyleIndType = settingVal.int_value();
+        }
+        else if ( settingName == "Highlight_TypingDelayMs" )
+        {
+            if ( settingVal.is_number() )
+                m_nHighlightTypingDelayMs = settingVal.int_value();
         }
         else if ( settingName == "FileExtsRule" )
         {

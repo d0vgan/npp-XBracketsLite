@@ -236,13 +236,30 @@ The plugin's settings under the "settings" node:
   "Delimiters": "'`\"\\|[](){}<>,.;:+-=~!@#$%^&*/?"
     defines delimiters for the "autocomplete" items (see above).
 
-  "SciStyleInd": 20
-    defines Scintilla's style indicator that is used by XBrackets to highlight the
-    matching brackets. This number is expected to be in a range from 8 to 31.
+  "Highlight_SciStyleIndIdx": 20
+    defines Scintilla's style indicator index that is used by XBrackets to highlight
+    the matching brackets. This number is expected to be in a range from 8 to 31.
     The value of 20 should not normally interfere with the styles used by Notepad++ itself.
     If any interference happens, change this value and observe the results.
     To disable brackets highlighting by XBrackets, set it to -1 :
-      "SciStyleInd": -1
+      "Highlight_SciStyleIndIdx": -1
+
+  "Highlight_SciStyleIndType": 17
+    defines a type (or, in terms of Scintilla, an own style) of the style indicator.
+    The value of 17 is INDIC_TEXTFORE - text foreground colour.
+    For details, refer to: https://scintilla.org/ScintillaDoc.html#SCI_INDICSETSTYLE
+
+  "Highlight_TypingDelayMs": 1200
+    defines the delay, in milliseconds, between the last typed character and the
+    brackets highlighting by XBrackets.
+    The purpose of this delay is to avoid high CPU consumption while typing, since
+    XBrackets needs to rebuild its bracket tree to be able to highlight brackets in
+    the updated text. With this delay, XBrackets postpones its internal activities
+    until no character is pressed during the given amount of time.
+    (Technical note: the actual delay will be from 100% to 125% of the given value
+     due to the internal implementation. Thus, in case of 1200, the actual delay
+     will be from 1200 to 1500 ms. It's because XBrackets reuses the existing timer
+     instead of creating a new one with each typed character).
 
   "GoToNearest_Flags": 0
     controls the behavior of the GoToNearestBracket function.

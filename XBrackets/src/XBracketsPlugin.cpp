@@ -25,8 +25,22 @@ void CXBracketsPlugin::CConfigFileChangeListener::HandleFileChange(const FileInf
     m_pPlugin->OnConfigFileChanged(pFile->filePath);
 }
 
-CXBracketsPlugin::CXBracketsPlugin() : m_ConfigFileChangeListener(this), m_nSciStyleInd(-1)
+CXBracketsPlugin::CXBracketsPlugin() :
+  m_ConfigFileChangeListener(this),
+  m_nHlTimerId(0),
+  m_nHlSciStyleInd(-1)
 {
+}
+
+CXBracketsPlugin::~CXBracketsPlugin()
+{
+    m_csHl.Lock();
+    if ( m_nHlTimerId != 0 )
+    {
+        ::KillTimer(NULL, m_nHlTimerId);
+        m_nHlTimerId = 0;
+    }
+    m_csHl.Unlock();
 }
 
 LRESULT CXBracketsPlugin::nppCallWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
@@ -122,6 +136,25 @@ LRESULT CALLBACK CXBracketsPlugin::sciNewWndProc(HWND hWnd, UINT uMsg, WPARAM wP
     return sciCallWndProc(hWnd, uMsg, wParam, lParam);
 }
 
+void CALLBACK CXBracketsPlugin::HlTimerProc(HWND, UINT, UINT_PTR idEvent, DWORD)
+{
+    CXBracketsPlugin& thePlugin = GetPlugin();
+
+    thePlugin.m_csHl.Lock();
+    if ( thePlugin.m_nHlTimerId != 0 )
+    {
+        auto elapsed_duration = std::chrono::system_clock::now() - thePlugin.m_lastTextChangedTimePoint;
+        auto elapsed_ms = std::chrono::duration_cast<std::chrono::milliseconds>(elapsed_duration).count();
+        if ( elapsed_ms >= GetOptions().getHighlightTypingDelayMs() )
+        {
+            ::KillTimer(NULL, thePlugin.m_nHlTimerId);
+            thePlugin.m_nHlTimerId = 0;
+            thePlugin.highlightActiveBrackets(-1);
+        }
+    }
+    thePlugin.m_csHl.Unlock();
+}
+
 FuncItem* CXBracketsPlugin::nppGetFuncsArray(int* pnbFuncItems)
 {
     *pnbFuncItems = CXBracketsMenu::N_NBFUNCITEMS;
@@ -198,13 +231,13 @@ void CXBracketsPlugin::OnNppBufferActivated()
     if ( !isNppReady )
         return;
 
-    clearSciStyleIndication();
-    m_BracketsLogic.UpdateFileType();
+    clearActiveBrackets();
+    m_BracketsLogic.UpdateFileType(CXBracketsLogic::icbfAll);
 }
 
 void CXBracketsPlugin::OnNppBufferReload()
 {
-    clearSciStyleIndication();
+    clearActiveBrackets();
     m_BracketsLogic.InvalidateCachedBrackets(CXBracketsLogic::icbfAll);
 }
 
@@ -216,7 +249,7 @@ void CXBracketsPlugin::OnNppFileOpened()
 
 void CXBracketsPlugin::OnNppFileReload()
 {
-    clearSciStyleIndication();
+    clearActiveBrackets();
     m_BracketsLogic.InvalidateCachedBrackets(CXBracketsLogic::icbfAll);
 }
 
@@ -225,7 +258,7 @@ void CXBracketsPlugin::OnNppFileSaved()
     // AutoRightBr is still valid, but file type may be changed:
     if ( m_BracketsLogic.UpdateFileType(CXBracketsLogic::icbfTree) )
     {
-        clearSciStyleIndication();
+        clearActiveBrackets();
     }
 }
 
@@ -233,13 +266,9 @@ void CXBracketsPlugin::OnNppReady()
 {
     ReadOptions();
     CXBracketsMenu::UpdateMenuState();
-    m_BracketsLogic.UpdateFileType();
+    m_BracketsLogic.UpdateFileType(CXBracketsLogic::icbfAll | CXBracketsLogic::uftfConfigUpdated);
 
-    unsigned int uSciFlags = (SC_MOD_INSERTTEXT | SC_MOD_DELETETEXT);
-    if ( GetOptions().getUpdateTreeAllowed() )
-    {
-        uSciFlags |= (SC_MOD_BEFOREINSERT | SC_MOD_BEFOREDELETE);
-    }
+    unsigned int uSciFlags = (SC_MOD_INSERTTEXT | SC_MOD_DELETETEXT | SC_MOD_BEFOREINSERT | SC_MOD_BEFOREDELETE);
     m_nppMsgr.SendNppMsg(NPPM_ADDSCNMODIFIEDFLAGS, 0, uSciFlags);
 
     auto pSetWindowLongPtr = isNppWndUnicode ? SetWindowLongPtrW : SetWindowLongPtrA;
@@ -301,7 +330,7 @@ void CXBracketsPlugin::OnNppMacro(int nMacroState)
     {
         nPrevAutoComplete = GetOptions().getBracketsAutoComplete() ? 1 : 0;
         GetOptions().setBracketsAutoComplete(false);
-        clearSciStyleIndication();
+        clearActiveBrackets();
         m_BracketsLogic.InvalidateCachedBrackets(CXBracketsLogic::icbfAll);
     }
     else
@@ -310,7 +339,7 @@ void CXBracketsPlugin::OnNppMacro(int nMacroState)
             nPrevAutoComplete = GetOptions().getBracketsAutoComplete() ? 1 : 0;
 
         GetOptions().setBracketsAutoComplete(nPrevAutoComplete > 0);
-        m_BracketsLogic.UpdateFileType();
+        m_BracketsLogic.UpdateFileType(CXBracketsLogic::icbfAll);
     }
 
     CXBracketsMenu::AllowAutocomplete(!isNppMacroStarted);
@@ -359,19 +388,19 @@ void CXBracketsPlugin::OnSciModified(SCNotification* pscn)
 {
     if ( pscn->modificationType & (SC_MOD_INSERTTEXT | SC_MOD_DELETETEXT | SC_MOD_BEFOREINSERT | SC_MOD_BEFOREDELETE) )
     {
-        OnSciTextChanged(pscn);
+        OnSciTextChange(pscn);
     }
 }
 
 void CXBracketsPlugin::OnSciAutoCompleted(SCNotification* pscn)
 {
-    clearSciStyleIndication();
+    clearActiveBrackets();
     m_BracketsLogic.OnTextAutoCompleted(pscn->text, pscn->position);
 }
 
 void CXBracketsPlugin::OnSciUpdateUI(SCNotification* pscn)
 {
-    if ( m_nSciStyleInd < 0 )
+    if ( m_nHlSciStyleInd < 0 )
         return;
 
     CSciMessager sciMsgr(reinterpret_cast<HWND>(pscn->nmhdr.hwndFrom));
@@ -382,47 +411,86 @@ void CXBracketsPlugin::OnSciUpdateUI(SCNotification* pscn)
         if ( pos < m_hlBrPair.nLeftBrPos || pos > m_hlBrPair.nRightBrPos + m_hlBrPair.nRightBrLen ||
              (pos > m_hlBrPair.nLeftBrPos + m_hlBrPair.nLeftBrLen && pos < m_hlBrPair.nRightBrPos) )
         {
-            clearSciStyleIndication();
+            clearActiveBrackets();
         }
     }
 
-    if ( m_hlBrPair.nLeftBrPos == -1 || m_hlBrPair.nRightBrPos == -1 )
+    // TODO: 
+    // This leads to a deadlock when the active file is "XBrackets_UserConfig.json",
+    // the caret is at a bracket and "XBrackets_UserConfig.json" is saved.
+    // The deadlock is caused by:
+    //  1. OnSciUpdateUI() is called from withing Scintilla
+    //  2. OnConfigFileChanged() is called when "XBrackets_UserConfig.json" has been updated
+    //  3. OnConfigFileChanged() sends messages to Scintilla but Scintilla is blocked by OnSciUpdateUI()
+
+    m_csHl.Lock();
+    if ( m_nHlTimerId == 0 )
     {
-        const auto pBrItem = m_BracketsLogic.FindBracketsByPos(pos, true);
-        if ( pBrItem != nullptr )
-        {
-            // new positions for the "indication"
-            m_hlBrPair.nLeftBrLen = static_cast<Sci_Position>(pBrItem->pBrPair->leftBr.length());
-            m_hlBrPair.nLeftBrPos = pBrItem->nLeftBrPos - m_hlBrPair.nLeftBrLen;
-            m_hlBrPair.nRightBrLen = static_cast<Sci_Position>(pBrItem->pBrPair->rightBr.length());
-            m_hlBrPair.nRightBrPos = pBrItem->nRightBrPos;
-
-            // setting the brackets "indication"
-            sciMsgr.SendSciMsg(SCI_SETINDICATORCURRENT, m_nSciStyleInd);
-            sciMsgr.SendSciMsg(SCI_INDICATORFILLRANGE, m_hlBrPair.nLeftBrPos, m_hlBrPair.nLeftBrLen);
-            sciMsgr.SendSciMsg(SCI_INDICATORFILLRANGE, m_hlBrPair.nRightBrPos, m_hlBrPair.nRightBrLen);
-        }
+        m_lastTextChangedTimePoint = std::chrono::system_clock::now();
+        m_lastTextChangedTimePoint -= std::chrono::milliseconds(GetOptions().getHighlightTypingDelayMs());
+        m_nHlTimerId = ::SetTimer(NULL, 0,  USER_TIMER_MINIMUM, HlTimerProc);
     }
+    m_csHl.Unlock();
 }
 
-void CXBracketsPlugin::clearSciStyleIndication()
+void CXBracketsPlugin::clearActiveBrackets()
 {
     CSciMessager sciMsgr(m_nppMsgr.getCurrentScintillaWnd());
 
+    m_csHl.Lock();
     // clearing the brackets "indication"
-    sciMsgr.SendSciMsg(SCI_SETINDICATORCURRENT, m_nSciStyleInd);
+    sciMsgr.SendSciMsg(SCI_SETINDICATORCURRENT, m_nHlSciStyleInd);
     sciMsgr.SendSciMsg(SCI_INDICATORCLEARRANGE, m_hlBrPair.nLeftBrPos, m_hlBrPair.nLeftBrLen);
     sciMsgr.SendSciMsg(SCI_INDICATORCLEARRANGE, m_hlBrPair.nRightBrPos, m_hlBrPair.nRightBrLen);
 
     // nothing is "indicated"
     m_hlBrPair.nLeftBrPos = -1;
     m_hlBrPair.nRightBrPos = -1;
+    m_csHl.Unlock();
 }
 
-void CXBracketsPlugin::OnSciTextChanged(SCNotification* pscn)
+void CXBracketsPlugin::highlightActiveBrackets(Sci_Position pos)
 {
-    clearSciStyleIndication();
-    m_BracketsLogic.InvalidateCachedBrackets(CXBracketsLogic::icbfAll, pscn);
+    if ( m_nHlSciStyleInd < 0 || m_hlBrPair.nLeftBrPos != -1 )
+        return;
+
+    CSciMessager sciMsgr(m_nppMsgr.getCurrentScintillaWnd());
+    if ( pos < 0 )
+        pos = sciMsgr.getCurrentPos();
+
+    const auto pBrItem = m_BracketsLogic.FindBracketsByPos(pos, true);
+    if ( pBrItem == nullptr )
+        return;
+
+    // new positions for the "indication"
+    m_hlBrPair.nLeftBrLen = static_cast<Sci_Position>(pBrItem->pBrPair->leftBr.length());
+    m_hlBrPair.nLeftBrPos = pBrItem->nLeftBrPos - m_hlBrPair.nLeftBrLen;
+    m_hlBrPair.nRightBrLen = static_cast<Sci_Position>(pBrItem->pBrPair->rightBr.length());
+    m_hlBrPair.nRightBrPos = pBrItem->nRightBrPos;
+
+    // setting the brackets "indication"
+    sciMsgr.SendSciMsg(SCI_SETINDICATORCURRENT, m_nHlSciStyleInd);
+    sciMsgr.SendSciMsg(SCI_INDICATORFILLRANGE, m_hlBrPair.nLeftBrPos, m_hlBrPair.nLeftBrLen);
+    sciMsgr.SendSciMsg(SCI_INDICATORFILLRANGE, m_hlBrPair.nRightBrPos, m_hlBrPair.nRightBrLen);
+}
+
+void CXBracketsPlugin::OnSciTextChange(SCNotification* pscn)
+{
+    if ( pscn->modificationType & (SC_MOD_BEFOREINSERT | SC_MOD_BEFOREDELETE) )
+    {
+        clearActiveBrackets();
+        m_BracketsLogic.InvalidateCachedBrackets(CXBracketsLogic::icbfAll, pscn);
+    }
+    else if ( pscn->modificationType & (SC_MOD_INSERTTEXT | SC_MOD_DELETETEXT) )
+    {
+        m_csHl.Lock();
+        m_lastTextChangedTimePoint = std::chrono::system_clock::now();
+        if ( m_nHlTimerId == 0 )
+        {
+            m_nHlTimerId = ::SetTimer(NULL, 0, GetOptions().getHighlightTypingDelayMs()/4, HlTimerProc);
+        }
+        m_csHl.Unlock();
+    }
 }
 
 void CXBracketsPlugin::GoToMatchingBracket()
@@ -531,10 +599,10 @@ void CXBracketsPlugin::OnConfigFileChanged(const tstr& configFilePath)
         return;
     }
 
-    clearSciStyleIndication(); // clear the existing style indication first
+    clearActiveBrackets(); // clear the existing style indication first
     onConfigFileHasBeenRead(); // now read the new style, if any
     m_PluginMenu.UpdateMenuState();
-    m_BracketsLogic.UpdateFileType();
+    m_BracketsLogic.UpdateFileType(CXBracketsLogic::icbfAll | CXBracketsLogic::uftfConfigUpdated);
 }
 
 void CXBracketsPlugin::onConfigFileError(const tstr& configFilePath, const tstr& err)
@@ -555,13 +623,15 @@ void CXBracketsPlugin::onConfigFileError(const tstr& configFilePath, const tstr&
 
 void CXBracketsPlugin::onConfigFileHasBeenRead()
 {
-    m_nSciStyleInd = GetOptions().getSciStyleInd();
-    if ( m_nSciStyleInd >= 0 )
+    m_csHl.Lock();
+    m_nHlSciStyleInd = GetOptions().getHighlightSciStyleIndIdx();
+    if ( m_nHlSciStyleInd >= 0 )
     {
         CSciMessager sciMsgr(m_nppMsgr.getCurrentScintillaWnd());
-        sciMsgr.SendSciMsg(SCI_INDICSETSTYLE, m_nSciStyleInd, INDIC_TEXTFORE);
-        sciMsgr.SendSciMsg(SCI_INDICSETFORE, m_nSciStyleInd, RGB(255, 0, 0));
+        sciMsgr.SendSciMsg(SCI_INDICSETSTYLE, m_nHlSciStyleInd, GetOptions().getHighlightSciStyleIndType());
+        sciMsgr.SendSciMsg(SCI_INDICSETFORE, m_nHlSciStyleInd, RGB(255, 0, 0));
     }
+    m_csHl.Unlock();
 }
 
 void CXBracketsPlugin::PluginMessageBox(const TCHAR* szMessageText, UINT uType)

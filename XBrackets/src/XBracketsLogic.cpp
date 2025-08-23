@@ -1352,12 +1352,15 @@ void CXBracketsLogic::jumpToPairBracket(CSciMessager& sciMsgr, const tBracketsJu
     }
 }
 
-bool CXBracketsLogic::UpdateFileType(unsigned int uInvalidateFlags)
+bool CXBracketsLogic::UpdateFileType(unsigned int uInvalidateAndUpdateFlags)
 {
     tstr fileExtension;
     const unsigned int uFileType = detectFileType(&fileExtension);
-    if ( uFileType == m_uFileType && fileExtension == m_fileExtension )
-        return false; // file syntax remains the same
+    if ( (uInvalidateAndUpdateFlags & uftfConfigUpdated) == 0 )
+    {
+        if ( uFileType == m_uFileType && fileExtension == m_fileExtension && m_pFileSyntax != nullptr )
+            return false; // file syntax remains the same
+    }
 
     m_uFileType = uFileType;
     m_fileExtension = fileExtension;
@@ -1379,7 +1382,7 @@ bool CXBracketsLogic::UpdateFileType(unsigned int uInvalidateFlags)
     }
 
     m_bracketsTree.setFileSyntax(m_pFileSyntax);
-    InvalidateCachedBrackets(uInvalidateFlags);
+    InvalidateCachedBrackets(uInvalidateAndUpdateFlags & icbfMask);
 
     return true; // file syntax changed
 }

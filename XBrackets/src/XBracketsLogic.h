@@ -74,11 +74,16 @@ public:
         baSelToNearest
     };
 
-    enum eInvalidateCachedBracketsFlags{
-        icbfAutoRightBr = 0x01,
-        icbfTree        = 0x02,
+    enum eInvalidateCachedBracketsFlags {
+        icbfAutoRightBr = 0x0001,
+        icbfTree        = 0x0002,
 
-        icbfAll = (icbfAutoRightBr | icbfTree)
+        icbfAll = (icbfAutoRightBr | icbfTree),
+        icbfMask = 0x00FF
+    };
+
+    enum eUpdateFileTypeFlags {
+        uftfConfigUpdated = 0x0100
     };
 
 public:
@@ -86,7 +91,7 @@ public:
 
     // interaction with the plugin
     void SetNppData(const NppData& nppd);
-    bool UpdateFileType(unsigned int uInvalidateFlags = icbfAll);
+    bool UpdateFileType(unsigned int uInvalidateAndUpdateFlags);
     void InvalidateCachedBrackets(unsigned int uInvalidateFlags, SCNotification* pscn = nullptr);
     eCharProcessingResult OnCharPress(const int ch);
     eCharProcessingResult OnTextAutoCompleted(const char* text, Sci_Position pos);
@@ -120,7 +125,7 @@ private:
     Sci_Position m_nAutoRightBracketPos{-1};
     int          m_nAutoRightBracketType{-1};
     int          m_nAutoRightBracketOffset{-1};
-    unsigned int m_uFileType{XBrackets::tfmIsSupported};
+    unsigned int m_uFileType{0};
     tstr         m_fileExtension;
 
 private:

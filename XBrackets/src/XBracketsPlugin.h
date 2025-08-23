@@ -6,6 +6,7 @@
 #include "XBracketsMenu.h"
 #include "XBracketsOptions.h"
 #include "CFileModificationWatcher.h"
+#include <chrono>
 
 class CXBracketsPlugin : public CNppPlugin
 {
@@ -23,6 +24,7 @@ class CXBracketsPlugin : public CNppPlugin
 
     public:
         CXBracketsPlugin();
+        virtual ~CXBracketsPlugin();
 
         // standard n++ plugin functions
         virtual void         nppBeNotified(SCNotification* pscn) override;
@@ -48,7 +50,7 @@ class CXBracketsPlugin : public CNppPlugin
         void OnSciModified(SCNotification* pscn);
         void OnSciAutoCompleted(SCNotification* pscn);
         void OnSciUpdateUI(SCNotification* pscn);
-        void OnSciTextChanged(SCNotification* pscn);
+        void OnSciTextChange(SCNotification* pscn);
 
         // custom functions
         void GoToMatchingBracket();
@@ -88,7 +90,10 @@ class CXBracketsPlugin : public CNppPlugin
         tstr m_sConfigFilePath;
         tstr m_sUserConfigFilePath;
         tHighlightBrPair m_hlBrPair;
-        int m_nSciStyleInd;
+        UINT_PTR m_nHlTimerId;
+        int m_nHlSciStyleInd;
+        std::chrono::time_point<std::chrono::system_clock> m_lastTextChangedTimePoint;
+        XBrackets::CCriticalSection m_csHl;
 
         static bool    isNppMacroStarted;
         static bool    isNppWndUnicode;
@@ -100,10 +105,12 @@ class CXBracketsPlugin : public CNppPlugin
         static LRESULT sciCallWndProc(HWND, UINT, WPARAM, LPARAM);
         static LRESULT CALLBACK nppNewWndProc(HWND, UINT, WPARAM, LPARAM);
         static LRESULT CALLBACK sciNewWndProc(HWND, UINT, WPARAM, LPARAM);
+        static void CALLBACK HlTimerProc(HWND, UINT, UINT_PTR, DWORD);
 
         void onConfigFileError(const tstr& configFilePath, const tstr& err);
         void onConfigFileHasBeenRead();
-        void clearSciStyleIndication();
+        void clearActiveBrackets();
+        void highlightActiveBrackets(Sci_Position pos);
 };
 
 CXBracketsPlugin& GetPlugin();

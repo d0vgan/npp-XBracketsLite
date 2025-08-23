@@ -120,9 +120,19 @@ class CXBracketsOptions
             return m_nJumpPairLineDiff;
         }
 
-        int getSciStyleInd() const
+        int getHighlightSciStyleIndIdx() const
         {
-            return m_nSciStyleInd;
+            return m_nHighlightSciStyleIndIdx;
+        }
+
+        int getHighlightSciStyleIndType() const
+        {
+            return m_nHighlightSciStyleIndType;
+        }
+
+        unsigned int getHighlightTypingDelayMs() const
+        {
+            return m_nHighlightTypingDelayMs;
         }
 
         const tstr& getNextCharOK() const
@@ -170,7 +180,9 @@ class CXBracketsOptions
         int   m_nJumpLinesVisUp;
         int   m_nJumpLinesVisDown;
         int   m_nJumpPairLineDiff;
-        int   m_nSciStyleInd;
+        int   m_nHighlightSciStyleIndIdx;
+        int   m_nHighlightSciStyleIndType;
+        UINT  m_nHighlightTypingDelayMs;
         tstr  m_sFileExtsRule;
         tstr  m_sNextCharOK;
         tstr  m_sPrevCharOK;
