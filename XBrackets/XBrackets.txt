@@ -369,6 +369,7 @@ v2.0 - Aug 2025
 + now the configuration is stored in JSON format
 + file type-specific (language-specific) rules are allowed
 + multi-character brackets and quotes are supported
++ brackets or quotes at the caret are highlighted
 + plugins communication by means of NPPM_MSGTOPLUGIN added
 * "XBrackets.ini" is no more used
 * thanks to astewart77 for testing and suggestions during the development
