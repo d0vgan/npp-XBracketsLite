@@ -130,6 +130,11 @@ class CXBracketsOptions
             return m_nHighlightSciStyleIndType;
         }
 
+        COLORREF getHighlightSciColor() const
+        {
+            return m_nHighlightSciColor;
+        }
+
         unsigned int getHighlightTypingDelayMs() const
         {
             return m_nHighlightTypingDelayMs;
@@ -182,6 +187,7 @@ class CXBracketsOptions
         int   m_nJumpPairLineDiff;
         int   m_nHighlightSciStyleIndIdx;
         int   m_nHighlightSciStyleIndType;
+        COLORREF m_nHighlightSciColor;
         UINT  m_nHighlightTypingDelayMs;
         tstr  m_sFileExtsRule;
         tstr  m_sNextCharOK;

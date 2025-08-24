@@ -415,22 +415,17 @@ void CXBracketsPlugin::OnSciUpdateUI(SCNotification* pscn)
         }
     }
 
-    // TODO: 
-    // This leads to a deadlock when the active file is "XBrackets_UserConfig.json",
-    // the caret is at a bracket and "XBrackets_UserConfig.json" is saved.
-    // The deadlock is caused by:
-    //  1. OnSciUpdateUI() is called from withing Scintilla
-    //  2. OnConfigFileChanged() is called when "XBrackets_UserConfig.json" has been updated
-    //  3. OnConfigFileChanged() sends messages to Scintilla but Scintilla is blocked by OnSciUpdateUI()
-
-    m_csHl.Lock();
-    if ( m_nHlTimerId == 0 )
+    if ( m_hlBrPair.nLeftBrPos == -1 && m_hlBrPair.nRightBrPos == -1 )
     {
-        m_lastTextChangedTimePoint = std::chrono::system_clock::now();
-        m_lastTextChangedTimePoint -= std::chrono::milliseconds(GetOptions().getHighlightTypingDelayMs());
-        m_nHlTimerId = ::SetTimer(NULL, 0,  USER_TIMER_MINIMUM, HlTimerProc);
+        m_csHl.Lock();
+        if ( m_nHlTimerId == 0 )
+        {
+            m_lastTextChangedTimePoint = std::chrono::system_clock::now();
+            m_lastTextChangedTimePoint -= std::chrono::milliseconds(GetOptions().getHighlightTypingDelayMs());
+            m_nHlTimerId = ::SetTimer(NULL, 0,  USER_TIMER_MINIMUM, HlTimerProc);
+        }
+        m_csHl.Unlock();
     }
-    m_csHl.Unlock();
 }
 
 void CXBracketsPlugin::clearActiveBrackets()
@@ -629,7 +624,7 @@ void CXBracketsPlugin::onConfigFileHasBeenRead()
     {
         CSciMessager sciMsgr(m_nppMsgr.getCurrentScintillaWnd());
         sciMsgr.SendSciMsg(SCI_INDICSETSTYLE, m_nHlSciStyleInd, GetOptions().getHighlightSciStyleIndType());
-        sciMsgr.SendSciMsg(SCI_INDICSETFORE, m_nHlSciStyleInd, RGB(255, 0, 0));
+        sciMsgr.SendSciMsg(SCI_INDICSETFORE, m_nHlSciStyleInd, GetOptions().getHighlightSciColor());
     }
     m_csHl.Unlock();
 }

@@ -86,6 +86,26 @@ namespace
         return result;
     }
 
+    COLORREF getRGBfromString(const std::string& s)
+    {
+        if ( s.length() == 7 && s[0] == '#' )
+        {
+            try
+            {
+                unsigned char r = static_cast<unsigned char>(std::stoi(s.substr(1, 2), nullptr, 16));
+                unsigned char g = static_cast<unsigned char>(std::stoi(s.substr(3, 2), nullptr, 16));
+                unsigned char b = static_cast<unsigned char>(std::stoi(s.substr(5, 2), nullptr, 16));
+
+                return RGB(r, g, b);
+            }
+            catch (const std::exception&)
+            {
+            }
+        }
+
+        return RGB(0, 0, 0);
+    }
+
     tBrPair readBrPairItem(const json11::Json& pairItem, bool isAutoComplete)
     {
         tBrPair brPair;
@@ -334,6 +354,7 @@ CXBracketsOptions::CXBracketsOptions() :
   m_nJumpPairLineDiff(1),
   m_nHighlightSciStyleIndIdx(-1),
   m_nHighlightSciStyleIndType(INDIC_TEXTFORE),
+  m_nHighlightSciColor(RGB(0xFF, 0x00, 0x00)),
   m_nHighlightTypingDelayMs(1200),
   m_sNextCharOK(_T(".,!?:;</")),
   m_sPrevCharOK(_T("([{<=")),
@@ -463,6 +484,11 @@ void CXBracketsOptions::readConfigSettingsItem(const void* pContext)
         {
             if ( settingVal.is_number() )
                 m_nHighlightSciStyleIndType = settingVal.int_value();
+        }
+        else if ( settingName == "Highlight_SciColor" )
+        {
+            if ( settingVal.is_string() )
+                m_nHighlightSciColor = getRGBfromString(settingVal.string_value());
         }
         else if ( settingName == "Highlight_TypingDelayMs" )
         {

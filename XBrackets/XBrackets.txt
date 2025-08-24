@@ -249,6 +249,11 @@ The plugin's settings under the "settings" node:
     The value of 17 is INDIC_TEXTFORE - text foreground colour.
     For details, refer to: https://scintilla.org/ScintillaDoc.html#SCI_INDICSETSTYLE
 
+  "Highlight_SciColor": "#FF0000"
+    defines the color of the Scintilla's style indicator. The format of the color is
+    #RRGGBB, where RR, GG and BB are the Red, Green and Blue components of the color
+    represented as hexadecimal numbers from 00 to FF.
+
   "Highlight_TypingDelayMs": 1200
     defines the delay, in milliseconds, between the last typed character and the
     brackets highlighting by XBrackets.
