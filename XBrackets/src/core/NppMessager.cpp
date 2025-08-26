@@ -52,12 +52,21 @@ BOOL CNppMessager::getCurrentFileExtPart(int strLen, TCHAR *str) const
     return (BOOL) SendNppMsg( NPPM_GETEXTPART, (WPARAM) strLen, (LPARAM) str );
 }
 
-HWND CNppMessager::getCurrentScintillaWnd() const
+int CNppMessager::getCurrentScintillaIdx() const
 {
     int currentView = 0;
     SendNppMsg( NPPM_GETCURRENTSCINTILLA, 0, (LPARAM) &currentView );
-    return ( (currentView == 0) ? 
-      m_nppData._scintillaMainHandle : m_nppData._scintillaSecondHandle );
+    return currentView;
+}
+
+HWND CNppMessager::getCurrentScintillaWnd() const
+{
+    return getCurrentScintillaWndByIdx( getCurrentScintillaIdx() );
+}
+
+HWND CNppMessager::getCurrentScintillaWndByIdx(int nScintillaIdx) const
+{
+    return ( (nScintillaIdx == 0) ? m_nppData._scintillaMainHandle : m_nppData._scintillaSecondHandle );
 }
 
 BOOL CNppMessager::getCurrentWord(int strLen, TCHAR *str) const

@@ -97,6 +97,7 @@ public:
     eCharProcessingResult OnTextAutoCompleted(const char* text, Sci_Position pos);
     void PerformBracketsAction(eGetBracketsAction nBrAction);
     const tBrPairItem* FindBracketsByPos(Sci_Position pos, bool isExactPos);
+    bool IsAtBracketPos(const CSciMessager& sciMsgr, Sci_Position pos) const;
 
 private:
     enum eAutoBracketOrigin {

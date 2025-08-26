@@ -1309,6 +1309,65 @@ const tBrPairItem* CXBracketsLogic::FindBracketsByPos(Sci_Position pos, bool isE
     return m_bracketsTree.findPairByPos(pos, isExactPos, &uBrPosFlags);
 }
 
+static bool isChsAtBr(const char* chs, const std::string& br)
+{
+    if ( br.length() == 1 )
+    {
+        if ( br[0] == chs[1] ||  //  |(  or  |)
+             br[0] == chs[0] )   //  (|  or  )|
+        {
+            return true;
+        }
+    }
+    else
+    {
+        if ( br[0] == chs[1] ||                   //  |((  or  |))
+             br.back() == chs[0] ||               //  ((|  or  ))|
+             br.find(chs) != std::string::npos )  //  (|(  or  )|)
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool CXBracketsLogic::IsAtBracketPos(const CSciMessager& sciMsgr, Sci_Position pos) const
+{
+    if ( m_pFileSyntax == nullptr )
+        return false;
+
+    char chs[3] = {
+        static_cast<char>((pos > 0) ? sciMsgr.getCharAt(pos - 1) : 0), // prev_ch
+        static_cast<char>(sciMsgr.getCharAt(pos)), // curr_ch
+        0 // '\0'
+    };
+
+    for ( const tBrPair& brPair : m_pFileSyntax->pairs )
+    {
+        if ( isSgLnCommKind(brPair.kind) )
+            continue;
+
+        if ( chs[0] != 0 )
+        {
+            if ( isChsAtBr(chs, brPair.leftBr) ||  //  |(  (|  |((  ((|  (|(
+                 isChsAtBr(chs, brPair.rightBr) )  //  |)  )|  |))  ))|  )|)
+            {
+                return true;
+            }
+        }
+        else // chs[0] == 0
+        {
+            if ( brPair.leftBr[0] == chs[1] ||  // |((
+                 brPair.rightBr[0] == chs[1] )  // |))
+            {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
 void CXBracketsLogic::jumpToPairBracket(CSciMessager& sciMsgr, const tBracketsJumpState& state, bool isGoTo)
 {
     sciMsgr.setSel(state.nSelStart, state.nSelEnd);

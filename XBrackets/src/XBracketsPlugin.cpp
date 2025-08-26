@@ -3,6 +3,8 @@
 #include "core/npp_files/resource.h"
 #include "PluginCommunication/xbrackets_msgs.h"
 
+#define XBRM_INTERNAL 0x0A00
+#define XBRM_CFGUPD   (XBRM_INTERNAL + 1)
 
 const TCHAR* CXBracketsPlugin::PLUGIN_NAME = _T("XBrackets Lite");
 
@@ -27,9 +29,12 @@ void CXBracketsPlugin::CConfigFileChangeListener::HandleFileChange(const FileInf
 
 CXBracketsPlugin::CXBracketsPlugin() :
   m_ConfigFileChangeListener(this),
+  m_nHlSciIdx(0),
   m_nHlTimerId(0),
-  m_nHlSciStyleInd(-1)
+  m_nHlSciStyleInd(-1),
+  m_isCfgUpdInProgress(false)
 {
+    ::ZeroMemory(&m_ciCfgUpd, sizeof(m_ciCfgUpd));
 }
 
 CXBracketsPlugin::~CXBracketsPlugin()
@@ -264,6 +269,10 @@ void CXBracketsPlugin::OnNppFileSaved()
 
 void CXBracketsPlugin::OnNppReady()
 {
+    m_ciCfgUpd.internalMsg = XBRM_CFGUPD;
+    m_ciCfgUpd.srcModuleName = getDllFileName().c_str();
+    m_ciCfgUpd.info = &m_ciCfgUpd; // now it's non-null, as expected :)
+
     ReadOptions();
     CXBracketsMenu::UpdateMenuState();
     m_BracketsLogic.UpdateFileType(CXBracketsLogic::icbfAll | CXBracketsLogic::uftfConfigUpdated);
@@ -352,6 +361,10 @@ LRESULT CXBracketsPlugin::OnNppMsgToPlugin(CommunicationInfo* pInfo)
 
     switch ( pInfo->internalMsg )
     {
+    case XBRM_CFGUPD:
+        onConfigFileUpdated();
+        break;
+
     case XBRM_GETMATCHINGBRACKETS:
     case XBRM_GETNEARESTBRACKETS:
         {
@@ -403,53 +416,90 @@ void CXBracketsPlugin::OnSciUpdateUI(SCNotification* pscn)
     if ( m_nHlSciStyleInd < 0 )
         return;
 
-    CSciMessager sciMsgr(reinterpret_cast<HWND>(pscn->nmhdr.hwndFrom));
+    const HWND hSciWnd = reinterpret_cast<HWND>(pscn->nmhdr.hwndFrom);
+    const int nSciIdx = (hSciWnd == m_nppMsgr.getSciMainWnd()) ? 0 : 1;
+    if ( nSciIdx != m_nHlSciIdx)
+    {
+        if ( m_hlBrPair[nSciIdx].nLeftBrPos != -1 && m_hlBrPair[nSciIdx].nRightBrPos != -1 )
+        {
+            clearActiveBrackets(nSciIdx);
+        }
+        return;
+    }
+
+    CSciMessager sciMsgr(hSciWnd);
     const Sci_Position pos = sciMsgr.getCurrentPos();
 
-    if ( m_hlBrPair.nLeftBrPos != -1 && m_hlBrPair.nRightBrPos != -1 )
+    const tHighlightBrPair& hlBrPair = m_hlBrPair[nSciIdx];
+    if ( hlBrPair.nLeftBrPos != -1 && hlBrPair.nRightBrPos != -1 )
     {
-        if ( pos < m_hlBrPair.nLeftBrPos || pos > m_hlBrPair.nRightBrPos + m_hlBrPair.nRightBrLen ||
-             (pos > m_hlBrPair.nLeftBrPos + m_hlBrPair.nLeftBrLen && pos < m_hlBrPair.nRightBrPos) )
+        if ( pos < hlBrPair.nLeftBrPos || pos > hlBrPair.nRightBrPos + hlBrPair.nRightBrLen ||
+             (pos > hlBrPair.nLeftBrPos + hlBrPair.nLeftBrLen && pos < hlBrPair.nRightBrPos) )
         {
             clearActiveBrackets();
         }
     }
 
-    if ( m_hlBrPair.nLeftBrPos == -1 && m_hlBrPair.nRightBrPos == -1 )
+    if ( hlBrPair.nLeftBrPos == -1 && hlBrPair.nRightBrPos == -1 )
     {
-        m_csHl.Lock();
-        if ( m_nHlTimerId == 0 )
+        if ( m_BracketsLogic.IsAtBracketPos(sciMsgr, pos) )
         {
-            m_lastTextChangedTimePoint = std::chrono::system_clock::now();
-            m_lastTextChangedTimePoint -= std::chrono::milliseconds(GetOptions().getHighlightTypingDelayMs());
-            m_nHlTimerId = ::SetTimer(NULL, 0,  USER_TIMER_MINIMUM, HlTimerProc);
+            m_csHl.Lock();
+            if ( m_nHlTimerId == 0 )
+            {
+                m_lastTextChangedTimePoint = std::chrono::system_clock::now();
+                m_lastTextChangedTimePoint -= std::chrono::milliseconds(GetOptions().getHighlightTypingDelayMs());
+                m_nHlTimerId = ::SetTimer(NULL, 0,  USER_TIMER_MINIMUM, HlTimerProc);
+              #ifdef _DEBUG
+                char str[100];
+                wsprintfA(str, "OnSciUpdateUI -> HlTimerProc, pos = %d\n", static_cast<int>(pos));
+                OutputDebugStringA(str);
+              #endif
+            }
+            m_csHl.Unlock();
         }
-        m_csHl.Unlock();
     }
 }
 
-void CXBracketsPlugin::clearActiveBrackets()
+void CXBracketsPlugin::clearActiveBrackets(int nSciIdx)
 {
-    CSciMessager sciMsgr(m_nppMsgr.getCurrentScintillaWnd());
+    int iStart = 0;
+    int iEnd = 2;
+    if ( nSciIdx == 0 || nSciIdx == 1 )
+    {
+        iStart = nSciIdx;
+        iEnd = iStart + 1;
+    }
 
     m_csHl.Lock();
     // clearing the brackets "indication"
-    sciMsgr.SendSciMsg(SCI_SETINDICATORCURRENT, m_nHlSciStyleInd);
-    sciMsgr.SendSciMsg(SCI_INDICATORCLEARRANGE, m_hlBrPair.nLeftBrPos, m_hlBrPair.nLeftBrLen);
-    sciMsgr.SendSciMsg(SCI_INDICATORCLEARRANGE, m_hlBrPair.nRightBrPos, m_hlBrPair.nRightBrLen);
+    for ( int i = iStart; i < iEnd; i++ )
+    {
+        if ( m_hlBrPair[i].nLeftBrPos != -1 && m_hlBrPair[i].nRightBrPos != -1 )
+        {
+            CSciMessager sciMsgr(m_nppMsgr.getCurrentScintillaWndByIdx(i));
 
-    // nothing is "indicated"
-    m_hlBrPair.nLeftBrPos = -1;
-    m_hlBrPair.nRightBrPos = -1;
+            sciMsgr.SendSciMsg(SCI_SETINDICATORCURRENT, m_nHlSciStyleInd);
+            sciMsgr.SendSciMsg(SCI_INDICATORCLEARRANGE, m_hlBrPair[i].nLeftBrPos, m_hlBrPair[i].nLeftBrLen);
+            sciMsgr.SendSciMsg(SCI_INDICATORCLEARRANGE, m_hlBrPair[i].nRightBrPos, m_hlBrPair[i].nRightBrLen);
+
+            // nothing is "indicated"
+            m_hlBrPair[i].nLeftBrPos = -1;
+            m_hlBrPair[i].nRightBrPos = -1;
+        }
+    }
     m_csHl.Unlock();
 }
 
 void CXBracketsPlugin::highlightActiveBrackets(Sci_Position pos)
 {
-    if ( m_nHlSciStyleInd < 0 || m_hlBrPair.nLeftBrPos != -1 )
+    const int nSciIdx = m_nppMsgr.getCurrentScintillaIdx();
+    tHighlightBrPair& hlBrPair = m_hlBrPair[nSciIdx];
+    CSciMessager sciMsgr(m_nppMsgr.getCurrentScintillaWndByIdx(nSciIdx));
+
+    if ( m_nHlSciStyleInd < 0 || hlBrPair.nLeftBrPos != -1 )
         return;
 
-    CSciMessager sciMsgr(m_nppMsgr.getCurrentScintillaWnd());
     if ( pos < 0 )
         pos = sciMsgr.getCurrentPos();
 
@@ -458,15 +508,16 @@ void CXBracketsPlugin::highlightActiveBrackets(Sci_Position pos)
         return;
 
     // new positions for the "indication"
-    m_hlBrPair.nLeftBrLen = static_cast<Sci_Position>(pBrItem->pBrPair->leftBr.length());
-    m_hlBrPair.nLeftBrPos = pBrItem->nLeftBrPos - m_hlBrPair.nLeftBrLen;
-    m_hlBrPair.nRightBrLen = static_cast<Sci_Position>(pBrItem->pBrPair->rightBr.length());
-    m_hlBrPair.nRightBrPos = pBrItem->nRightBrPos;
+    hlBrPair.nLeftBrLen = static_cast<Sci_Position>(pBrItem->pBrPair->leftBr.length());
+    hlBrPair.nLeftBrPos = pBrItem->nLeftBrPos - hlBrPair.nLeftBrLen;
+    hlBrPair.nRightBrLen = static_cast<Sci_Position>(pBrItem->pBrPair->rightBr.length());
+    hlBrPair.nRightBrPos = pBrItem->nRightBrPos;
+    m_nHlSciIdx = nSciIdx;
 
     // setting the brackets "indication"
     sciMsgr.SendSciMsg(SCI_SETINDICATORCURRENT, m_nHlSciStyleInd);
-    sciMsgr.SendSciMsg(SCI_INDICATORFILLRANGE, m_hlBrPair.nLeftBrPos, m_hlBrPair.nLeftBrLen);
-    sciMsgr.SendSciMsg(SCI_INDICATORFILLRANGE, m_hlBrPair.nRightBrPos, m_hlBrPair.nRightBrLen);
+    sciMsgr.SendSciMsg(SCI_INDICATORFILLRANGE, hlBrPair.nLeftBrPos, hlBrPair.nLeftBrLen);
+    sciMsgr.SendSciMsg(SCI_INDICATORFILLRANGE, hlBrPair.nRightBrPos, hlBrPair.nRightBrLen);
 }
 
 void CXBracketsPlugin::OnSciTextChange(SCNotification* pscn)
@@ -587,7 +638,27 @@ void CXBracketsPlugin::OnSettings()
 
 void CXBracketsPlugin::OnConfigFileChanged(const tstr& configFilePath)
 {
+    // This method is called from a different thread.
+    // Let's send a plugin message to self to do the further processing in the main thread.
+    m_csCfgUpd.Lock();
+    m_sCfgFileUpd = configFilePath;
+    if ( !m_isCfgUpdInProgress )
+    {
+        ::PostMessage( m_nppMsgr.getNppWnd(), NPPM_MSGTOPLUGIN,
+            (WPARAM) getDllFileName().c_str(), (LPARAM) &m_ciCfgUpd );
+        m_isCfgUpdInProgress = true;
+    }
+    m_csCfgUpd.Unlock();
+}
+
+void CXBracketsPlugin::onConfigFileUpdated()
+{
+    m_csCfgUpd.Lock();
+    tstr configFilePath = m_sCfgFileUpd;
     const tstr err = GetOptions().ReadConfig(configFilePath);
+    m_isCfgUpdInProgress = false;
+    m_csCfgUpd.Unlock();
+
     if ( !err.empty() )
     {
         onConfigFileError(configFilePath, err);
@@ -622,9 +693,12 @@ void CXBracketsPlugin::onConfigFileHasBeenRead()
     m_nHlSciStyleInd = GetOptions().getHighlightSciStyleIndIdx();
     if ( m_nHlSciStyleInd >= 0 )
     {
-        CSciMessager sciMsgr(m_nppMsgr.getCurrentScintillaWnd());
-        sciMsgr.SendSciMsg(SCI_INDICSETSTYLE, m_nHlSciStyleInd, GetOptions().getHighlightSciStyleIndType());
-        sciMsgr.SendSciMsg(SCI_INDICSETFORE, m_nHlSciStyleInd, GetOptions().getHighlightSciColor());
+        for ( int i = 0; i < 2; i++ )
+        {
+            CSciMessager sciMsgr(m_nppMsgr.getCurrentScintillaWndByIdx(i));
+            sciMsgr.SendSciMsg(SCI_INDICSETSTYLE, m_nHlSciStyleInd, GetOptions().getHighlightSciStyleIndType());
+            sciMsgr.SendSciMsg(SCI_INDICSETFORE, m_nHlSciStyleInd, GetOptions().getHighlightSciColor());
+        }
     }
     m_csHl.Unlock();
 }

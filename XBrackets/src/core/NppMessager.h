@@ -24,7 +24,9 @@ class CNppMessager
         BOOL    getCurrentFileNameExt(int strLen, TCHAR *str) const;
         BOOL    getCurrentFileNamePart(int strLen, TCHAR *str) const;
         BOOL    getCurrentFileExtPart(int strLen, TCHAR *str) const;
+        int     getCurrentScintillaIdx() const; // 0 - primary, 1 - secondary
         HWND    getCurrentScintillaWnd() const;
+        HWND    getCurrentScintillaWndByIdx(int nScintillaIdx) const;
         BOOL    getCurrentWord(int strLen, TCHAR *str) const;
         BOOL    getNppDirectory(int strLen, TCHAR *str) const;
         HWND    getNppWnd() const  { return m_nppData._nppHandle; }

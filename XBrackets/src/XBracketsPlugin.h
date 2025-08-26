@@ -89,11 +89,16 @@ class CXBracketsPlugin : public CNppPlugin
         tstr m_sIniFilePath;
         tstr m_sConfigFilePath;
         tstr m_sUserConfigFilePath;
-        tHighlightBrPair m_hlBrPair;
+        tstr m_sCfgFileUpd;
+        tHighlightBrPair m_hlBrPair[2];
+        int m_nHlSciIdx;
         UINT_PTR m_nHlTimerId;
         int m_nHlSciStyleInd;
+        CommunicationInfo m_ciCfgUpd;
+        bool m_isCfgUpdInProgress;
         std::chrono::time_point<std::chrono::system_clock> m_lastTextChangedTimePoint;
         XBrackets::CCriticalSection m_csHl;
+        XBrackets::CCriticalSection m_csCfgUpd;
 
         static bool    isNppMacroStarted;
         static bool    isNppWndUnicode;
@@ -107,9 +112,10 @@ class CXBracketsPlugin : public CNppPlugin
         static LRESULT CALLBACK sciNewWndProc(HWND, UINT, WPARAM, LPARAM);
         static void CALLBACK HlTimerProc(HWND, UINT, UINT_PTR, DWORD);
 
+        void onConfigFileUpdated();
         void onConfigFileError(const tstr& configFilePath, const tstr& err);
         void onConfigFileHasBeenRead();
-        void clearActiveBrackets();
+        void clearActiveBrackets(int nSciIdx = 2); // 2 - main & second
         void highlightActiveBrackets(Sci_Position pos);
 };
 
