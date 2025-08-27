@@ -237,11 +237,15 @@ The plugin's settings under the "settings" node:
     defines delimiters for the "autocomplete" items (see above).
 
   "Highlight_SciStyleIndIdx": 20
-    defines Scintilla's style indicator index that is used by XBrackets to highlight
-    the matching brackets. This number is expected to be in a range from 8 to 31.
+    defines a fallback value of Scintilla's style indicator index to be used by
+    XBrackets to highlight the matching brackets. (First, XBrackets sends a message
+    NPPM_ALLOCATEINDICATOR to retrieve an indicator index from Notepad++, and uses
+    that retrieved indicator index if NPPM_ALLOCATEINDICATOR succeeds. Otherwise, the
+    fallback value is used).
+    This number is expected to be in a range from 8 to 31.
     The value of 20 should not normally interfere with the styles used by Notepad++ itself.
     If any interference happens, change this value and observe the results.
-    To disable brackets highlighting by XBrackets, set it to -1 :
+    To disable brackets highlighting by XBrackets, set this value to -1 :
       "Highlight_SciStyleIndIdx": -1
 
   "Highlight_SciStyleIndType": 17

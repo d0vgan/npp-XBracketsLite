@@ -94,8 +94,9 @@ class CXBracketsPlugin : public CNppPlugin
         int m_nHlSciIdx;
         UINT_PTR m_nHlTimerId;
         int m_nHlSciStyleInd;
-        CommunicationInfo m_ciCfgUpd;
+        int m_nHlSciStyleIndByNpp;
         bool m_isCfgUpdInProgress;
+        CommunicationInfo m_ciCfgUpd;
         std::chrono::time_point<std::chrono::system_clock> m_lastTextChangedTimePoint;
         XBrackets::CCriticalSection m_csHl;
         XBrackets::CCriticalSection m_csCfgUpd;

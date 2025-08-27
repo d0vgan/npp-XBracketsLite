@@ -29,9 +29,10 @@ void CXBracketsPlugin::CConfigFileChangeListener::HandleFileChange(const FileInf
 
 CXBracketsPlugin::CXBracketsPlugin() :
   m_ConfigFileChangeListener(this),
-  m_nHlSciIdx(0),
+  m_nHlSciIdx(-1),
   m_nHlTimerId(0),
   m_nHlSciStyleInd(-1),
+  m_nHlSciStyleIndByNpp(-1),
   m_isCfgUpdInProgress(false)
 {
     ::ZeroMemory(&m_ciCfgUpd, sizeof(m_ciCfgUpd));
@@ -418,7 +419,7 @@ void CXBracketsPlugin::OnSciUpdateUI(SCNotification* pscn)
 
     const HWND hSciWnd = reinterpret_cast<HWND>(pscn->nmhdr.hwndFrom);
     const int nSciIdx = (hSciWnd == m_nppMsgr.getSciMainWnd()) ? 0 : 1;
-    if ( nSciIdx != m_nHlSciIdx)
+    if ( m_nHlSciIdx != -1 && nSciIdx != m_nHlSciIdx)
     {
         if ( m_hlBrPair[nSciIdx].nLeftBrPos != -1 && m_hlBrPair[nSciIdx].nRightBrPos != -1 )
         {
@@ -487,6 +488,11 @@ void CXBracketsPlugin::clearActiveBrackets(int nSciIdx)
             m_hlBrPair[i].nLeftBrPos = -1;
             m_hlBrPair[i].nRightBrPos = -1;
         }
+    }
+    if ( m_hlBrPair[0].nLeftBrPos == -1 && m_hlBrPair[1].nLeftBrPos == -1 )
+    {
+        // there's no highlighted brackets in both Scintilla's viewes
+        m_nHlSciIdx = -1;
     }
     m_csHl.Unlock();
 }
@@ -693,6 +699,20 @@ void CXBracketsPlugin::onConfigFileHasBeenRead()
     m_nHlSciStyleInd = GetOptions().getHighlightSciStyleIndIdx();
     if ( m_nHlSciStyleInd >= 0 )
     {
+        if ( m_nHlSciStyleIndByNpp < 0 )
+        {
+            int nIndIdx = -1;
+            if ( m_nppMsgr.SendNppMsg(NPPM_ALLOCATEINDICATOR, 1, (LPARAM) &nIndIdx) && nIndIdx != -1 )
+            {
+                m_nHlSciStyleIndByNpp = nIndIdx;
+                m_nHlSciStyleInd = nIndIdx;
+            }
+        }
+        else
+        {
+            m_nHlSciStyleInd = m_nHlSciStyleIndByNpp;
+        }
+
         for ( int i = 0; i < 2; i++ )
         {
             CSciMessager sciMsgr(m_nppMsgr.getCurrentScintillaWndByIdx(i));

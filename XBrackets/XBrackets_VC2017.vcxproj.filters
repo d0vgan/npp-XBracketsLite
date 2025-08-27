@@ -28,6 +28,9 @@
     <Filter Include="Header Files\PluginCommunication">
       <UniqueIdentifier>{f8ebace0-2dd5-4815-a6d5-d519e1053f5b}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\core\npp_files">
+      <UniqueIdentifier>{e9d3cc3e-89b5-4820-983c-c82976967a01}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Main.cpp">
@@ -115,6 +118,21 @@
     </ClInclude>
     <ClInclude Include="src\PluginCommunication\xbrackets_msgs.h">
       <Filter>Header Files\PluginCommunication</Filter>
+    </ClInclude>
+    <ClInclude Include="src\core\npp_files\menuCmdID.h">
+      <Filter>Header Files\core\npp_files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\core\npp_files\Notepad_plus_msgs.h">
+      <Filter>Header Files\core\npp_files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\core\npp_files\PluginInterface.h">
+      <Filter>Header Files\core\npp_files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\core\npp_files\resource.h">
+      <Filter>Header Files\core\npp_files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\core\npp_files\Scintilla.h">
+      <Filter>Header Files\core\npp_files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

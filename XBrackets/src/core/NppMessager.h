@@ -2,6 +2,7 @@
 #define _npp_messager_h_
 //---------------------------------------------------------------------------
 #include "base.h"
+#include "npp_files/Notepad_plus_msgs.h"
 #include "npp_files/PluginInterface.h"
 #include "npp_files/menuCmdID.h"
 
