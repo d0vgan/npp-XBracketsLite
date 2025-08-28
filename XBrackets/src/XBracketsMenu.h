@@ -15,8 +15,9 @@ class CXBracketsMenu : public CNppPluginMenu
             N_SELTOMATCHINGBR,
             N_SELTONEARESTBR,
             N_SEPARATOR2,
+            N_HELP,
             N_ABOUT,
-            
+
             N_NBFUNCITEMS
         };
         static FuncItem arrFuncItems[N_NBFUNCITEMS];
@@ -31,6 +32,7 @@ class CXBracketsMenu : public CNppPluginMenu
         static void    funcGoToNearestBracket();
         static void    funcSelToMatchingBracket();
         static void    funcSelToNearestBrackets();
+        static void    funcHelp();
         static void    funcAbout();
         
 };

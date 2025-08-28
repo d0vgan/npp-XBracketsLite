@@ -62,6 +62,7 @@ class CXBracketsPlugin : public CNppPlugin
         void SaveOptions();
         void OnSettings();
         void OnConfigFileChanged(const tstr& configFilePath);
+        void OnHelp();
 
         void PluginMessageBox(const TCHAR* szMessageText, UINT uType);
 

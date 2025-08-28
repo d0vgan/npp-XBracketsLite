@@ -14,6 +14,7 @@ FuncItem CXBracketsMenu::arrFuncItems[N_NBFUNCITEMS] = {
     { _T("Select To Matching Bracket"), funcSelToMatchingBracket, 0, false, NULL },
     { _T("Select To Nearest Brackets"), funcSelToNearestBrackets, 0, false, NULL },
     { _T(""),                           NULL,                     0, false, NULL }, // separator
+    { _T("Help..."),                    funcHelp,                 0, false, NULL },
     { _T("About"),                      funcAbout,                0, false, NULL }
 };
 
@@ -46,6 +47,11 @@ void CXBracketsMenu::funcSelToMatchingBracket()
 void CXBracketsMenu::funcSelToNearestBrackets()
 {
     GetPlugin().SelToNearestBrackets();
+}
+
+void CXBracketsMenu::funcHelp()
+{
+    GetPlugin().OnHelp();
 }
 
 void CXBracketsMenu::funcAbout()

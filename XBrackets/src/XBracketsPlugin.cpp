@@ -723,6 +723,45 @@ void CXBracketsPlugin::onConfigFileHasBeenRead()
     m_csHl.Unlock();
 }
 
+void CXBracketsPlugin::OnHelp()
+{
+    static const TCHAR* const cszHelpFileNames[2] = {
+        _T("XBrackets\\XBrackets.txt"), // doc\XBrackets\XBrackets.txt
+        _T("XBrackets.txt")             // doc\XBrackets.txt
+    };
+
+    tstr helpFilePath;
+    tstr helpDir = getDllDir();
+    bool hasBeenOpened = false;
+    size_t n = helpDir.find_last_of(_T("\\/"));
+    if ( n != tstr::npos )
+    {
+        helpDir.resize(n);
+    }
+    helpDir += _T("\\doc\\");
+
+    for ( const TCHAR* const cszFileName : cszHelpFileNames )
+    {
+        helpFilePath = helpDir;
+        helpFilePath += cszFileName;
+
+        if ( XBrackets::isExistingFile(helpFilePath) )
+        {
+            if ( m_nppMsgr.doOpen(helpFilePath.c_str()) )
+            {
+                hasBeenOpened = true;
+                break;
+            }
+        }
+    }
+
+    if ( !hasBeenOpened )
+    {
+        helpFilePath.insert(0, _T("Could not open a file:\r\n  "));
+        PluginMessageBox(helpFilePath.c_str(), MB_OK | MB_ICONWARNING);
+    }
+}
+
 void CXBracketsPlugin::PluginMessageBox(const TCHAR* szMessageText, UINT uType)
 {
     ::MessageBox(
