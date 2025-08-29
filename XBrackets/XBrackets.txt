@@ -1,6 +1,6 @@
 ****************************************************************
 * XBrackets Lite for Notepad++ 8.x.x (and above)
-* by DV, Jan 2009 - Aug 2025
+* by DV, Jan 2009 - Sep 2025
 * https://github.com/d0vgan/npp-XBracketsLite
 *
 * Powered by json11: https://github.com/dropbox/json11
@@ -253,7 +253,7 @@ The plugin's settings under the "settings" node:
     The value of 17 is INDIC_TEXTFORE - text foreground colour.
     For details, refer to: https://scintilla.org/ScintillaDoc.html#SCI_INDICSETSTYLE
 
-  "Highlight_SciColor": "#FF0000"
+  "Highlight_SciColor": "#E04040"
     defines the color of the Scintilla's style indicator. The format of the color is
     #RRGGBB, where RR, GG and BB are the Red, Green and Blue components of the color
     represented as hexadecimal numbers from 00 to FF.
@@ -365,13 +365,13 @@ The plugin's settings under the "settings" node:
 *  History  *
 *************
 
-v2.0 - Aug 2025
+v2.0 - Sep 2025
 ---------------
 * Glory to Ukraine! Glory to the heroes!
 + new functions: Go To Matching Bracket, Sel To Matching Bracket
 + new functions: Go To Nearest Bracket, Sel To Nearest Brackets
 + now the configuration is stored in JSON format
-+ file type-specific (language-specific) rules are allowed
++ file type-specific (language-specific) rules are applied
 + multi-character brackets and quotes are supported
 + brackets or quotes at the caret are highlighted
 + plugins communication by means of NPPM_MSGTOPLUGIN added

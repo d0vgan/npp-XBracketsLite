@@ -354,7 +354,7 @@ CXBracketsOptions::CXBracketsOptions() :
   m_nJumpPairLineDiff(1),
   m_nHighlightSciStyleIndIdx(-1),
   m_nHighlightSciStyleIndType(INDIC_TEXTFORE),
-  m_nHighlightSciColor(RGB(0xFF, 0x00, 0x00)),
+  m_nHighlightSciColor(RGB(0xE0, 0x40, 0x40)),
   m_nHighlightTypingDelayMs(1200),
   m_sNextCharOK(_T(".,!?:;</")),
   m_sPrevCharOK(_T("([{<=")),
