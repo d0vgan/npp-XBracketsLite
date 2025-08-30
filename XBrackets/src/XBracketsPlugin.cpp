@@ -31,6 +31,7 @@ CXBracketsPlugin::CXBracketsPlugin() :
   m_ConfigFileChangeListener(this),
   m_nHlSciIdx(-1),
   m_nHlTimerId(0),
+  m_nTextLength(0),
   m_nHlSciStyleInd(-1),
   m_nHlSciStyleIndByNpp(-1),
   m_isCfgUpdInProgress(false)
@@ -238,7 +239,7 @@ void CXBracketsPlugin::OnNppBufferActivated()
         return;
 
     clearActiveBrackets();
-    m_BracketsLogic.UpdateFileType(CXBracketsLogic::icbfAll);
+    updateFileInfo(CXBracketsLogic::icbfAll);
 }
 
 void CXBracketsPlugin::OnNppBufferReload()
@@ -262,7 +263,7 @@ void CXBracketsPlugin::OnNppFileReload()
 void CXBracketsPlugin::OnNppFileSaved()
 {
     // AutoRightBr is still valid, but file type may be changed:
-    if ( m_BracketsLogic.UpdateFileType(CXBracketsLogic::icbfTree) )
+    if ( updateFileInfo(CXBracketsLogic::icbfTree) )
     {
         clearActiveBrackets();
     }
@@ -276,7 +277,7 @@ void CXBracketsPlugin::OnNppReady()
 
     ReadOptions();
     CXBracketsMenu::UpdateMenuState();
-    m_BracketsLogic.UpdateFileType(CXBracketsLogic::icbfAll | CXBracketsLogic::uftfConfigUpdated);
+    updateFileInfo(CXBracketsLogic::icbfAll | CXBracketsLogic::uftfConfigUpdated);
 
     unsigned int uSciFlags = (SC_MOD_INSERTTEXT | SC_MOD_DELETETEXT | SC_MOD_BEFOREINSERT | SC_MOD_BEFOREDELETE);
     m_nppMsgr.SendNppMsg(NPPM_ADDSCNMODIFIEDFLAGS, 0, uSciFlags);
@@ -349,7 +350,7 @@ void CXBracketsPlugin::OnNppMacro(int nMacroState)
             nPrevAutoComplete = GetOptions().getBracketsAutoComplete() ? 1 : 0;
 
         GetOptions().setBracketsAutoComplete(nPrevAutoComplete > 0);
-        m_BracketsLogic.UpdateFileType(CXBracketsLogic::icbfAll);
+        updateFileInfo(CXBracketsLogic::icbfAll);
     }
 
     CXBracketsMenu::AllowAutocomplete(!isNppMacroStarted);
@@ -414,7 +415,7 @@ void CXBracketsPlugin::OnSciAutoCompleted(SCNotification* pscn)
 
 void CXBracketsPlugin::OnSciUpdateUI(SCNotification* pscn)
 {
-    if ( m_nHlSciStyleInd < 0 )
+    if ( !isHighlightEnabled() )
         return;
 
     const HWND hSciWnd = reinterpret_cast<HWND>(pscn->nmhdr.hwndFrom);
@@ -462,6 +463,14 @@ void CXBracketsPlugin::OnSciUpdateUI(SCNotification* pscn)
     }
 }
 
+bool CXBracketsPlugin::updateFileInfo(unsigned int uInvalidateAndUpdateFlags)
+{
+    CSciMessager sciMsgr(m_nppMsgr.getCurrentScintillaWnd());
+    m_nTextLength = sciMsgr.getTextLength();
+
+    return m_BracketsLogic.UpdateFileType(uInvalidateAndUpdateFlags);
+}
+
 void CXBracketsPlugin::clearActiveBrackets(int nSciIdx)
 {
     int iStart = 0;
@@ -503,7 +512,7 @@ void CXBracketsPlugin::highlightActiveBrackets(Sci_Position pos)
     tHighlightBrPair& hlBrPair = m_hlBrPair[nSciIdx];
     CSciMessager sciMsgr(m_nppMsgr.getCurrentScintillaWndByIdx(nSciIdx));
 
-    if ( m_nHlSciStyleInd < 0 || hlBrPair.nLeftBrPos != -1 )
+    if ( !isHighlightEnabled() || hlBrPair.nLeftBrPos != -1 )
         return;
 
     if ( pos < 0 )
@@ -524,6 +533,17 @@ void CXBracketsPlugin::highlightActiveBrackets(Sci_Position pos)
     sciMsgr.SendSciMsg(SCI_SETINDICATORCURRENT, m_nHlSciStyleInd);
     sciMsgr.SendSciMsg(SCI_INDICATORFILLRANGE, hlBrPair.nLeftBrPos, hlBrPair.nLeftBrLen);
     sciMsgr.SendSciMsg(SCI_INDICATORFILLRANGE, hlBrPair.nRightBrPos, hlBrPair.nRightBrLen);
+}
+
+bool CXBracketsPlugin::isHighlightEnabled() const
+{
+    if ( m_nHlSciStyleInd >= 0 )
+    {
+        const Sci_Position nMaxTextLength = static_cast<Sci_Position>(GetOptions().getHighlightMaxTextLength());
+        if ( nMaxTextLength == 0 || nMaxTextLength >= m_nTextLength )
+            return true;
+    }
+    return false;
 }
 
 void CXBracketsPlugin::OnSciTextChange(SCNotification* pscn)
@@ -674,7 +694,7 @@ void CXBracketsPlugin::onConfigFileUpdated()
     clearActiveBrackets(); // clear the existing style indication first
     onConfigFileHasBeenRead(); // now read the new style, if any
     m_PluginMenu.UpdateMenuState();
-    m_BracketsLogic.UpdateFileType(CXBracketsLogic::icbfAll | CXBracketsLogic::uftfConfigUpdated);
+    updateFileInfo(CXBracketsLogic::icbfAll | CXBracketsLogic::uftfConfigUpdated);
 }
 
 void CXBracketsPlugin::onConfigFileError(const tstr& configFilePath, const tstr& err)

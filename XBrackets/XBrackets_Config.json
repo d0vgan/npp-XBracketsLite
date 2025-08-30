@@ -10,6 +10,7 @@
     "Highlight_SciStyleIndType": 17,
     "Highlight_SciColor": "#E04040",
     "Highlight_TypingDelayMs": 1200,
+    "Highlight_MaxTextLength": 6291456,
     "GoToNearest_Flags": 0,
     "SelToNearest_Flags": 2,
     "Jump_Lines_Vis_Up": 1,

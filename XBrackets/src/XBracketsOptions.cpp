@@ -356,6 +356,7 @@ CXBracketsOptions::CXBracketsOptions() :
   m_nHighlightSciStyleIndType(INDIC_TEXTFORE),
   m_nHighlightSciColor(RGB(0xE0, 0x40, 0x40)),
   m_nHighlightTypingDelayMs(1200),
+  m_nHighlightMaxTextLength(0),
   m_sNextCharOK(_T(".,!?:;</")),
   m_sPrevCharOK(_T("([{<=")),
   m_sDelimiters(_T("'`\"\\|[](){}<>,.;:+-=~!@#$%^&*/?")),
@@ -494,6 +495,11 @@ void CXBracketsOptions::readConfigSettingsItem(const void* pContext)
         {
             if ( settingVal.is_number() )
                 m_nHighlightTypingDelayMs = settingVal.int_value();
+        }
+        else if ( settingName == "Highlight_MaxTextLength" )
+        {
+            if ( settingVal.is_number() )
+                m_nHighlightMaxTextLength = settingVal.int_value();
         }
         else if ( settingName == "FileExtsRule" )
         {

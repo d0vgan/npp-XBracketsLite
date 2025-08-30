@@ -247,6 +247,7 @@ The plugin's settings under the "settings" node:
     If any interference happens, change this value and observe the results.
     To disable brackets highlighting by XBrackets, set this value to -1 :
       "Highlight_SciStyleIndIdx": -1
+    See also: "Highlight_MaxTextLength".
 
   "Highlight_SciStyleIndType": 17
     defines a type (or, in terms of Scintilla, an own style) of the style indicator.
@@ -269,6 +270,15 @@ The plugin's settings under the "settings" node:
      due to the internal implementation. Thus, in case of 1200, the actual delay
      will be from 1200 to 1500 ms. It's because XBrackets reuses the existing timer
      instead of creating a new one with each typed character).
+
+  "Highlight_MaxTextLength": 6291456
+    defines the maximum text length (in terms of Scintilla's text length) when the
+    active brackets or quotes are highlighted by XBrackets. If the text length exceeds
+    this value, active brackets or quotes are not highlighted.
+    Set this value to 0 to remove the text length limit - in this case, active brackets
+    or quotes will be highlighted whatever the text length is :
+      "Highlight_MaxTextLength": 0
+    See also: "Highlight_SciStyleIndIdx".
 
   "GoToNearest_Flags": 0
     controls the behavior of the GoToNearestBracket function.

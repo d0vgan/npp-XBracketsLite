@@ -94,6 +94,7 @@ class CXBracketsPlugin : public CNppPlugin
         tHighlightBrPair m_hlBrPair[2];
         int m_nHlSciIdx;
         UINT_PTR m_nHlTimerId;
+        Sci_Position m_nTextLength;
         int m_nHlSciStyleInd;
         int m_nHlSciStyleIndByNpp;
         bool m_isCfgUpdInProgress;
@@ -117,8 +118,10 @@ class CXBracketsPlugin : public CNppPlugin
         void onConfigFileUpdated();
         void onConfigFileError(const tstr& configFilePath, const tstr& err);
         void onConfigFileHasBeenRead();
+        bool updateFileInfo(unsigned int uInvalidateAndUpdateFlags);
         void clearActiveBrackets(int nSciIdx = 2); // 2 - main & second
         void highlightActiveBrackets(Sci_Position pos);
+        bool isHighlightEnabled() const;
 };
 
 CXBracketsPlugin& GetPlugin();

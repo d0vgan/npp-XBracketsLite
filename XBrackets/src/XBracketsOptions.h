@@ -140,6 +140,11 @@ class CXBracketsOptions
             return m_nHighlightTypingDelayMs;
         }
 
+        unsigned int getHighlightMaxTextLength() const
+        {
+            return m_nHighlightMaxTextLength;
+        }
+
         const tstr& getNextCharOK() const
         {
             return m_sNextCharOK;
@@ -189,6 +194,7 @@ class CXBracketsOptions
         int   m_nHighlightSciStyleIndType;
         COLORREF m_nHighlightSciColor;
         UINT  m_nHighlightTypingDelayMs;
+        UINT  m_nHighlightMaxTextLength;
         tstr  m_sFileExtsRule;
         tstr  m_sNextCharOK;
         tstr  m_sPrevCharOK;
