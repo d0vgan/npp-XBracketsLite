@@ -272,12 +272,14 @@ void CBracketsTree::buildTree(CSciMessager& sciMsgr)
                 if ( nCurrentParentIdx != -1 )
                 {
                     Sci_Position nEndIdx = static_cast<Sci_Position>(bracketsTree.size());
+                    // TODO: probably this should be from (nEndIdx - 1) to the (position of the first single-line quote in line); --nIdx
                     for ( nIdx = nCurrentParentIdx + 1; nIdx < nEndIdx; ++nIdx )
                     {
                         const tBrPairItem& rightItem = bracketsTree[nIdx];
                         if ( rightItem.isOpenRightBr() )
                         {
                             // potentially a right bracket after an incomplete single-line quote
+                            // TODO: probably the start index should be the ((position of the first single-line quote in line) - 1)
                             for ( Sci_Position nLeftIdx = nCurrentParentIdx; nLeftIdx != -1; )
                             {
                                 tBrPairItem& leftItem = bracketsTree[nLeftIdx];
