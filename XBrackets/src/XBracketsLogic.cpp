@@ -225,7 +225,7 @@ void CBracketsTree::buildTree(CSciMessager& sciMsgr)
 
                 for ( ; nIdx != -1; )
                 {
-                    const tBrPairItem& item = bracketsTree[nIdx];
+                    tBrPairItem& item = bracketsTree[nIdx];
                     if ( item.nLine != nCurrentLine )
                         break;
 
@@ -234,11 +234,18 @@ void CBracketsTree::buildTree(CSciMessager& sciMsgr)
                         nCommIdx = nIdx;
                         nNewParentIdx = item.nParentIdx; // above the comment
                     }
-                    else if ( nNewParentIdx == -1 && // TODO: (")()
-                              item.isOpenLeftBr() &&
-                              !isSgLnBrQtKind(item.pBrPair->kind) )
+                    else if ( item.isOpenLeftBr() )
                     {
-                        nNewParentIdx = nIdx; // at an open left multi-line bracket
+                        if ( !isSgLnBrQtKind(item.pBrPair->kind) )
+                        {
+                            // at an open left multi-line bracket
+                            if ( nNewParentIdx == -1 )
+                                nNewParentIdx = nIdx;
+                        }
+                        else
+                        {
+                            item.nLeftBrPos = -1; // invalidate
+                        }
                     }
 
                     nIdx = item.nParentIdx;
@@ -264,7 +271,7 @@ void CBracketsTree::buildTree(CSciMessager& sciMsgr)
 
                 if ( nCurrentParentIdx != -1 )
                 {
-                    const Sci_Position nEndIdx = static_cast<Sci_Position>(bracketsTree.size());
+                    Sci_Position nEndIdx = static_cast<Sci_Position>(bracketsTree.size());
                     for ( nIdx = nCurrentParentIdx + 1; nIdx < nEndIdx; ++nIdx )
                     {
                         const tBrPairItem& rightItem = bracketsTree[nIdx];
@@ -282,12 +289,24 @@ void CBracketsTree::buildTree(CSciMessager& sciMsgr)
                                     if ( leftItem.pBrPair->leftBr == rightItem.pBrPair->leftBr )
                                     {
                                         leftItem.nRightBrPos = rightItem.nRightBrPos;
-                                        nCurrentParentIdx = getOpenParentIdx(leftItem.nParentIdx);
+                                        if ( nIdx == nEndIdx - 1)
+                                        {
+                                            nEndIdx = nCurrentParentIdx; // previous value
+                                            nCurrentParentIdx = getOpenParentIdx(leftItem.nParentIdx);
+                                            nIdx = nCurrentParentIdx; // current value, can become -1
+                                        }
+                                        else
+                                        {
+                                            nCurrentParentIdx = getOpenParentIdx(leftItem.nParentIdx);
+                                        }
                                         break;
                                     }
                                 }
                                 nLeftIdx = leftItem.nParentIdx;
                             }
+
+                            if ( nIdx == -1 )
+                                break;
                         }
                     }
                 }
