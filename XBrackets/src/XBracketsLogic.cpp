@@ -234,7 +234,7 @@ void CBracketsTree::buildTree(CSciMessager& sciMsgr)
                         nCommIdx = nIdx;
                         nNewParentIdx = item.nParentIdx; // above the comment
                     }
-                    else if ( nNewParentIdx == -1 &&
+                    else if ( nNewParentIdx == -1 && // TODO: (")()
                               item.isOpenLeftBr() &&
                               !isSgLnBrQtKind(item.pBrPair->kind) )
                     {
@@ -1418,7 +1418,10 @@ bool CXBracketsLogic::UpdateFileType(unsigned int uInvalidateAndUpdateFlags)
     if ( (uInvalidateAndUpdateFlags & uftfConfigUpdated) == 0 )
     {
         if ( uFileType == m_uFileType && fileExtension == m_fileExtension && m_pFileSyntax != nullptr )
+        {
+            InvalidateCachedBrackets(uInvalidateAndUpdateFlags & icbfMask);
             return false; // file syntax remains the same
+        }
     }
 
     m_uFileType = uFileType;
