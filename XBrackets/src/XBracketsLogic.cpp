@@ -396,43 +396,43 @@ void CBracketsTree::buildTree(CSciMessager& sciMsgr)
                 {
                     // this is an enquoting brackets pair
                     Sci_Position nFoundItemIdx = -1;
-                    for ( Sci_Position nItemIdx = nCurrentParentIdx; nItemIdx != -1; )
+                    for ( Sci_Position nLeftIdx = nCurrentParentIdx; nLeftIdx != -1; )
                     {
-                        const tBrPairItem& item = bracketsTree[nItemIdx];
-                        if ( item.isOpenLeftBr() )
+                        const tBrPairItem& leftItem = bracketsTree[nLeftIdx];
+                        if ( leftItem.isOpenLeftBr() )
                         {
-                            if ( isSgLnBrQtKind(pBrPair->kind) && item.nLine != nCurrentLine )
+                            if ( isSgLnBrQtKind(pBrPair->kind) && leftItem.nLine != nCurrentLine )
                                 break;
 
                             for ( const tBrPair* pRightBrPair : rightBrPairs )
                             {
-                                if ( item.pBrPair->leftBr == pRightBrPair->leftBr )
+                                if ( leftItem.pBrPair->leftBr == pRightBrPair->leftBr )
                                 {
                                     pBrPair = pRightBrPair;
-                                    nFoundItemIdx = nItemIdx;
+                                    nFoundItemIdx = nLeftIdx;
                                     break;
                                 }
                             }
                             if ( nFoundItemIdx != -1 )
                                 break;
 
-                            if ( isMlLnCommKind(pBrPair->kind) && isMlLnCommKind(item.pBrPair->kind) ) // TODO: verify this condition
+                            if ( isMlLnCommKind(pBrPair->kind) && isMlLnCommKind(leftItem.pBrPair->kind) ) // TODO: verify this condition
                                 break;
                         }
-                        nItemIdx = item.nParentIdx;
+                        nLeftIdx = leftItem.nParentIdx;
                     }
 
                     if ( nFoundItemIdx != -1 )
                     {
-                        tBrPairItem& item = bracketsTree[nFoundItemIdx];
+                        tBrPairItem& leftItem = bracketsTree[nFoundItemIdx];
                         // nPos is its right bracket
-                        item.nRightBrPos = nPos; // |)
-                        nCurrentParentIdx = getOpenParentIdx(item.nParentIdx);
+                        leftItem.nRightBrPos = nPos; // |)
+                        nCurrentParentIdx = getOpenParentIdx(leftItem.nParentIdx);
 
                         const Sci_Position nEndIdx = static_cast<Sci_Position>(bracketsTree.size());
-                        if ( isQtKind(item.pBrPair->kind) )
+                        if ( isQtKind(leftItem.pBrPair->kind) )
                         {
-                            decIsQuoted(item.pBrPair->kind, isQuoted, isSgLnQuoted);
+                            decIsQuoted(leftItem.pBrPair->kind, isQuoted, isSgLnQuoted);
                             completeChildQuotedBrackets(bracketsTree, nFoundItemIdx, nEndIdx, isQuoted, isSgLnQuoted);
                         }
                         invalidateChildIncompleteBrackets(nFoundItemIdx, nEndIdx);
@@ -451,13 +451,13 @@ void CBracketsTree::buildTree(CSciMessager& sciMsgr)
                     // non-enquoting brackets pair
                     if ( !bracketsTree.empty() )
                     {
-                        auto& item = bracketsTree.back();
-                        if ( item.pBrPair->leftBr == pBrPair->leftBr &&
-                             (item.nLine == nCurrentLine || !isSgLnBrQtKind(item.pBrPair->kind)) )
+                        tBrPairItem& leftItem = bracketsTree.back();
+                        if ( leftItem.pBrPair->leftBr == pBrPair->leftBr &&
+                             (leftItem.nLine == nCurrentLine || !isSgLnBrQtKind(leftItem.pBrPair->kind)) )
                         {
                             // item is an unmatched left bracket, nPos is its right bracket
-                            item.nRightBrPos = nPos; // |)
-                            nCurrentParentIdx = getOpenParentIdx(item.nParentIdx);
+                            leftItem.nRightBrPos = nPos; // |)
+                            nCurrentParentIdx = getOpenParentIdx(leftItem.nParentIdx);
                         }
                         else
                         {
@@ -479,7 +479,7 @@ void CBracketsTree::buildTree(CSciMessager& sciMsgr)
             else
             {
                 // left bracket
-                Sci_Position nFoundItemIdx = -1;
+                Sci_Position nStopItemIdx = -1;
                 if ( isMlLnCommKind(pBrPair->kind) )
                 {
                     for ( Sci_Position nItemIdx = nCurrentParentIdx; nItemIdx != -1; )
@@ -488,7 +488,7 @@ void CBracketsTree::buildTree(CSciMessager& sciMsgr)
                         const unsigned int itemKind = item.pBrPair->kind;
                         if ( isMlLnQtKind(itemKind) || (isMlLnCommKind(itemKind) && item.pBrPair->leftBr == pBrPair->leftBr) )
                         {
-                            nFoundItemIdx = nItemIdx;
+                            nStopItemIdx = nItemIdx;
                             break;
                         }
 
@@ -496,7 +496,7 @@ void CBracketsTree::buildTree(CSciMessager& sciMsgr)
                     }
                 }
 
-                if ( nFoundItemIdx == -1 )
+                if ( nStopItemIdx == -1 )
                 {
                     const Sci_Position nLeftBrPos = nPos + static_cast<Sci_Position>(pBrPair->leftBr.length()); // (|
                     bracketsTree.push_back({nLeftBrPos, -1, nCurrentLine, nCurrentParentIdx, pBrPair});
@@ -517,22 +517,22 @@ void CBracketsTree::buildTree(CSciMessager& sciMsgr)
         {
             // right bracket
             Sci_Position nFoundItemIdx = -1;
-            for ( Sci_Position nItemIdx = nCurrentParentIdx; nItemIdx != -1; )
+            for ( Sci_Position nLeftIdx = nCurrentParentIdx; nLeftIdx != -1; )
             {
-                const tBrPairItem& item = bracketsTree[nItemIdx];
-                if ( item.isOpenLeftBr() )
+                const tBrPairItem& leftItem = bracketsTree[nLeftIdx];
+                if ( leftItem.isOpenLeftBr() )
                 {
-                    if ( isSgLnBrQtKind(pBrPair->kind) && item.nLine != nCurrentLine )
+                    if ( isSgLnBrQtKind(pBrPair->kind) && leftItem.nLine != nCurrentLine )
                         break;
 
-                    if ( isSgLnQuoted == 0 || isMlLnCommKind(item.pBrPair->kind) )
+                    if ( isSgLnQuoted == 0 || isMlLnCommKind(leftItem.pBrPair->kind) )
                     {
                         for ( const tBrPair* pRightBrPair : rightBrPairs )
                         {
-                            if ( item.pBrPair->leftBr == pRightBrPair->leftBr )
+                            if ( leftItem.pBrPair->leftBr == pRightBrPair->leftBr )
                             {
                                 pBrPair = pRightBrPair;
-                                nFoundItemIdx = nItemIdx;
+                                nFoundItemIdx = nLeftIdx;
                                 break;
                             }
                         }
@@ -540,14 +540,14 @@ void CBracketsTree::buildTree(CSciMessager& sciMsgr)
                             break;
                     }
 
-                    if ( isMlLnCommKind(item.pBrPair->kind) && !isMlLnCommKind(pBrPair->kind) )
+                    if ( isMlLnCommKind(leftItem.pBrPair->kind) && !isMlLnCommKind(pBrPair->kind) )
                         break;
 
-                    if ( isMlLnQtKind(item.pBrPair->kind) )
+                    if ( isMlLnQtKind(leftItem.pBrPair->kind) )
                         break;
 
-                    if ( item.nLine == nCurrentLine &&
-                         (isSgLnCommKind(item.pBrPair->kind) || isSgLnQuoted) &&
+                    if ( leftItem.nLine == nCurrentLine &&
+                         (isSgLnCommKind(leftItem.pBrPair->kind) || isSgLnQuoted) &&
                          !isMlLnCommKind(pBrPair->kind) && !isQtKind(pBrPair->kind) )
                     {
                         // adding a child right bracket for the further processing
@@ -555,19 +555,19 @@ void CBracketsTree::buildTree(CSciMessager& sciMsgr)
                         break;
                     }
                 }
-                nItemIdx = item.nParentIdx;
+                nLeftIdx = leftItem.nParentIdx;
             }
 
             if ( nFoundItemIdx != -1 )
             {
-                tBrPairItem& item = bracketsTree[nFoundItemIdx];
-                item.nRightBrPos = nPos; // |)
-                nCurrentParentIdx = getOpenParentIdx(item.nParentIdx);
+                tBrPairItem& leftItem = bracketsTree[nFoundItemIdx];
+                leftItem.nRightBrPos = nPos; // |)
+                nCurrentParentIdx = getOpenParentIdx(leftItem.nParentIdx);
 
                 const Sci_Position nEndIdx = static_cast<Sci_Position>(bracketsTree.size());
-                if ( isQtKind(item.pBrPair->kind) )
+                if ( isQtKind(leftItem.pBrPair->kind) )
                 {
-                    decIsQuoted(item.pBrPair->kind, isQuoted, isSgLnQuoted);
+                    decIsQuoted(leftItem.pBrPair->kind, isQuoted, isSgLnQuoted);
                     completeChildQuotedBrackets(bracketsTree, nFoundItemIdx, nEndIdx, isQuoted, isSgLnQuoted);
                 }
                 invalidateChildIncompleteBrackets(nFoundItemIdx, nEndIdx);
