@@ -170,10 +170,10 @@ void CBracketsTree::buildTree(CSciMessager& sciMsgr)
     unsigned int isSgLnQuoted = 0;
     unsigned int uGetBrFlags = gbfLnSt;
 
-    auto invalidateChildIncompleteBrackets = [&bracketsTree](Sci_Position nFoundItemIdx)
+    auto invalidateChildIncompleteBrackets = [&bracketsTree](Sci_Position nFoundItemIdx, Sci_Position nEndIdx)
     {
         tBrPairItem* pItem = bracketsTree.data() + nFoundItemIdx + 1;
-        const tBrPairItem* pEnd = bracketsTree.data() + bracketsTree.size();
+        const tBrPairItem* pEnd = bracketsTree.data() + nEndIdx;
         for ( ; pItem != pEnd; ++pItem )
         {
             if ( pItem->isIncomplete() && pItem->nParentIdx >= nFoundItemIdx )
@@ -219,97 +219,106 @@ void CBracketsTree::buildTree(CSciMessager& sciMsgr)
         {
             if ( nCurrentParentIdx != -1 && nCurrentParentIdx >= nPrevLineTreeSize )
             {
-                Sci_Position nNewParentIdx = -1;
-                Sci_Position nCommIdx = -1;
-                Sci_Position nIdx = nCurrentParentIdx;
-
-                for ( ; nIdx != -1; )
+                bool hasSgLnItem = false;
+                for ( Sci_Position nIdx = nCurrentParentIdx; nIdx != -1; )
                 {
-                    tBrPairItem& item = bracketsTree[nIdx];
+                    const tBrPairItem& item = bracketsTree[nIdx];
                     if ( item.nLine != nCurrentLine )
                         break;
 
-                    if ( isSgLnCommKind(item.pBrPair->kind) )
+                    if ( item.isOpenLeftBr() )
                     {
-                        nCommIdx = nIdx;
-                        nNewParentIdx = item.nParentIdx; // above the comment
-                    }
-                    else if ( item.isOpenLeftBr() )
-                    {
-                        if ( !isSgLnBrQtKind(item.pBrPair->kind) )
+                        const unsigned int kind = item.pBrPair->kind;
+                        if ( isSgLnCommKind(kind) || isSgLnBrQtKind(kind) )
                         {
-                            // at an open left multi-line bracket
-                            if ( nNewParentIdx == -1 )
-                                nNewParentIdx = nIdx;
-                        }
-                        else
-                        {
-                            item.nLeftBrPos = -1; // invalidate
+                            hasSgLnItem = true;
+                            break;
                         }
                     }
 
                     nIdx = item.nParentIdx;
                 }
 
-                if ( nNewParentIdx != -1 )
-                    nCurrentParentIdx = nNewParentIdx;
-                else
-                    nCurrentParentIdx = nIdx;
-
-                if ( nCommIdx != -1 )
+                if ( hasSgLnItem )
                 {
-                    for ( Sci_Position idx = bracketsTree.size() - 1; idx >= nCommIdx; --idx )
-                    {
-                        tBrPairItem& item = bracketsTree[idx];
-                        if ( idx == nCommIdx || item.isIncomplete() )
-                        {
-                            item.nLeftBrPos = -1;
-                            item.nRightBrPos = -1;
-                        }
-                    }
-                }
+                    const Sci_Position nEndIdx = static_cast<Sci_Position>(bracketsTree.size());
 
-                if ( nCurrentParentIdx != -1 )
-                {
-                    Sci_Position nEndIdx = static_cast<Sci_Position>(bracketsTree.size());
-                    // TODO: probably this should be from (nEndIdx - 1) to the (position of the first single-line quote in line); --nIdx
-                    for ( nIdx = nCurrentParentIdx + 1; nIdx < nEndIdx; ++nIdx )
+                    // checking the unpaired (open) right brackets...
+                    for ( Sci_Position nRightIdx = nPrevLineTreeSize + 1; nRightIdx < nEndIdx; ++nRightIdx )
                     {
-                        const tBrPairItem& rightItem = bracketsTree[nIdx];
+                        tBrPairItem& rightItem = bracketsTree[nRightIdx];
                         if ( rightItem.isOpenRightBr() )
                         {
-                            // potentially a right bracket after an incomplete single-line quote
-                            // TODO: probably the start index should be the ((position of the first single-line quote in line) - 1)
-                            for ( Sci_Position nLeftIdx = nCurrentParentIdx; nLeftIdx != -1; )
+                            const bool isRightSgLn = isSgLnBrQtKind(rightItem.pBrPair->kind);
+
+                            // checking the unpaired (open) left brackets...
+                            for ( Sci_Position nLeftIdx = nRightIdx - 1; nLeftIdx != -1; )
                             {
                                 tBrPairItem& leftItem = bracketsTree[nLeftIdx];
+                                if ( isRightSgLn && leftItem.nLine != nCurrentLine )
+                                    break; // a single-line right bracket, a different line
+
                                 if ( leftItem.isOpenLeftBr() )
                                 {
-                                    if ( leftItem.nLine != nCurrentLine && isSgLnBrQtKind(rightItem.pBrPair->kind) )
-                                        break;
+                                    const unsigned int leftKind = leftItem.pBrPair->kind;
+                                    if ( isSgLnCommKind(leftKind) )
+                                        break; // a single-line comment before a right bracket
 
                                     if ( leftItem.pBrPair->leftBr == rightItem.pBrPair->leftBr )
                                     {
                                         leftItem.nRightBrPos = rightItem.nRightBrPos;
-                                        if ( nIdx == nEndIdx - 1)
+                                        if ( isQtKind(leftKind) )
                                         {
-                                            nEndIdx = nCurrentParentIdx; // previous value
-                                            nCurrentParentIdx = getOpenParentIdx(leftItem.nParentIdx);
-                                            nIdx = nCurrentParentIdx; // current value, can become -1
+                                            completeChildQuotedBrackets(bracketsTree, nLeftIdx, nRightIdx, isQuoted, isSgLnQuoted);
                                         }
-                                        else
-                                        {
-                                            nCurrentParentIdx = getOpenParentIdx(leftItem.nParentIdx);
-                                        }
-                                        break;
+                                        invalidateChildIncompleteBrackets(nLeftIdx, nRightIdx);
+                                        break; // a pair found
                                     }
-                                }
-                                nLeftIdx = leftItem.nParentIdx;
-                            }
 
-                            if ( nIdx == -1 )
-                                break;
+                                    if ( isMlLnCommKind(leftKind) )
+                                        break; // a multi-line comment before a right bracket
+                                }
+
+                                nLeftIdx = leftItem.nParentIdx;
+                            } // for (nLeftIdx)
                         }
+                    } // for (nRightIdx)
+
+                    // invalidating incomplete brackets
+                    bool hasSgLnComm = false;
+                    for ( Sci_Position nIdx = nPrevLineTreeSize; nIdx < nEndIdx; ++nIdx )
+                    {
+                        tBrPairItem& item = bracketsTree[nIdx];
+                        if ( item.isOpenLeftBr() )
+                        {
+                            if ( hasSgLnComm )
+                            {
+                                item.nLeftBrPos = -1; // invalidate
+                            }
+                            else
+                            {
+                                const unsigned int kind = item.pBrPair->kind;
+                                if ( isSgLnCommKind(kind) )
+                                {
+                                    hasSgLnComm = true;
+                                    item.nLeftBrPos = -1; // invalidate
+                                }
+                                else if ( isSgLnBrQtKind(kind) )
+                                {
+                                    item.nLeftBrPos = -1; // invalidate
+                                }
+                            }
+                        }
+                    }
+
+                    // updating the nCurrentParentIdx
+                    for ( ; nCurrentParentIdx != -1; )
+                    {
+                        const tBrPairItem& item = bracketsTree[nCurrentParentIdx];
+                        if ( item.isOpenLeftBr() )
+                            break;
+
+                        nCurrentParentIdx = item.nParentIdx;
                     }
                 }
             }
@@ -420,12 +429,13 @@ void CBracketsTree::buildTree(CSciMessager& sciMsgr)
                         item.nRightBrPos = nPos; // |)
                         nCurrentParentIdx = getOpenParentIdx(item.nParentIdx);
 
+                        const Sci_Position nEndIdx = static_cast<Sci_Position>(bracketsTree.size());
                         if ( isQtKind(item.pBrPair->kind) )
                         {
                             decIsQuoted(item.pBrPair->kind, isQuoted, isSgLnQuoted);
-                            completeChildQuotedBrackets(bracketsTree, nFoundItemIdx, static_cast<Sci_Position>(bracketsTree.size()), isQuoted, isSgLnQuoted);
+                            completeChildQuotedBrackets(bracketsTree, nFoundItemIdx, nEndIdx, isQuoted, isSgLnQuoted);
                         }
-                        invalidateChildIncompleteBrackets(nFoundItemIdx);
+                        invalidateChildIncompleteBrackets(nFoundItemIdx, nEndIdx);
                     }
                     else
                     {
@@ -554,12 +564,13 @@ void CBracketsTree::buildTree(CSciMessager& sciMsgr)
                 item.nRightBrPos = nPos; // |)
                 nCurrentParentIdx = getOpenParentIdx(item.nParentIdx);
 
+                const Sci_Position nEndIdx = static_cast<Sci_Position>(bracketsTree.size());
                 if ( isQtKind(item.pBrPair->kind) )
                 {
                     decIsQuoted(item.pBrPair->kind, isQuoted, isSgLnQuoted);
-                    completeChildQuotedBrackets(bracketsTree, nFoundItemIdx, static_cast<Sci_Position>(bracketsTree.size()), isQuoted, isSgLnQuoted);
+                    completeChildQuotedBrackets(bracketsTree, nFoundItemIdx, nEndIdx, isQuoted, isSgLnQuoted);
                 }
-                invalidateChildIncompleteBrackets(nFoundItemIdx);
+                invalidateChildIncompleteBrackets(nFoundItemIdx, nEndIdx);
             }
 
             int nBrLen = static_cast<int>(pBrPair->rightBr.length());

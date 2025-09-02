@@ -136,6 +136,11 @@ namespace XBrackets
             return (nLeftBrPos == -1 || nRightBrPos == -1);
         }
 
+        bool isValid() const
+        {
+            return (nLeftBrPos != -1 || nRightBrPos != -1);
+        }
+
         bool isOpenLeftBr() const
         {
             return (nLeftBrPos != -1 && nRightBrPos == -1);
