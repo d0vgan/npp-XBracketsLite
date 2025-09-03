@@ -56,6 +56,7 @@
 <
 >
 
+[
 [ // ]
 ]
 
@@ -94,4 +95,19 @@
 "ab" "cd" "ef"
 
 // {} "abc" 
+
+
+' [ /* ] */
+" [ // ]
+[ ' /* ] */
+[ " // ]
+
+[ "]", "]
+
+// now try the very same file with
+//   `[ "[", "]", "multi-line-quotes" ]`
+// and
+//   `[ "[", "]", "single-line-quotes" ]`
+// and
+//   `[ "[", "]", "multi-line-comment" ]`
 

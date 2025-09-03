@@ -269,6 +269,10 @@ void CBracketsTree::buildTree(CSciMessager& sciMsgr)
                                         leftItem.nRightBrPos = rightItem.nRightBrPos;
                                         if ( isQtKind(leftKind) )
                                         {
+                                            // We should not get here, because the quoting pairs are
+                                            // expected to be already handled.
+                                            // If we get here, it probably means a mistake in some
+                                            // condition in the main body of the loop.
                                             completeChildQuotedBrackets(bracketsTree, nLeftIdx, nRightIdx, isQuoted, isSgLnQuoted);
                                         }
                                         invalidateChildIncompleteBrackets(nLeftIdx, nRightIdx);
@@ -522,10 +526,12 @@ void CBracketsTree::buildTree(CSciMessager& sciMsgr)
                 const tBrPairItem& leftItem = bracketsTree[nLeftIdx];
                 if ( leftItem.isOpenLeftBr() )
                 {
-                    if ( isSgLnBrQtKind(pBrPair->kind) && leftItem.nLine != nCurrentLine )
+                    const unsigned int rightKind = pBrPair->kind;
+                    if ( isSgLnBrQtKind(rightKind) && leftItem.nLine != nCurrentLine )
                         break;
 
-                    if ( isSgLnQuoted == 0 || isMlLnCommKind(leftItem.pBrPair->kind) )
+                    const unsigned int leftKind = leftItem.pBrPair->kind;
+                    if ( isSgLnQuoted == 0 || isQtKind(rightKind) || isMlLnCommKind(rightKind) )
                     {
                         for ( const tBrPair* pRightBrPair : rightBrPairs )
                         {
@@ -540,19 +546,17 @@ void CBracketsTree::buildTree(CSciMessager& sciMsgr)
                             break;
                     }
 
-                    if ( isMlLnCommKind(leftItem.pBrPair->kind) && !isMlLnCommKind(pBrPair->kind) )
-                        break;
-
-                    if ( isMlLnQtKind(leftItem.pBrPair->kind) )
-                        break;
-
-                    if ( leftItem.nLine == nCurrentLine &&
-                         (isSgLnCommKind(leftItem.pBrPair->kind) || isSgLnQuoted) &&
-                         !isMlLnCommKind(pBrPair->kind) && !isQtKind(pBrPair->kind) )
+                    if ( !isQtKind(rightKind) && !isMlLnCommKind(rightKind) )
                     {
-                        // adding a child right bracket for the further processing
-                        bracketsTree.push_back({-1, nPos, nCurrentLine, nCurrentParentIdx, pBrPair});
-                        break;
+                        if ( isMlLnCommKind(leftKind) || isMlLnQtKind(leftKind) )
+                            break;
+
+                        if ( leftItem.nLine == nCurrentLine && (isSgLnCommKind(leftKind) || isSgLnQuoted) )
+                        {
+                            // adding a child right bracket for the further processing
+                            bracketsTree.push_back({-1, nPos, nCurrentLine, nCurrentParentIdx, pBrPair});
+                            break;
+                        }
                     }
                 }
                 nLeftIdx = leftItem.nParentIdx;
