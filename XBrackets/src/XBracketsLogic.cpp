@@ -419,9 +419,6 @@ void CBracketsTree::buildTree(CSciMessager& sciMsgr)
                             }
                             if ( nFoundItemIdx != -1 )
                                 break;
-
-                            if ( isMlLnCommKind(pBrPair->kind) && isMlLnCommKind(leftItem.pBrPair->kind) ) // TODO: verify this condition
-                                break;
                         }
                         nLeftIdx = leftItem.nParentIdx;
                     }

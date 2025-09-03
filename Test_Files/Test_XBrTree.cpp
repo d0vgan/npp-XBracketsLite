@@ -111,3 +111,26 @@
 // and
 //   `[ "[", "]", "multi-line-comment" ]`
 
+
+// only for the testing purpose,
+// the following lines to be tested with
+//   `[ "%", "%", "multi-line-comment" ]`
+
+/* % */ % %
+
+% /* % */
+
+/* %
+*/ %
+%
+
+% /*
+% 
+*/
+
+% ' /*
+% 
+
+" % ' /*
+% 
+
