@@ -17,6 +17,6 @@ This configuration file contains both the plugin's settings and the file type-sp
 For example, the `Sel_AutoBr` property allows to enclose (or disclose) the selected text with brackets.  
 See "XBrackets.txt" for details.  
 
-Here is the user-configuration file "XBrackets_UserConfig.json", as of version 2.0.0:
+Here is the user-configuration file "XBrackets_UserConfig.json", as of version 2.0:
 
 <img width="698" height="536" alt="XBrackets_Config" src="https://github.com/user-attachments/assets/8cc6d122-6d2b-4b7e-8c19-91bc935fbd89" />
