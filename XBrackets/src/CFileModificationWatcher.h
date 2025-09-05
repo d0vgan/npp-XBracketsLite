@@ -123,7 +123,7 @@ struct DirWatchStruct
     tstr sDirectory;
     file_items_type Files;
 
-    DirWatchStruct(CDirectoryWatcher* pDirWatcher_, IDirectoryChangeListener* pChangeListener_, 
+    DirWatchStruct(CDirectoryWatcher* pDirWatcher_, IDirectoryChangeListener* pChangeListener_,
                    DWORD dwNotifyFilter_, BOOL bRecursive_, const tstr& sDirectory_);
 
     void AddFile(IFileChangeListener* pChangeListener_, const tstr& sFilePath);

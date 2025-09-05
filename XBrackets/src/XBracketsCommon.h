@@ -120,7 +120,7 @@ namespace XBrackets
 
     struct tBrPairItem
     {
-        Sci_Position nLeftBrPos{-1};  // (| 
+        Sci_Position nLeftBrPos{-1};  // (|
         Sci_Position nRightBrPos{-1}; // |)
         Sci_Position nLine{-1}; // only for internal comparison
         Sci_Position nParentIdx{-1};
@@ -179,6 +179,7 @@ namespace XBrackets
     bool isExistingFile(const TCHAR* filePath) noexcept;
     bool isExistingFile(const tstr& filePath) noexcept;
     std::vector<char> readFile(const TCHAR* filePath);
+    bool writeFile(const TCHAR* filePath, const std::vector<char>& data);
     tstr string_to_tstr(const std::string& str);
     tstr string_to_tstr_changecase(const std::string& str, eStringCase strCase);
 

@@ -7,6 +7,7 @@
 
 FuncItem CXBracketsMenu::arrFuncItems[N_NBFUNCITEMS] = {
     { _T("Autocomplete brackets"),      funcAutocomplete,         0, false, NULL },
+    { _T("Highlight brackets"),         funcHighlight,            0, false, NULL },
     { _T("Settings..."),                funcSettings,             0, false, NULL },
     { _T(""),                           NULL,                     0, false, NULL }, // separator
     { _T("Go To Matching Bracket"),     funcGoToMatchingBracket,  0, false, NULL },
@@ -21,7 +22,16 @@ FuncItem CXBracketsMenu::arrFuncItems[N_NBFUNCITEMS] = {
 void CXBracketsMenu::funcAutocomplete()
 {
     GetOptions().setBracketsAutoComplete( !GetOptions().getBracketsAutoComplete() );
-    UpdateMenuState();
+    UpdatePluginState();
+}
+
+void CXBracketsMenu::funcHighlight()
+{
+    int nHighlightIdx = GetOptions().getHighlightSciStyleIndIdx();
+    nHighlightIdx = (nHighlightIdx != 0) ? (-nHighlightIdx) : (-1);
+    GetOptions().setHighlightSciStyleIndIdx(nHighlightIdx);
+    UpdatePluginState();
+    GetPlugin().OnHighlight();
 }
 
 void CXBracketsMenu::funcSettings()
@@ -71,16 +81,16 @@ INT_PTR CXBracketsMenu::PluginDialogBox(WORD idDlg, DLGPROC lpDlgFunc)
                MAKEINTRESOURCE(idDlg), m_nppMsgr.getNppWnd(), lpDlgFunc );
 }
 
-void CXBracketsMenu::UpdateMenuState()
+void CXBracketsMenu::UpdatePluginState()
 {
+    CXBracketsOptions& opt = GetOptions();
     HMENU hMenu = ::GetMenu( m_nppMsgr.getNppWnd() );
     ::CheckMenuItem(hMenu, arrFuncItems[N_AUTOCOMPLETE]._cmdID,
-        MF_BYCOMMAND | (GetOptions().getBracketsAutoComplete() ? MF_CHECKED : MF_UNCHECKED));
+        MF_BYCOMMAND | (opt.getBracketsAutoComplete() ? MF_CHECKED : MF_UNCHECKED));
+    ::CheckMenuItem(hMenu, arrFuncItems[N_HIGHLIGHT]._cmdID,
+        MF_BYCOMMAND | ((opt.getHighlightSciStyleIndIdx() >= 0) ? MF_CHECKED : MF_UNCHECKED));
 
-    if ( GetOptions().getBracketsAutoComplete() )
-    {
-        GetPlugin().OnNppBufferActivated();
-    }
+    GetPlugin().OnNppBufferActivated();
 }
 
 void CXBracketsMenu::AllowAutocomplete(bool bAllow)

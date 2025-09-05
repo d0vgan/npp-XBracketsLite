@@ -40,6 +40,22 @@ namespace XBrackets
         return buf;
     }
 
+    bool writeFile(const TCHAR* filePath, const std::vector<char>& data)
+    {
+        HANDLE hFile = ::CreateFile(filePath, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, 0, NULL);
+        if ( hFile == INVALID_HANDLE_VALUE )
+        {
+            // ERROR: Could not create the file
+            return false;
+        }
+
+        DWORD dwWritten = 0;
+        const DWORD dwToWrite = static_cast<DWORD>(data.size());
+        const BOOL isWritten = ::WriteFile(hFile, data.data(), dwToWrite, &dwWritten, NULL);
+
+        return (isWritten != FALSE && dwWritten == dwToWrite);
+    }
+
     tstr string_to_tstr(const std::string& str)
     {
     #ifdef _UNICODE

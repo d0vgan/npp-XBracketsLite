@@ -5,9 +5,9 @@
 #include "XBracketsPlugin.h"
 
 
-extern "C" BOOL APIENTRY DllMain( 
-                        HINSTANCE hInstance, 
-                        DWORD     dwReason, 
+extern "C" BOOL APIENTRY DllMain(
+                        HINSTANCE hInstance,
+                        DWORD     dwReason,
                         LPVOID    lpReserved
 					 )
 {
@@ -30,7 +30,7 @@ extern "C" BOOL APIENTRY DllMain(
         default:
             break;
     }
-    
+
     return TRUE;
 }
 

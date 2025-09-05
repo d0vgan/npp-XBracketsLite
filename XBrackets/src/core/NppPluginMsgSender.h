@@ -12,7 +12,7 @@ class CNppPluginMsgSender
         std::basic_string<TCHAR> m_srcModuleName;
 
     public:
-        CNppPluginMsgSender(HWND hNppWnd, const TCHAR* srcModuleName) : 
+        CNppPluginMsgSender(HWND hNppWnd, const TCHAR* srcModuleName) :
           m_hNppWnd(hNppWnd), m_srcModuleName(srcModuleName)
         {
         }
@@ -24,13 +24,13 @@ class CNppPluginMsgSender
 
         BOOL SendMsg(const TCHAR *destModuleName, long internalMsg, void* info)
         {
-            CommunicationInfo ci = { internalMsg, 
+            CommunicationInfo ci = { internalMsg,
                                      m_srcModuleName.c_str(),
                                      info };
-            return (BOOL) ::SendMessage( m_hNppWnd, 
+            return (BOOL) ::SendMessage( m_hNppWnd,
                                          NPPM_MSGTOPLUGIN,
                                          (WPARAM) destModuleName,
-                                         (LPARAM) &ci 
+                                         (LPARAM) &ci
                                        );
         }
 

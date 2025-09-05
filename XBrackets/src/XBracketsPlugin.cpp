@@ -244,6 +244,9 @@ void CXBracketsPlugin::OnNppBufferActivated()
 
 void CXBracketsPlugin::OnNppBufferReload()
 {
+    if ( !isNppReady )
+        return;
+
     clearActiveBrackets();
     m_BracketsLogic.InvalidateCachedBrackets(CXBracketsLogic::icbfAll);
 }
@@ -256,12 +259,18 @@ void CXBracketsPlugin::OnNppFileOpened()
 
 void CXBracketsPlugin::OnNppFileReload()
 {
+    if ( !isNppReady )
+        return;
+
     clearActiveBrackets();
     m_BracketsLogic.InvalidateCachedBrackets(CXBracketsLogic::icbfAll);
 }
 
 void CXBracketsPlugin::OnNppFileSaved()
 {
+    if ( !isNppReady )
+        return;
+
     // AutoRightBr is still valid, but file type may be changed:
     if ( updateFileInfo(CXBracketsLogic::icbfTree) )
     {
@@ -276,7 +285,7 @@ void CXBracketsPlugin::OnNppReady()
     m_ciCfgUpd.info = &m_ciCfgUpd; // now it's non-null, as expected :)
 
     ReadOptions();
-    CXBracketsMenu::UpdateMenuState();
+    CXBracketsMenu::UpdatePluginState();
     updateFileInfo(CXBracketsLogic::icbfAll | CXBracketsLogic::uftfConfigUpdated);
 
     unsigned int uSciFlags = (SC_MOD_INSERTTEXT | SC_MOD_DELETETEXT | SC_MOD_BEFOREINSERT | SC_MOD_BEFOREDELETE);
@@ -298,6 +307,8 @@ void CXBracketsPlugin::OnNppReady()
 
 void CXBracketsPlugin::OnNppShutdown()
 {
+    isNppReady = false;
+
     m_FileWatcher.StopWatching();
 
     auto pSetWindowLongPtr = isNppWndUnicode ? SetWindowLongPtrW : SetWindowLongPtrA;
@@ -323,6 +334,9 @@ void CXBracketsPlugin::OnNppShutdown()
 void CXBracketsPlugin::OnNppMacro(int nMacroState)
 {
     static int nPrevAutoComplete = -1; // uninitialized
+
+    if ( !isNppReady )
+        return;
 
     switch ( nMacroState )
     {
@@ -358,7 +372,7 @@ void CXBracketsPlugin::OnNppMacro(int nMacroState)
 
 LRESULT CXBracketsPlugin::OnNppMsgToPlugin(CommunicationInfo* pInfo)
 {
-    if ( pInfo == nullptr || pInfo->info == nullptr )
+    if ( !isNppReady || pInfo == nullptr || pInfo->info == nullptr )
         return FALSE;
 
     switch ( pInfo->internalMsg )
@@ -396,11 +410,17 @@ LRESULT CXBracketsPlugin::OnNppMsgToPlugin(CommunicationInfo* pInfo)
 
 CXBracketsLogic::eCharProcessingResult CXBracketsPlugin::OnSciChar(const int ch)
 {
+    if ( !isNppReady )
+        return CXBracketsLogic::cprNone;
+
     return m_BracketsLogic.OnCharPress(ch);
 }
 
 void CXBracketsPlugin::OnSciModified(SCNotification* pscn)
 {
+    if ( !isNppReady )
+        return;
+
     if ( pscn->modificationType & (SC_MOD_INSERTTEXT | SC_MOD_DELETETEXT | SC_MOD_BEFOREINSERT | SC_MOD_BEFOREDELETE) )
     {
         OnSciTextChange(pscn);
@@ -409,13 +429,16 @@ void CXBracketsPlugin::OnSciModified(SCNotification* pscn)
 
 void CXBracketsPlugin::OnSciAutoCompleted(SCNotification* pscn)
 {
+    if ( !isNppReady )
+        return;
+
     clearActiveBrackets();
     m_BracketsLogic.OnTextAutoCompleted(pscn->text, pscn->position);
 }
 
 void CXBracketsPlugin::OnSciUpdateUI(SCNotification* pscn)
 {
-    if ( !isHighlightEnabled() )
+    if ( !isNppReady || !isHighlightEnabled() )
         return;
 
     const HWND hSciWnd = reinterpret_cast<HWND>(pscn->nmhdr.hwndFrom);
@@ -548,6 +571,9 @@ bool CXBracketsPlugin::isHighlightEnabled() const
 
 void CXBracketsPlugin::OnSciTextChange(SCNotification* pscn)
 {
+    if ( !isNppReady )
+        return;
+
     if ( pscn->modificationType & (SC_MOD_BEFOREINSERT | SC_MOD_BEFOREDELETE) )
     {
         clearActiveBrackets();
@@ -603,29 +629,28 @@ void CXBracketsPlugin::ReadOptions()
     m_sUserConfigFilePath += _T("XBrackets_UserConfig.json");
     m_sIniFilePath += m_sIniFileName;
 
-    GetOptions().ReadOptions(m_sIniFilePath.c_str());
-
-    m_sConfigFilePath = getDllDir();
-    m_sConfigFilePath.append(_T("\\XBrackets_Config.json"));
+    m_sStaticConfigFilePath = getDllDir();
+    m_sStaticConfigFilePath.append(_T("\\XBrackets_Config.json"));
 
     const bool isUserConfig = XBrackets::isExistingFile(m_sUserConfigFilePath);
     if ( !isUserConfig )
     {
-        if ( !XBrackets::isExistingFile(m_sConfigFilePath) )
+        if ( !XBrackets::isExistingFile(m_sStaticConfigFilePath) )
         {
             tstr err = _T("The default config file does not exist:\r\n");
-            err.append(m_sConfigFilePath);
+            err.append(m_sStaticConfigFilePath);
             PluginMessageBox(err.c_str(), MB_OK | MB_ICONERROR);
             return;
         }
     }
 
-    const tstr err = GetOptions().ReadConfig(isUserConfig ? m_sUserConfigFilePath : m_sConfigFilePath);
+    const tstr err = GetOptions().ReadConfig(isUserConfig ? m_sUserConfigFilePath : m_sStaticConfigFilePath);
     if ( !err.empty() )
     {
         if ( isUserConfig )
         {
-            GetOptions().ReadConfig(m_sConfigFilePath);
+            // failed to read the user config
+            GetOptions().ReadConfig(m_sStaticConfigFilePath);
             onConfigFileError(m_sUserConfigFilePath, err);
         }
         else
@@ -643,9 +668,13 @@ void CXBracketsPlugin::ReadOptions()
 
 void CXBracketsPlugin::SaveOptions()
 {
-    if ( GetOptions().MustBeSaved() )
+    if ( GetOptions().IsConfigUpdated() )
     {
-        GetOptions().SaveOptions(m_sIniFilePath.c_str());
+        if ( !XBrackets::isExistingFile(m_sUserConfigFilePath) )
+        {
+            ::CopyFile(m_sStaticConfigFilePath.c_str(), m_sUserConfigFilePath.c_str(), TRUE);
+        }
+        GetOptions().WriteConfig(m_sUserConfigFilePath);
     }
 }
 
@@ -653,13 +682,22 @@ void CXBracketsPlugin::OnSettings()
 {
     if ( !XBrackets::isExistingFile(m_sUserConfigFilePath) )
     {
-        ::CopyFile(m_sConfigFilePath.c_str(), m_sUserConfigFilePath.c_str(), TRUE);
+        ::CopyFile(m_sStaticConfigFilePath.c_str(), m_sUserConfigFilePath.c_str(), TRUE);
 
         m_FileWatcher.AddFile(m_sUserConfigFilePath.c_str(), &m_ConfigFileChangeListener);
         m_FileWatcher.StartWatching();
     }
 
     m_nppMsgr.doOpen(m_sUserConfigFilePath.c_str());
+}
+
+void CXBracketsPlugin::OnHighlight()
+{
+    onUpdateHighlight();
+
+    SCNotification scn{};
+    scn.nmhdr.hwndFrom = m_nppMsgr.getCurrentScintillaWnd();
+    OnSciUpdateUI(&scn);
 }
 
 void CXBracketsPlugin::OnConfigFileChanged(const tstr& configFilePath)
@@ -693,7 +731,7 @@ void CXBracketsPlugin::onConfigFileUpdated()
 
     clearActiveBrackets(); // clear the existing style indication first
     onConfigFileHasBeenRead(); // now read the new style, if any
-    m_PluginMenu.UpdateMenuState();
+    m_PluginMenu.UpdatePluginState();
     updateFileInfo(CXBracketsLogic::icbfAll | CXBracketsLogic::uftfConfigUpdated);
 }
 
@@ -714,6 +752,11 @@ void CXBracketsPlugin::onConfigFileError(const tstr& configFilePath, const tstr&
 }
 
 void CXBracketsPlugin::onConfigFileHasBeenRead()
+{
+    onUpdateHighlight();
+}
+
+void CXBracketsPlugin::onUpdateHighlight()
 {
     m_csHl.Lock();
     m_nHlSciStyleInd = GetOptions().getHighlightSciStyleIndIdx();

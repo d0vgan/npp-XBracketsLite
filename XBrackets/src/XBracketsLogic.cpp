@@ -976,7 +976,7 @@ bool CBracketsTree::isEscapedPos(const char* pTextBegin, const Sci_Position nPos
     int nPrefixLen{}; // len <= MAX_ESCAPED_PREFIX, so 'int' is always enough
 
     getEscapedPrefixPos(nPos, &nPrefixPos, &nPrefixLen);
-    
+
     const char* prefix = pTextBegin + nPrefixPos;
     bool isEscaped = false;
 
@@ -1022,7 +1022,7 @@ void CXBracketsLogic::InvalidateCachedBrackets(unsigned int uInvalidateFlags, SC
     if ( uInvalidateFlags & icbfTree )
     {
         if ( !GetOptions().getUpdateTreeAllowed() ||
-             pscn == nullptr || 
+             pscn == nullptr ||
              (pscn->modificationType & (SC_MOD_INSERTTEXT | SC_MOD_DELETETEXT | SC_MOD_BEFOREINSERT | SC_MOD_BEFOREDELETE)) == 0 )
         {
             m_bracketsTree.invalidateTree();

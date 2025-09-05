@@ -15,11 +15,10 @@ class CXBracketsOptions
         CXBracketsOptions();
         ~CXBracketsOptions();
 
-        bool MustBeSaved() const;
         bool IsSupportedFile(const TCHAR* szExt) const;
+        bool IsConfigUpdated() const;
         tstr ReadConfig(const tstr& cfgFilePath);
-        void ReadOptions(const TCHAR* szIniFilePath);
-        void SaveOptions(const TCHAR* szIniFilePath);
+        void WriteConfig(const tstr& cfgFilePath);
 
     protected:
         enum eOptConsts {
@@ -125,6 +124,11 @@ class CXBracketsOptions
             return m_nHighlightSciStyleIndIdx;
         }
 
+        void setHighlightSciStyleIndIdx(int nHighlightIdx)
+        {
+            m_nHighlightSciStyleIndIdx = nHighlightIdx;
+        }
+
         int getHighlightSciStyleIndType() const
         {
             return m_nHighlightSciStyleIndType;
@@ -184,6 +188,7 @@ class CXBracketsOptions
 
     protected:
         UINT  m_uFlags;
+        UINT  m_uFlags0;
         UINT  m_uSelAutoBr; // one of eSelAutoBr
         UINT  m_uGoToNearestFlags; // see eGoToNearestBrFlags
         UINT  m_uSelToNearestFlags; // see eSelToNearestBrFlags
@@ -191,6 +196,7 @@ class CXBracketsOptions
         int   m_nJumpLinesVisDown;
         int   m_nJumpPairLineDiff;
         int   m_nHighlightSciStyleIndIdx;
+        int   m_nHighlightSciStyleIndIdx0;
         int   m_nHighlightSciStyleIndType;
         COLORREF m_nHighlightSciColor;
         UINT  m_nHighlightTypingDelayMs;

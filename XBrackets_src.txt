@@ -15,3 +15,4 @@ XBrackets\src\core\*.cpp
 XBrackets\src\core\*.h
 XBrackets\src\core\npp_files\*.h
 XBrackets\src\json11\*.*
+XBrackets\src\PluginCommunication\*.*

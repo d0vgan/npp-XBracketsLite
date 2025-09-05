@@ -25,7 +25,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 /*
 
 Reference to "Notepad_plus_msgs.h":
- 
+
   #define NPPM_MSGTOPLUGIN (NPPMSG + 47)
   //BOOL NPPM_MSGTOPLUGIN(TCHAR *destModuleName, CommunicationInfo *info)
   // return value is TRUE when the message arrive to the destination plugins.
@@ -35,7 +35,7 @@ Reference to "Notepad_plus_msgs.h":
     const TCHAR * srcModuleName;
     void * info; // defined by plugin
   };
- 
+
 The following messages can be used as internalMsg parameter.
 
  */

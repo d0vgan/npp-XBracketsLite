@@ -183,7 +183,7 @@ namespace
             {
                 const auto lenLeftBr1 = item1.leftBr.length();
                 const auto lenLeftBr2 = item2.leftBr.length();
-                return (lenLeftBr1 > lenLeftBr2 || 
+                return (lenLeftBr1 > lenLeftBr2 ||
                     (lenLeftBr1 == lenLeftBr2 && item1.rightBr.length() > item2.rightBr.length()));
             }
         );
@@ -195,7 +195,7 @@ namespace
         {
             const auto itrBegin = existingPairs.begin();
             const auto itrEnd = existingPairs.end();
-            auto itr = std::find_if(itrBegin, itrEnd, 
+            auto itr = std::find_if(itrBegin, itrEnd,
                 [&newBr](const tBrPair& oldBr)
                 {
                     return oldBr.leftBr == newBr.leftBr && oldBr.rightBr == newBr.rightBr;
@@ -341,11 +341,92 @@ namespace
             }
         }
     }
+
+    void setConfigOption(std::vector<char>& optionsBuf, const char* optionName, const char* optionValue)
+    {
+        const size_t lenOptName = strlen(optionName);
+        char* p = optionsBuf.data();
+        const char* pEnd = p + optionsBuf.size() - (lenOptName + 2) + 1;
+
+        for ( ; p < pEnd; ++p )
+        {
+            if ( *p == '"' && *(p + lenOptName + 1) == '"' &&
+                 memcmp(p + 1, optionName, lenOptName*sizeof(char)) == 0 )
+            {
+                break; // the "optionName" has been found
+            }
+        }
+
+        if ( p == pEnd )
+            return;
+
+        p += (lenOptName + 2); // after the "optionName"
+        while ( *p == ' ' || *p == '\t' )
+            ++p; // skipping whitespaces
+
+        if ( *p != ':' )
+            return;
+
+        p += 1; // after ':'
+        while ( *p == ' ' || *p == '\t' )
+            ++p; // skipping whitespaces
+
+        const char* p2 = p; // p points to the start of the old value
+        pEnd = optionsBuf.data() + optionsBuf.size();
+
+        if ( *p2 == '"' )
+        {
+            ++p2; // after the opening '"'
+            for ( ; p2 < pEnd; ++p2 )
+            {
+                const char ch = *p2;
+                if ( ch == '"' )
+                {
+                    ++p2; // after the closing '"'
+                    break; // end of the quoted string
+                }
+
+                if ( ch == '\\' )
+                {
+                    if ( p2 + 1 < pEnd )
+                        ++p2; // skip a character after '\\'
+                }
+            }
+        }
+
+        for ( ; p2 < pEnd; ++p2 )
+        {
+            const char ch = *p2;
+            if ( ch == ',' || ch == '}' || ch == '\r' || ch == '\n' )
+                break; // end of the old value
+        }
+
+        if ( p2 == pEnd )
+            return;
+
+        const size_t lenOldVal = static_cast<size_t>(p2 - p);
+        const size_t lenOptValue = strlen(optionValue);
+        const size_t offset = static_cast<size_t>(p - optionsBuf.data());
+        auto itrVal = optionsBuf.begin() + offset;
+        if ( lenOptValue > lenOldVal )
+        {
+            optionsBuf.insert(itrVal, lenOptValue - lenOldVal, '\0');
+            p = optionsBuf.data() + offset;
+        }
+        else if ( lenOptValue < lenOldVal )
+        {
+            optionsBuf.erase(itrVal, itrVal + (lenOldVal - lenOptValue));
+            p = optionsBuf.data() + offset;
+        }
+
+        memcpy(p, optionValue, lenOptValue*sizeof(char));
+    }
 }
 
 CXBracketsOptions::CXBracketsOptions() :
   // default values:
   m_uFlags(OPTF_AUTOCOMPLETE),
+  m_uFlags0(OPTF_AUTOCOMPLETE),
   m_uSelAutoBr(sabNone),
   m_uGoToNearestFlags(gnbfAutoPos),
   m_uSelToNearestFlags(snbfAutoPos),
@@ -353,6 +434,7 @@ CXBracketsOptions::CXBracketsOptions() :
   m_nJumpLinesVisDown(0),
   m_nJumpPairLineDiff(1),
   m_nHighlightSciStyleIndIdx(-1),
+  m_nHighlightSciStyleIndIdx0(-1),
   m_nHighlightSciStyleIndType(INDIC_TEXTFORE),
   m_nHighlightSciColor(RGB(0xE0, 0x40, 0x40)),
   m_nHighlightTypingDelayMs(1200),
@@ -366,11 +448,6 @@ CXBracketsOptions::CXBracketsOptions() :
 
 CXBracketsOptions::~CXBracketsOptions()
 {
-}
-
-bool CXBracketsOptions::MustBeSaved() const
-{
-    return false;
 }
 
 bool CXBracketsOptions::IsSupportedFile(const TCHAR* szExt) const
@@ -509,6 +586,11 @@ void CXBracketsOptions::readConfigSettingsItem(const void* pContext)
     }
 }
 
+bool CXBracketsOptions::IsConfigUpdated() const
+{
+    return (m_uFlags != m_uFlags0 || m_nHighlightSciStyleIndIdx != m_nHighlightSciStyleIndIdx0);
+}
+
 tstr CXBracketsOptions::ReadConfig(const tstr& cfgFilePath)
 {
     std::list<tFileSyntax> fileSyntaxes;
@@ -560,20 +642,36 @@ tstr CXBracketsOptions::ReadConfig(const tstr& cfgFilePath)
     postprocessSyntaxes(fileSyntaxes, &pDefaultFileSyntax);
 
     // OK, finally:
+    m_uFlags0 = m_uFlags;
+    m_nHighlightSciStyleIndIdx0 = m_nHighlightSciStyleIndIdx;
     std::swap(m_fileSyntaxes, fileSyntaxes);
     std::swap(m_pDefaultFileSyntax, pDefaultFileSyntax);
 
     return tstr();
 }
 
-void CXBracketsOptions::ReadOptions(const TCHAR* szIniFilePath)
+void CXBracketsOptions::WriteConfig(const tstr& cfgFilePath)
 {
-    (szIniFilePath);
-}
+    auto cfgBuf = readFile(cfgFilePath.c_str());
 
-void CXBracketsOptions::SaveOptions(const TCHAR* szIniFilePath)
-{
-    (szIniFilePath);
+    if ( m_uFlags0 != m_uFlags )
+    {
+        const char* strVal = getBracketsAutoComplete() ? "true" : "false";
+        setConfigOption(cfgBuf, "AutoComplete", strVal);
+    }
+
+    if ( m_nHighlightSciStyleIndIdx0 != m_nHighlightSciStyleIndIdx )
+    {
+        char strVal[12];
+        wsprintfA(strVal, "%d", getHighlightSciStyleIndIdx());
+        setConfigOption(cfgBuf, "Highlight_SciStyleIndIdx", strVal);
+    }
+
+    if ( writeFile(cfgFilePath.c_str(), cfgBuf) )
+    {
+        m_uFlags0 = m_uFlags;
+        m_nHighlightSciStyleIndIdx0 = m_nHighlightSciStyleIndIdx;
+    }
 }
 
 CXBracketsOptions& GetOptions()

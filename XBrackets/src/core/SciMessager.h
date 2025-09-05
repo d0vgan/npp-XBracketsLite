@@ -15,7 +15,7 @@ class CSciMessager
 
         LRESULT SendSciMsg(UINT uMsg, WPARAM wParam = 0, LPARAM lParam = 0);
         LRESULT SendSciMsg(UINT uMsg, WPARAM wParam = 0, LPARAM lParam = 0) const;
-        
+
         void          beginUndoAction();
         void          endUndoAction();
         void          ensureVisible(Sci_Position line); // deals with the folding and does NOT scroll lines

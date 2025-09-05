@@ -21,5 +21,5 @@
 #define IDC_ED_BRACKETS_DOTAGIF                 1016
 #define IDC_CH_BRACKETS_DOTAG2                  1017
 #define IDC_CH_BRACKETS_SKIPESCAPED             1018
-#define IDC_ED_BRACKETS_SKIPESCAPED             1019 
+#define IDC_ED_BRACKETS_SKIPESCAPED             1019
 #define IDC_ST_BRACKETS_SKIPESCAPED             1020

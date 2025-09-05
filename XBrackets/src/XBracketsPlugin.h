@@ -60,8 +60,9 @@ class CXBracketsPlugin : public CNppPlugin
 
         void ReadOptions();
         void SaveOptions();
-        void OnSettings();
         void OnConfigFileChanged(const tstr& configFilePath);
+        void OnSettings();
+        void OnHighlight();
         void OnHelp();
 
         void PluginMessageBox(const TCHAR* szMessageText, UINT uType);
@@ -88,7 +89,7 @@ class CXBracketsPlugin : public CNppPlugin
         CFileModificationWatcher m_FileWatcher;
         CConfigFileChangeListener m_ConfigFileChangeListener;
         tstr m_sIniFilePath;
-        tstr m_sConfigFilePath;
+        tstr m_sStaticConfigFilePath;
         tstr m_sUserConfigFilePath;
         tstr m_sCfgFileUpd;
         tHighlightBrPair m_hlBrPair[2];
@@ -118,6 +119,7 @@ class CXBracketsPlugin : public CNppPlugin
         void onConfigFileUpdated();
         void onConfigFileError(const tstr& configFilePath, const tstr& err);
         void onConfigFileHasBeenRead();
+        void onUpdateHighlight();
         bool updateFileInfo(unsigned int uInvalidateAndUpdateFlags);
         void clearActiveBrackets(int nSciIdx = 2); // 2 - main & second
         void highlightActiveBrackets(Sci_Position pos);

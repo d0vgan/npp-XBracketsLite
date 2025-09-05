@@ -204,7 +204,7 @@ void CFileModificationWatcher::StopWatching()
 
 
 // FileInfoStruct
-FileInfoStruct::FileInfoStruct(IFileChangeListener* pChangeListener_, const tstr& filePath_) : 
+FileInfoStruct::FileInfoStruct(IFileChangeListener* pChangeListener_, const tstr& filePath_) :
   pChangeListener(pChangeListener_), filePath(filePath_)
 {
     GetFileSizeAndTime(filePath.c_str(), &fileSize, &fileLastWriteTime);
@@ -247,7 +247,7 @@ void FileInfoStruct::CopySizeAndTime(const FileInfoStruct& other)
 
 
 // DirWatchStruct
-DirWatchStruct::DirWatchStruct(CDirectoryWatcher* pDirWatcher_, IDirectoryChangeListener* pChangeListener_, 
+DirWatchStruct::DirWatchStruct(CDirectoryWatcher* pDirWatcher_, IDirectoryChangeListener* pChangeListener_,
                                DWORD dwNotifyFilter_, BOOL bRecursive_, const tstr& sDirectory_) :
   pDirWatcher(pDirWatcher_), pChangeListener(pChangeListener_),
   dwNotifyFilter(dwNotifyFilter_), bRecursive(bRecursive_), sDirectory(sDirectory_)

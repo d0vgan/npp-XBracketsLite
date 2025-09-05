@@ -8,6 +8,7 @@ class CXBracketsMenu : public CNppPluginMenu
     public:
         enum NMenuItems {
             N_AUTOCOMPLETE = 0,
+            N_HIGHLIGHT,
             N_SETTINGS,
             N_SEPARATOR1,
             N_GOTOMATCHINGBR,
@@ -22,11 +23,12 @@ class CXBracketsMenu : public CNppPluginMenu
         };
         static FuncItem arrFuncItems[N_NBFUNCITEMS];
 
-    public:    
+    public:
         static INT_PTR PluginDialogBox(WORD idDlg, DLGPROC lpDlgFunc);
-        static void    UpdateMenuState();
+        static void    UpdatePluginState();
         static void    AllowAutocomplete(bool bAllow);
         static void    funcAutocomplete();
+        static void    funcHighlight();
         static void    funcSettings();
         static void    funcGoToMatchingBracket();
         static void    funcGoToNearestBracket();
@@ -34,7 +36,7 @@ class CXBracketsMenu : public CNppPluginMenu
         static void    funcSelToNearestBrackets();
         static void    funcHelp();
         static void    funcAbout();
-        
+
 };
 
 //---------------------------------------------------------------------------
