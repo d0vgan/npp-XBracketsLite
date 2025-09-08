@@ -1,0 +1,147 @@
+#ifndef _xbracketslogic_npp_plugin_h_
+#define _xbracketslogic_npp_plugin_h_
+//---------------------------------------------------------------------------
+#include "XBracketsCommon.h"
+#include <vector>
+
+class CBracketsTree
+{
+public:
+    using tstr = XBrackets::tstr;
+    using tBrPair = XBrackets::tBrPair;
+    using tBrPairItem = XBrackets::tBrPairItem;
+    using tFileSyntax = XBrackets::tFileSyntax;
+
+    enum eBrPairPosFlags
+    {
+        bpfNone     = 0x00,
+        bpfLeftBr   = 0x01, // ((
+        bpfRightBr  = 0x02, // ))
+        bpfBeforeBr = 0x10, // |((
+        bpfAfterBr  = 0x20, // ((|
+        bpfInsideBr = 0x40  // (|(
+    };
+
+private:
+    enum eGetBrFlags
+    {
+        gbfLnSt = 0x01, // is line start
+        gbfLdSp = 0x02  // is leading spaces
+    };
+
+public:
+    CBracketsTree();
+
+    void setFileSyntax(const tFileSyntax* pFileSyntax);
+
+    bool isTreeEmpty() const;
+    void buildTree(CSciMessager& sciMsgr);
+    void invalidateTree();
+    void updateTree(const SCNotification* pscn);
+
+    const tBrPairItem* findPairByPos(const Sci_Position nPos, bool isExact, unsigned int* puBrPosFlags) const;
+    const tBrPairItem* findParent(const tBrPairItem* pBrPair) const;
+
+private:
+    const tBrPair* getLeftBrPair(const char* p, size_t nLen, unsigned int uGetBrFlags) const;
+    std::vector<const tBrPair*> getRightBrPair(const char* p, size_t nLen, size_t nCurrentOffset, unsigned int uGetBrFlags) const;
+    bool isEscapedPos(const char* pTextBegin, const Sci_Position nPos) const;
+
+private:
+    std::vector<tBrPairItem> m_bracketsTree;
+    std::vector<const tBrPairItem*> m_bracketsByRightBr;
+    const tFileSyntax* m_pFileSyntax{nullptr};
+};
+
+class CXBracketsLogic
+{
+public:
+    using tstr = XBrackets::tstr;
+    using tBrPair = XBrackets::tBrPair;
+    using tBrPairItem = XBrackets::tBrPairItem;
+    using tFileSyntax = XBrackets::tFileSyntax;
+
+    enum eCharProcessingResult {
+        cprNone = 0,
+        cprBrAutoCompl,
+        cprSelAutoCompl
+    };
+
+    enum eGetBracketsAction {
+        baGoToMatching = 0,
+        baSelToMatching,
+        baGoToNearest,
+        baSelToNearest
+    };
+
+    enum eInvalidateCachedBracketsFlags {
+        icbfAutoRightBr = 0x0001,
+        icbfTree        = 0x0002,
+
+        icbfAll = (icbfAutoRightBr | icbfTree),
+        icbfMask = 0x00FF
+    };
+
+    enum eUpdateFileTypeFlags {
+        uftfConfigUpdated = 0x0100
+    };
+
+public:
+    CXBracketsLogic();
+
+    // interaction with the plugin
+    void SetNppData(const NppData& nppd);
+    bool UpdateFileType(unsigned int uInvalidateAndUpdateFlags);
+    void InvalidateCachedBrackets(unsigned int uInvalidateFlags, SCNotification* pscn = nullptr);
+    eCharProcessingResult OnCharPress(const int ch);
+    eCharProcessingResult OnTextAutoCompleted(const char* text, Sci_Position pos);
+    void PerformBracketsAction(eGetBracketsAction nBrAction);
+    const tBrPairItem* FindBracketsByPos(Sci_Position pos, bool isExactPos);
+    bool IsAtBracketPos(const CSciMessager& sciMsgr, Sci_Position pos) const;
+
+private:
+    enum eAutoBracketOrigin {
+        aboCharPress = 0,
+        aboTextAutoCompleted
+    };
+
+    enum eAutoBracketTypeFlags {
+        abtfTextJustAutoCompleted = 0x020000
+    };
+
+    struct tBracketsJumpState
+    {
+        Sci_Position nSelStart{-1};
+        Sci_Position nSelEnd{-1};
+        Sci_Position nLeftBrPos{-1};
+        Sci_Position nRightBrPos{-1};
+        Sci_Position nLeftBrLen{1}; // default length
+        Sci_Position nRightBrLen{1}; // default length
+    };
+
+    // internal vars
+    CBracketsTree m_bracketsTree;
+    CNppMessager m_nppMsgr;
+    const tFileSyntax* m_pFileSyntax{nullptr};
+    Sci_Position m_nAutoRightBracketPos{-1};
+    int          m_nAutoRightBracketType{-1};
+    int          m_nAutoRightBracketOffset{-1};
+    unsigned int m_uFileType{0};
+    tstr         m_fileExtension;
+
+private:
+    // custom functions
+    int getAutocompleteLeftBracketType(CSciMessager& sciMsgr, const char ch) const;
+    int getAutocompleteRightBracketType(CSciMessager& sciMsgr, const char ch) const;
+    const tBrPair* getAutoCompleteBrPair(int nBracketType) const;
+    eCharProcessingResult autoBracketsFunc(int nBracketType, eAutoBracketOrigin origin);
+    bool autoBracketsOverSelectionFunc(int nBracketType);
+    bool isEnclosedInBrackets(const char* pszTextLeft, const char* pszTextRight, int* pnBracketType, bool bInSelection);
+    unsigned int detectFileType(tstr* pFileExt = nullptr);
+    bool isSkipEscapedSupported() const;
+    bool isEscapedPos(const CSciMessager& sciMsgr, const Sci_Position nCharPos) const;
+    void jumpToPairBracket(CSciMessager& sciMsgr, const tBracketsJumpState& state, bool isGoTo);
+};
+
+//---------------------------------------------------------------------------
+#endif

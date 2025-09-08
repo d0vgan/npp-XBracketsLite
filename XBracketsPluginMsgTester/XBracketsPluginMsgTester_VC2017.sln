@@ -1,0 +1,34 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.28307.1321
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{34DD89BA-5C5D-48B4-ACF7-057DEBB50ABA}") = "XBracketsPluginMsgTester", "XBracketsPluginMsgTester_VC2017.vcxproj", "{AD78122C-F7E5-451A-85AE-255F3E1B7634}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Debug|x64 = Debug|x64
+		Release (ANSI)|Win32 = Release (ANSI)|Win32
+		Release (ANSI)|x64 = Release (ANSI)|x64
+		Release|Win32 = Release|Win32
+		Release|x64 = Release|x64
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{AD78122C-F7E5-451A-85AE-255F3E1B7634}.Debug|Win32.ActiveCfg = Debug|Win32
+		{AD78122C-F7E5-451A-85AE-255F3E1B7634}.Debug|Win32.Build.0 = Debug|Win32
+		{AD78122C-F7E5-451A-85AE-255F3E1B7634}.Debug|x64.ActiveCfg = Debug|x64
+		{AD78122C-F7E5-451A-85AE-255F3E1B7634}.Debug|x64.Build.0 = Debug|x64
+		{AD78122C-F7E5-451A-85AE-255F3E1B7634}.Release (ANSI)|Win32.ActiveCfg = Release (ANSI)|Win32
+		{AD78122C-F7E5-451A-85AE-255F3E1B7634}.Release (ANSI)|Win32.Build.0 = Release (ANSI)|Win32
+		{AD78122C-F7E5-451A-85AE-255F3E1B7634}.Release (ANSI)|x64.ActiveCfg = Release (ANSI)|x64
+		{AD78122C-F7E5-451A-85AE-255F3E1B7634}.Release (ANSI)|x64.Build.0 = Release (ANSI)|x64
+		{AD78122C-F7E5-451A-85AE-255F3E1B7634}.Release|Win32.ActiveCfg = Release|Win32
+		{AD78122C-F7E5-451A-85AE-255F3E1B7634}.Release|Win32.Build.0 = Release|Win32
+		{AD78122C-F7E5-451A-85AE-255F3E1B7634}.Release|x64.ActiveCfg = Release|x64
+		{AD78122C-F7E5-451A-85AE-255F3E1B7634}.Release|x64.Build.0 = Release|x64
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

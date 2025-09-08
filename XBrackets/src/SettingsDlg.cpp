@@ -1,11 +1,9 @@
 #include "SettingsDlg.h"
 #include "resource.h"
-#include "XBrackets.h"
+
+/*
+#include "XBracketsPlugin.h"
 #include "XBracketsOptions.h"
-
-
-extern CXBrackets thePlugin;
-extern CXBracketsOptions g_opt;
 
 
 BOOL AnyWindow_CenterWindow(HWND hWnd, HWND hParentWnd, BOOL bRepaint);
@@ -134,7 +132,7 @@ bool SettingsDlg_OnOK(HWND hDlg)
         szFileExts[0] = 0;
         GetWindowText(hEd, szFileExts, CXBracketsOptions::STR_FILEEXTS_SIZE - 1);
         CharLower(szFileExts);
-        g_opt.setSglQuoteFileExts(szFileExts);
+        GetOptions().setSglQuoteFileExts(szFileExts);
     }
 
     hEd = GetDlgItem(hDlg, IDC_ED_BRACKETS_DOTAGIF);
@@ -143,7 +141,7 @@ bool SettingsDlg_OnOK(HWND hDlg)
         szFileExts[0] = 0;
         GetWindowText(hEd, szFileExts, CXBracketsOptions::STR_FILEEXTS_SIZE - 1);
         CharLower(szFileExts);
-        g_opt.setHtmlFileExts(szFileExts);
+        GetOptions().setHtmlFileExts(szFileExts);
     }
 
     hEd = GetDlgItem(hDlg, IDC_ED_BRACKETS_SKIPESCAPED);
@@ -152,18 +150,18 @@ bool SettingsDlg_OnOK(HWND hDlg)
         szFileExts[0] = 0;
         GetWindowText(hEd, szFileExts, CXBracketsOptions::STR_FILEEXTS_SIZE - 1);
         CharLower(szFileExts);
-        g_opt.setEscapedFileExts(szFileExts);
+        GetOptions().setEscapedFileExts(szFileExts);
     }
 
-    g_opt.setBracketsAutoComplete( CheckBox_IsChecked(hDlg, IDC_CH_BRACKETS_AUTOCOMPLETE) );
-    g_opt.setBracketsRightExistsOK( CheckBox_IsChecked(hDlg, IDC_CH_BRACKETS_RIGHTEXISTS_OK) );
-    g_opt.setBracketsDoDoubleQuote( CheckBox_IsChecked(hDlg, IDC_CH_BRACKETS_DODOUBLEQUOTE) );
-    g_opt.setBracketsDoSingleQuote( CheckBox_IsChecked(hDlg, IDC_CH_BRACKETS_DOSINGLEQUOTE) );
-    g_opt.setBracketsDoSingleQuoteIf( CheckBox_IsChecked(hDlg, IDC_CH_BRACKETS_DOSINGLEQUOTEIF) );
-    g_opt.setBracketsDoTag( CheckBox_IsChecked(hDlg, IDC_CH_BRACKETS_DOTAG) );
-    g_opt.setBracketsDoTag2( CheckBox_IsChecked(hDlg, IDC_CH_BRACKETS_DOTAG2) );
-    g_opt.setBracketsDoTagIf( CheckBox_IsChecked(hDlg, IDC_CH_BRACKETS_DOTAGIF) );
-    g_opt.setBracketsSkipEscaped( CheckBox_IsChecked(hDlg, IDC_CH_BRACKETS_SKIPESCAPED) );
+    GetOptions().setBracketsAutoComplete( CheckBox_IsChecked(hDlg, IDC_CH_BRACKETS_AUTOCOMPLETE) );
+    GetOptions().setBracketsRightExistsOK( CheckBox_IsChecked(hDlg, IDC_CH_BRACKETS_RIGHTEXISTS_OK) );
+    GetOptions().setBracketsDoDoubleQuote( CheckBox_IsChecked(hDlg, IDC_CH_BRACKETS_DODOUBLEQUOTE) );
+    GetOptions().setBracketsDoSingleQuote( CheckBox_IsChecked(hDlg, IDC_CH_BRACKETS_DOSINGLEQUOTE) );
+    GetOptions().setBracketsDoSingleQuoteIf( CheckBox_IsChecked(hDlg, IDC_CH_BRACKETS_DOSINGLEQUOTEIF) );
+    GetOptions().setBracketsDoTag( CheckBox_IsChecked(hDlg, IDC_CH_BRACKETS_DOTAG) );
+    GetOptions().setBracketsDoTag2( CheckBox_IsChecked(hDlg, IDC_CH_BRACKETS_DOTAG2) );
+    GetOptions().setBracketsDoTagIf( CheckBox_IsChecked(hDlg, IDC_CH_BRACKETS_DOTAGIF) );
+    GetOptions().setBracketsSkipEscaped( CheckBox_IsChecked(hDlg, IDC_CH_BRACKETS_SKIPESCAPED) );
 
     return TRUE;
 }
@@ -171,8 +169,8 @@ bool SettingsDlg_OnOK(HWND hDlg)
 void showPluginStatus(HWND hDlg, bool bActive)
 {
     DlgItem_SetText( hDlg, IDC_ST_PLUGINSTATE,
-      bActive ? _T("Status: the plugin is active") :
-        _T("Status: the plugin is NOT active") );
+      bActive ? _T("Status: Auto-completion is active") :
+        _T("Status: Auto-completion is NOT active") );
 }
 
 void SettingsDlg_OnChBracketsAutoCompleteClicked(HWND hDlg)
@@ -240,57 +238,57 @@ void SettingsDlg_OnStPluginStateDblClicked(HWND hDlg)
 
 void SettingsDlg_OnInitDialog(HWND hDlg)
 {
-    AnyWindow_CenterWindow(hDlg, thePlugin.getNppWnd(), FALSE);
+    AnyWindow_CenterWindow(hDlg, GetPlugin().getNppWnd(), FALSE);
 
     CheckBox_SetCheck(hDlg,
-      IDC_CH_BRACKETS_DODOUBLEQUOTE, g_opt.getBracketsDoDoubleQuote());
+      IDC_CH_BRACKETS_DODOUBLEQUOTE, GetOptions().getBracketsDoDoubleQuote());
     CheckBox_SetCheck(hDlg,
-      IDC_CH_BRACKETS_DOSINGLEQUOTE, g_opt.getBracketsDoSingleQuote());
+      IDC_CH_BRACKETS_DOSINGLEQUOTE, GetOptions().getBracketsDoSingleQuote());
     CheckBox_SetCheck(hDlg,
-        IDC_CH_BRACKETS_DOSINGLEQUOTEIF, g_opt.getBracketsDoSingleQuoteIf());
+        IDC_CH_BRACKETS_DOSINGLEQUOTEIF, GetOptions().getBracketsDoSingleQuoteIf());
     CheckBox_SetCheck(hDlg,
-        IDC_CH_BRACKETS_DOTAG, g_opt.getBracketsDoTag());
+        IDC_CH_BRACKETS_DOTAG, GetOptions().getBracketsDoTag());
     CheckBox_SetCheck(hDlg,
-        IDC_CH_BRACKETS_DOTAG2, g_opt.getBracketsDoTag2());
+        IDC_CH_BRACKETS_DOTAG2, GetOptions().getBracketsDoTag2());
     CheckBox_SetCheck(hDlg,
-        IDC_CH_BRACKETS_DOTAGIF, g_opt.getBracketsDoTagIf());
+        IDC_CH_BRACKETS_DOTAGIF, GetOptions().getBracketsDoTagIf());
     CheckBox_SetCheck(hDlg,
-        IDC_CH_BRACKETS_SKIPESCAPED, g_opt.getBracketsSkipEscaped());
+        IDC_CH_BRACKETS_SKIPESCAPED, GetOptions().getBracketsSkipEscaped());
     CheckBox_SetCheck(hDlg,
-      IDC_CH_BRACKETS_AUTOCOMPLETE, g_opt.getBracketsAutoComplete());
+      IDC_CH_BRACKETS_AUTOCOMPLETE, GetOptions().getBracketsAutoComplete());
     CheckBox_SetCheck(hDlg,
-      IDC_CH_BRACKETS_RIGHTEXISTS_OK, g_opt.getBracketsRightExistsOK());
+      IDC_CH_BRACKETS_RIGHTEXISTS_OK, GetOptions().getBracketsRightExistsOK());
 
-    DlgItem_EnableWindow(hDlg, IDC_CH_BRACKETS_DOSINGLEQUOTEIF, g_opt.getBracketsDoSingleQuote());
+    DlgItem_EnableWindow(hDlg, IDC_CH_BRACKETS_DOSINGLEQUOTEIF, GetOptions().getBracketsDoSingleQuote());
     DlgItem_EnableWindow(hDlg, IDC_ED_BRACKETS_DOSINGLEQUOTEIF,
-        g_opt.getBracketsDoSingleQuote() ? g_opt.getBracketsDoSingleQuoteIf() : false);
-    DlgItem_EnableWindow(hDlg, IDC_CH_BRACKETS_DOTAG2, g_opt.getBracketsDoTag());
-    DlgItem_EnableWindow(hDlg, IDC_CH_BRACKETS_DOTAGIF, g_opt.getBracketsDoTag());
+        GetOptions().getBracketsDoSingleQuote() ? GetOptions().getBracketsDoSingleQuoteIf() : false);
+    DlgItem_EnableWindow(hDlg, IDC_CH_BRACKETS_DOTAG2, GetOptions().getBracketsDoTag());
+    DlgItem_EnableWindow(hDlg, IDC_CH_BRACKETS_DOTAGIF, GetOptions().getBracketsDoTag());
     DlgItem_EnableWindow(hDlg, IDC_ED_BRACKETS_DOTAGIF,
-      g_opt.getBracketsDoTag() ? g_opt.getBracketsDoTagIf() : false);
-    DlgItem_EnableWindow(hDlg, IDC_ED_BRACKETS_SKIPESCAPED, g_opt.getBracketsSkipEscaped());
-    DlgItem_EnableWindow(hDlg, IDC_ST_BRACKETS_SKIPESCAPED, g_opt.getBracketsSkipEscaped());
+      GetOptions().getBracketsDoTag() ? GetOptions().getBracketsDoTagIf() : false);
+    DlgItem_EnableWindow(hDlg, IDC_ED_BRACKETS_SKIPESCAPED, GetOptions().getBracketsSkipEscaped());
+    DlgItem_EnableWindow(hDlg, IDC_ST_BRACKETS_SKIPESCAPED, GetOptions().getBracketsSkipEscaped());
     DlgItem_EnableWindow(hDlg,
-        IDC_CH_BRACKETS_RIGHTEXISTS_OK, g_opt.getBracketsAutoComplete());
+        IDC_CH_BRACKETS_RIGHTEXISTS_OK, GetOptions().getBracketsAutoComplete());
 
-    showPluginStatus(hDlg, g_opt.getBracketsAutoComplete());
+    showPluginStatus(hDlg, GetOptions().getBracketsAutoComplete());
 
     HWND hEd = GetDlgItem(hDlg, IDC_ED_BRACKETS_DOSINGLEQUOTEIF);
     if ( hEd )
     {
-        SetWindowText(hEd, g_opt.getSglQuoteFileExts().c_str());
+        SetWindowText(hEd, GetOptions().getSglQuoteFileExts().c_str());
     }
 
     hEd = GetDlgItem(hDlg, IDC_ED_BRACKETS_DOTAGIF);
     if ( hEd )
     {
-        SetWindowText(hEd, g_opt.getHtmlFileExts().c_str());
+        SetWindowText(hEd, GetOptions().getHtmlFileExts().c_str());
     }
 
     hEd = GetDlgItem(hDlg, IDC_ED_BRACKETS_SKIPESCAPED);
     if ( hEd )
     {
-        SetWindowText(hEd, g_opt.getEscapedFileExts().c_str());
+        SetWindowText(hEd, GetOptions().getEscapedFileExts().c_str());
     }
 
     SettingsDlg_SetAutocompleteBracketsText(hDlg);
@@ -423,3 +421,5 @@ BOOL DlgItem_SetText(HWND hDlg, UINT idDlgItem, const TCHAR* pszText)
     }
     return FALSE;
 }
+
+*/

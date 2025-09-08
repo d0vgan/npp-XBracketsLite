@@ -5,15 +5,18 @@
 #include "SciMessager.h"
 #include "NppMessager.h"
 #include "NppPluginMenu.h"
+#include <string>
 
+typedef std::basic_string<TCHAR> tstr;
 
 class CNppPlugin
 {
     protected:
         CNppMessager  m_nppMsgr;
         HMODULE       m_hDllModule;
-        TCHAR         m_szDllFileName[100];
-        TCHAR         m_szIniFileName[100];
+        tstr          m_sDllDir;
+        tstr          m_sDllFileName;
+        tstr          m_sIniFileName;
 
     public:
         CNppPlugin();
@@ -33,9 +36,10 @@ class CNppPlugin
         // common n++ notification
         virtual void OnNppSetInfo(const NppData& nppd)  { }
 
-        const TCHAR* getDllFileName() const  { return m_szDllFileName; }
         HMODULE getDllModule() const  { return m_hDllModule; }
-        const TCHAR* getIniFileName() const  { return m_szIniFileName; }
+        const tstr& getDllDir() const  { return m_sDllDir; } // full directory path to the .dll
+        const tstr& getDllFileName() const  { return m_sDllFileName; } // name.dll
+        const tstr& getIniFileName() const  { return m_sIniFileName; } // name.ini
         HWND getNppWnd() const  { return m_nppMsgr.getNppWnd(); }
         const CNppMessager& getNppMsgr() const  { return m_nppMsgr; }
         CNppMessager& getNppMsgr()  { return m_nppMsgr; }

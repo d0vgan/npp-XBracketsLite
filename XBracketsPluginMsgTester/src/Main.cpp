@@ -2,23 +2,23 @@
 //
 
 #include "core/base.h"
-#include "XBracketsPlugin.h"
+#include "MsgTester.h"
 
 
-extern "C" BOOL APIENTRY DllMain(
-                        HINSTANCE hInstance,
-                        DWORD     dwReason,
+extern "C" BOOL APIENTRY DllMain( 
+                        HINSTANCE hInstance, 
+                        DWORD     dwReason, 
                         LPVOID    lpReserved
 					 )
 {
     switch ( dwReason )
     {
         case DLL_PROCESS_ATTACH:
-            GetPlugin().OnDllProcessAttach(hInstance);
+            GetMsgTester().OnDllProcessAttach(hInstance);
             break;
 
         case DLL_PROCESS_DETACH:
-            GetPlugin().OnDllProcessDetach();
+            GetMsgTester().OnDllProcessDetach();
             break;
 
         case DLL_THREAD_ATTACH:
@@ -30,33 +30,33 @@ extern "C" BOOL APIENTRY DllMain(
         default:
             break;
     }
-
+    
     return TRUE;
 }
 
 extern "C" __declspec(dllexport) void setInfo(NppData nppd)
 {
-    GetPlugin().nppSetInfo(nppd);
+    GetMsgTester().nppSetInfo(nppd);
 }
 
 extern "C" __declspec(dllexport) const TCHAR * getName()
 {
-    return GetPlugin().nppGetName();
+    return GetMsgTester().nppGetName();
 }
 
 extern "C" __declspec(dllexport) void beNotified(SCNotification* pscn)
 {
-    GetPlugin().nppBeNotified(pscn);
+    GetMsgTester().nppBeNotified(pscn);
 }
 
 extern "C" __declspec(dllexport) LRESULT messageProc(UINT Message, WPARAM wParam, LPARAM lParam)
 {
-    return GetPlugin().nppMessageProc(Message, wParam, lParam);
+    return GetMsgTester().nppMessageProc(Message, wParam, lParam);
 }
 
 extern "C" __declspec(dllexport) FuncItem * getFuncsArray(int* pnbFuncItems)
 {
-    return GetPlugin().nppGetFuncsArray(pnbFuncItems);
+    return GetMsgTester().nppGetFuncsArray(pnbFuncItems);
 }
 
 #ifdef UNICODE

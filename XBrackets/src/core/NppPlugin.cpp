@@ -3,8 +3,6 @@
 
 CNppPlugin::CNppPlugin() : m_hDllModule(NULL)
 {
-    m_szDllFileName[0] = 0;
-    m_szIniFileName[0] = 0;
 }
 
 CNppPlugin::~CNppPlugin()
@@ -13,30 +11,32 @@ CNppPlugin::~CNppPlugin()
 
 void CNppPlugin::OnDllProcessAttach(HINSTANCE hDLLInstance)
 {
-    int   nLen;
     TCHAR szPath[2*MAX_PATH + 1];
-    
-    m_hDllModule = (HMODULE) hDLLInstance;
-    nLen = (int) ::GetModuleFileName(m_hDllModule, szPath, 2*MAX_PATH);
-    while ( nLen-- > 0 )
-    {
-        if ( (szPath[nLen] == _T('\\')) || (szPath[nLen] == _T('/')) )
-        {
-            lstrcpy(m_szDllFileName, szPath + nLen + 1);
-            lstrcpy(m_szIniFileName, m_szDllFileName);
-            break;
-        }
-    }
 
-    nLen = lstrlen(m_szIniFileName);
-    while ( nLen-- > 0 )
+    m_hDllModule = (HMODULE) hDLLInstance;
+    size_t pos = ::GetModuleFileName(m_hDllModule, szPath, 2*MAX_PATH);
+    tstr dllFilePath(szPath, pos);
+
+    pos = dllFilePath.find_last_of(_T("\\/"));
+    if ( pos != tstr::npos )
     {
-        if ( m_szIniFileName[nLen] == _T('.') )
-        {
-            lstrcpy(m_szIniFileName + nLen + 1, _T("ini"));
-            break;
-        }
+        m_sDllDir.assign(dllFilePath, 0, pos);
+        m_sDllFileName.assign(dllFilePath, pos + 1);
     }
+    else
+    {
+        // should not happen, but anyway
+        m_sDllDir = _T(".");
+        m_sDllFileName = dllFilePath;
+    }
+    m_sIniFileName = m_sDllFileName;
+
+    pos = m_sIniFileName.rfind(_T('.'));
+    if ( pos != tstr::npos )
+    {
+        m_sIniFileName.erase(pos, m_sIniFileName.length() - pos);
+    }
+    m_sIniFileName.append(_T(".ini"));
 }
 
 void CNppPlugin::OnDllProcessDetach()

@@ -2,36 +2,29 @@
 #define _xbrackets_npp_options_h_
 //---------------------------------------------------------------------------
 #include "core/base.h"
-#include <string>
-
-typedef std::basic_string<TCHAR> tstr;
+#include "XBracketsCommon.h"
+#include <list>
 
 class CXBracketsOptions
 {
     public:
+        using tstr = XBrackets::tstr;
+        using tFileSyntax = XBrackets::tFileSyntax;
+
+    public:
         CXBracketsOptions();
         ~CXBracketsOptions();
 
-        bool MustBeSaved() const;
-        bool IsHtmlCompatible(const TCHAR* szExt) const;
-        bool IsEscapedFileExt(const TCHAR* szExt) const;
-        bool IsSingleQuoteFileExt(const TCHAR* szExt) const;
         bool IsSupportedFile(const TCHAR* szExt) const;
-        void ReadOptions(const TCHAR* szIniFilePath);
-        void SaveOptions(const TCHAR* szIniFilePath);
+        bool IsConfigUpdated() const;
+        tstr ReadConfig(const tstr& cfgFilePath);
+        void WriteConfig(const tstr& cfgFilePath);
 
     protected:
         enum eOptConsts {
             // flags
             OPTF_AUTOCOMPLETE     = 0x000001,
-            OPTF_RIGHTBRACKETOK   = 0x000008,
-            OPTF_DOSINGLEQUOTE    = 0x000100,
-            OPTF_DOTAG            = 0x000200,
-            OPTF_DOTAGIF          = 0x000400,
-            OPTF_DOTAG2           = 0x000800,
-            OPTF_SKIPESCAPED      = 0x001000,
-            OPTF_DOSINGLEQUOTEIF  = 0x002000,
-            OPTF_DONOTDOUBLEQUOTE = 0x004000
+            OPTF_RIGHTBRACKETOK   = 0x000008
         };
 
         inline bool getBoolFlag(UINT uWhich) const
@@ -47,6 +40,8 @@ class CXBracketsOptions
                 m_uFlags ^= uWhich;
         }
 
+        void readConfigSettingsItem(const void* pContext);
+
     public:
         enum eConsts {
             MAX_EXT             = 50,
@@ -59,6 +54,19 @@ class CXBracketsOptions
             sabEncloseAndSel,
             sabEncloseRemove,
             sabEncloseRemoveOuter
+        };
+
+        enum eGoToNearestBrFlags {
+            gnbfAutoPos  = 0x00,
+            gnbfOuterPos = 0x01,
+            gnbfLeftBr   = 0x10,
+            gnbfRightBr  = 0x20
+        };
+
+        enum eSelToNearestBrFlags {
+            snbfAutoPos  = 0x00,
+            snbfOuterPos = 0x01,
+            snbfWiden    = 0x02
         };
 
         bool getBracketsAutoComplete() const
@@ -81,109 +89,64 @@ class CXBracketsOptions
             setBoolFlag(OPTF_RIGHTBRACKETOK, bBracketsRightExistsOK);
         }
 
-        bool getBracketsDoDoubleQuote() const
-        {
-            return !getBoolFlag(OPTF_DONOTDOUBLEQUOTE);
-        }
-
-        void setBracketsDoDoubleQuote(bool bBracketsDoDoubleQuote)
-        {
-            setBoolFlag(OPTF_DONOTDOUBLEQUOTE, !bBracketsDoDoubleQuote);
-        }
-
-        bool getBracketsDoSingleQuote() const
-        {
-            return getBoolFlag(OPTF_DOSINGLEQUOTE);
-        }
-
-        void setBracketsDoSingleQuote(bool bBracketsDoSingleQuote)
-        {
-            setBoolFlag(OPTF_DOSINGLEQUOTE, bBracketsDoSingleQuote);
-        }
-
-        bool getBracketsDoSingleQuoteIf() const
-        {
-            return getBoolFlag(OPTF_DOSINGLEQUOTEIF);
-        }
-
-        void setBracketsDoSingleQuoteIf(bool bBracketsDoSingleQuoteIf)
-        {
-            setBoolFlag(OPTF_DOSINGLEQUOTEIF, bBracketsDoSingleQuoteIf);
-        }
-
-        bool getBracketsDoTag() const
-        {
-            return getBoolFlag(OPTF_DOTAG);
-        }
-
-        void setBracketsDoTag(bool bBracketsDoTag)
-        {
-            setBoolFlag(OPTF_DOTAG, bBracketsDoTag);
-        }
-
-        bool getBracketsDoTag2() const
-        {
-            return getBoolFlag(OPTF_DOTAG2);
-        }
-
-        void setBracketsDoTag2(bool bBracketsDoTag2)
-        {
-            setBoolFlag(OPTF_DOTAG2, bBracketsDoTag2);
-        }
-
-        bool getBracketsDoTagIf() const
-        {
-            return getBoolFlag(OPTF_DOTAGIF);
-        }
-
-        void setBracketsDoTagIf(bool bBracketsDoTagIf)
-        {
-            setBoolFlag(OPTF_DOTAGIF, bBracketsDoTagIf);
-        }
-
-        bool getBracketsSkipEscaped() const
-        {
-            return getBoolFlag(OPTF_SKIPESCAPED);
-        }
-
-        void setBracketsSkipEscaped(bool bBracketsSkipEscaped)
-        {
-            setBoolFlag(OPTF_SKIPESCAPED, bBracketsSkipEscaped);
-        }
-
         UINT getBracketsSelAutoBr() const // one of eSelAutoBr
         {
             return m_uSelAutoBr;
         }
 
-        const tstr& getHtmlFileExts() const
+        UINT getGoToNearestFlags() const
         {
-            return m_sHtmlFileExts;
+            return m_uGoToNearestFlags;
         }
 
-        void setHtmlFileExts(const TCHAR* cszHtmlFileExts)
+        UINT getSelToNearestFlags() const
         {
-            m_sHtmlFileExts = cszHtmlFileExts;
+            return m_uSelToNearestFlags;
         }
 
-        const tstr& getEscapedFileExts() const
+        int getJumpLinesVisUp() const
         {
-            return m_sEscapedFileExts;
+            return m_nJumpLinesVisUp;
         }
 
-        void setEscapedFileExts(const TCHAR* cszEscapedFileExts)
+        int getJumpLinesVisDown() const
         {
-            m_sEscapedFileExts = cszEscapedFileExts;
+            return m_nJumpLinesVisDown;
         }
 
-        const tstr& getSglQuoteFileExts() const
+        int getJumpPairLineDiff() const
         {
-            return m_sSglQuoteFileExts;
+            return m_nJumpPairLineDiff;
         }
 
-        void setSglQuoteFileExts(const TCHAR* cszSglQuoteFileExts)
+        int getHighlightSciStyleIndIdx() const
         {
-            m_sSglQuoteFileExts = cszSglQuoteFileExts;
+            return m_nHighlightSciStyleIndIdx;
+        }
+
+        void setHighlightSciStyleIndIdx(int nHighlightIdx)
+        {
+            m_nHighlightSciStyleIndIdx = nHighlightIdx;
+        }
+
+        int getHighlightSciStyleIndType() const
+        {
+            return m_nHighlightSciStyleIndType;
+        }
+
+        COLORREF getHighlightSciColor() const
+        {
+            return m_nHighlightSciColor;
+        }
+
+        unsigned int getHighlightTypingDelayMs() const
+        {
+            return m_nHighlightTypingDelayMs;
+        }
+
+        unsigned int getHighlightMaxTextLength() const
+        {
+            return m_nHighlightMaxTextLength;
         }
 
         const tstr& getNextCharOK() const
@@ -196,24 +159,57 @@ class CXBracketsOptions
             return m_sPrevCharOK;
         }
 
+        const tstr& getDelimiters() const
+        {
+            return m_sDelimiters;
+        }
+
+        const std::list<tFileSyntax>& getFileSyntaxes() const
+        {
+            return m_fileSyntaxes;
+        }
+
+        const tFileSyntax* getDefaultFileSyntax() const
+        {
+            return m_pDefaultFileSyntax;
+        }
+
+        bool getUpdateTreeAllowed() const
+        {
+            // buildTree() takes less than a second for a 1 MB file even on a
+            // 10-years old notebook.
+            // updateTree() is called on each and every character typed or
+            // deleted, potentially slowing down the entire reaction to typing.
+            // As buildTree() is fast enough, we can just call invalidateTree()
+            // instead of updateTree().
+            // See also: CXBracketsPlugin::OnNppReady().
+            return false;
+        }
+
     protected:
         UINT  m_uFlags;
         UINT  m_uFlags0;
         UINT  m_uSelAutoBr; // one of eSelAutoBr
-        UINT  m_uSelAutoBr0;
-        bool  m_bSaveFileExtsRule;
-        bool  m_bSaveNextCharOK;
-        bool  m_bSavePrevCharOK;
-        tstr  m_sHtmlFileExts;
-        tstr  m_sHtmlFileExts0;
-        tstr  m_sEscapedFileExts;
-        tstr  m_sEscapedFileExts0;
-        tstr  m_sSglQuoteFileExts;
-        tstr  m_sSglQuoteFileExts0;
+        UINT  m_uGoToNearestFlags; // see eGoToNearestBrFlags
+        UINT  m_uSelToNearestFlags; // see eSelToNearestBrFlags
+        int   m_nJumpLinesVisUp;
+        int   m_nJumpLinesVisDown;
+        int   m_nJumpPairLineDiff;
+        int   m_nHighlightSciStyleIndIdx;
+        int   m_nHighlightSciStyleIndIdx0;
+        int   m_nHighlightSciStyleIndType;
+        COLORREF m_nHighlightSciColor;
+        UINT  m_nHighlightTypingDelayMs;
+        UINT  m_nHighlightMaxTextLength;
         tstr  m_sFileExtsRule;
         tstr  m_sNextCharOK;
         tstr  m_sPrevCharOK;
+        tstr  m_sDelimiters;
+        std::list<tFileSyntax> m_fileSyntaxes;
+        const tFileSyntax* m_pDefaultFileSyntax;
 };
+
+CXBracketsOptions& GetOptions();
 
 //---------------------------------------------------------------------------
 #endif

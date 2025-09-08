@@ -11,6 +11,7 @@ cd XBrackets\Release
 %ARC_EXE% u -tzip ..\..\XBrackets%ARC_DATE%_dll.zip XBrackets.dll -mx5
 cd ..
 %ARC_EXE% u -tzip ..\XBrackets%ARC_DATE%_dll.zip XBrackets*.txt -mx5
+%ARC_EXE% u -tzip ..\XBrackets%ARC_DATE%_dll.zip XBrackets_Config.json -mx5
 cd ..
 %ARC_EXE% t XBrackets%ARC_DATE%_dll.zip
 
@@ -20,6 +21,7 @@ cd XBrackets\x64\Release
 %ARC_EXE% u -tzip ..\..\..\XBrackets%ARC_DATE%_dll_x64.zip XBrackets.dll -mx5
 cd ..\..
 %ARC_EXE% u -tzip ..\XBrackets%ARC_DATE%_dll_x64.zip XBrackets*.txt -mx5
+%ARC_EXE% u -tzip ..\XBrackets%ARC_DATE%_dll_x64.zip XBrackets_Config.json -mx5
 cd ..
 %ARC_EXE% t XBrackets%ARC_DATE%_dll_x64.zip
 

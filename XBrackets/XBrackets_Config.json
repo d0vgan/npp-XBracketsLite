@@ -1,0 +1,463 @@
+{
+  "settings": {
+    "AutoComplete": true,
+    "AutoComplete_WhenRightBrExists": false,
+    "Sel_AutoBr": 4,
+    "Next_Char_OK": ".,!?:;</",
+    "Prev_Char_OK": "([{<=,;",
+    "Delimiters": "'`\"\\|[](){}<>,.;:+-=~!@#$%^&*/?",
+    "Highlight_SciStyleIndIdx": 20,
+    "Highlight_SciStyleIndType": 17,
+    "Highlight_SciColor": "#E04040",
+    "Highlight_TypingDelayMs": 1200,
+    "Highlight_MaxTextLength": 6291456,
+    "GoToNearest_Flags": 0,
+    "SelToNearest_Flags": 2,
+    "Jump_Lines_Vis_Up": 1,
+    "Jump_Lines_Vis_Down": 0,
+    "Jump_Pair_Line_Diff": 1,
+    "FileExtsRule": ""
+  },
+  "fileSyntax": [
+    {
+      "name": "Text/Unknown",
+      "fileExtensions": [],
+      "syntax": [
+        [ "{", "}", "multi-line-brackets" ],
+        [ "(", ")", "multi-line-brackets" ],
+        [ "[", "]", "multi-line-brackets" ],
+        [ "\"", "\"", "single-line-quotes" ]
+      ],
+      "autocomplete": [
+        [ "{", "}" ],
+        [ "(", ")" ],
+        [ "[", "]" ],
+        [ "\"", "\"" ]
+      ]
+    },
+    {
+      "name": "C-like",
+      "fileExtensions": null,
+      "syntax": [
+        [ "{", "}", "multi-line-brackets" ],
+        [ "(", ")", "multi-line-brackets" ],
+        [ "[", "]", "multi-line-brackets" ],
+        [ "\"", "\"", "single-line-quotes" ],
+        [ "'", "'", "single-line-quotes" ],
+        [ "\\", "quote-escape-char" ],
+        [ "//", "", "single-line-comment" ],
+        [ "/*", "*/", "multi-line-comment" ]
+      ],
+      "autocomplete": [
+        [ "{", "}" ],
+        [ "(", ")" ],
+        [ "[", "]" ],
+        [ "\"", "\"" ],
+        [ "'", "'" ],
+        [ "/*", "*/" ]
+      ]
+    },
+    {
+      "name": "C",
+      "parent": "C-like",
+      "fileExtensions": [
+        "c", "h"
+      ],
+      "syntax": [
+        [ "<", ">", "single-line-brackets" ]
+      ]
+    },
+    {
+      "name": "C++",
+      "parent": "C",
+      "fileExtensions": [
+        "cc", "cpp", "cxx", "hh", "hpp", "hxx"
+      ],
+      "syntax": [
+        [ "R\"(", ")\"", "multi-line-quotes" ]
+      ]
+    },
+    {
+      "name": "C#",
+      "parent": "C",
+      "fileExtensions": [
+        "cs", "csx"
+      ],
+      "syntax": [
+        [ "@\"", "\"", "multi-line-quotes" ]
+      ]
+    },
+    {
+      "name": "Java",
+      "parent": "C",
+      "fileExtensions": [
+        "java"
+      ],
+      "syntax": [
+        [ "\"\"\"", "\"\"\"", "multi-line-quotes" ]
+      ]
+    },
+    {
+      "name": "JavaScript",
+      "parent": "C-like",
+      "fileExtensions": [
+        "js"
+      ],
+      "syntax": [
+        [ "/", "/", "single-line-quotes" ],
+        [ "`", "`", "multi-line-quotes" ]
+      ]
+    },
+    {
+      "name": "awk",
+      "fileExtensions": [
+        "awk"
+      ],
+      "syntax": [
+        [ "{", "}", "multi-line-brackets" ],
+        [ "(", ")", "multi-line-brackets" ],
+        [ "[", "]", "multi-line-brackets" ],
+        [ "\"", "\"", "single-line-quotes" ],
+        [ "/", "/", "single-line-quotes" ],
+        [ "\\", "quote-escape-char" ],
+        [ "#", "", "single-line-comment" ]
+      ],
+      "autocomplete": [
+        [ "{", "}" ],
+        [ "(", ")" ],
+        [ "[", "]" ],
+        [ "\"", "\"" ]
+      ]
+    },
+    {
+      "name": "Go",
+      "fileExtensions": [
+        "go"
+      ],
+      "syntax": [
+        [ "{", "}", "multi-line-brackets" ],
+        [ "(", ")", "multi-line-brackets" ],
+        [ "[", "]", "multi-line-brackets" ],
+        [ "\"", "\"", "single-line-quotes" ],
+        [ "'", "'", "single-line-quotes" ],
+        [ "`", "`", "multi-line-quotes" ],
+        [ "\\", "quote-escape-char" ],
+        [ "//", "", "single-line-comment" ],
+        [ "/*", "*/", "multi-line-comment" ]
+      ],
+      "autocomplete": [
+        [ "{", "}" ],
+        [ "(", ")" ],
+        [ "[", "]" ],
+        [ "\"", "\"" ],
+        [ "'", "'" ],
+        [ "`", "`" ],
+        [ "/*", "*/" ]
+      ]
+    },
+    {
+      "name": "Pascal",
+      "fileExtensions": [
+        "pas", "dpr"
+      ],
+      "syntax": [
+        [ "(", ")", "multi-line-brackets" ],
+        [ "[", "]", "multi-line-brackets" ],
+        [ "'", "'", "single-line-quotes" ],
+        [ "//", "", "single-line-comment" ],
+        [ "{", "}", "multi-line-comment" ],
+        [ "(*", "*)", "multi-line-comment" ]
+      ],
+      "autocomplete": [
+        [ "{", "}" ],
+        [ "(", ")" ],
+        [ "[", "]" ],
+        [ "'", "'" ],
+        [ "`", "`" ],
+        [ "(*", "*" ],
+        [ "begin", "end", 134 ],
+        [ "record", "end", 134 ],
+        [ "class", "end", 134 ],
+        [ "implementation", "end", 134 ]
+      ]
+    },
+    {
+      "name": "ini",
+      "fileExtensions": [
+        "ini", "inf", "url"
+      ],
+      "syntax": [
+        [ "{", "}", "single-line-brackets" ],
+        [ "(", ")", "single-line-brackets" ],
+        [ "[", "]", "single-line-brackets" ],
+        [ "\"", "\"", "single-line-quotes" ],
+        [ ";", "", "single-line-comment" ],
+        [ "#", "", "single-line-comment" ]
+      ],
+      "autocomplete": [
+        [ "{", "}" ],
+        [ "(", ")" ],
+        [ "[", "]" ],
+        [ "\"", "\"" ]
+      ]
+    },
+    {
+      "name": "reg",
+      "parent": "ini",
+      "fileExtensions": [
+        "reg"
+      ],
+      "syntax": [
+        [ "\\", "quote-escape-char" ]
+      ]
+    },
+    {
+      "name": "JSON",
+      "fileExtensions": [
+        "json"
+      ],
+      "syntax": [
+        [ "{", "}", "multi-line-brackets" ],
+        [ "(", ")", "multi-line-brackets" ],
+        [ "[", "]", "multi-line-brackets" ],
+        [ "\"", "\"", "single-line-quotes" ],
+        [ "\\", "quote-escape-char" ]
+      ],
+      "autocomplete": [
+        [ "{", "}" ],
+        [ "(", ")" ],
+        [ "[", "]" ],
+        [ "\"", "\"" ]
+      ]
+    },
+    {
+      "name": "XML",
+      "fileExtensions": [
+        "xml", "vcxproj", "csproj"
+      ],
+      "syntax": [
+        [ "<", ">", "multi-line-brackets" ],
+        [ "\"", "\"", "single-line-quotes" ],
+        [ "'", "'", "single-line-quotes" ],
+        [ "{", "}", "multi-line-brackets" ],
+        [ "(", ")", "multi-line-brackets" ],
+        [ "[", "]", "multi-line-brackets" ],
+        [ "<!--", "-->", "multi-line-comment" ]
+      ],
+      "autocomplete": [
+        [ "<", ">" ],
+        [ "\"", "\"" ],
+        [ "'", "'" ],
+        [ "(", ")" ],
+        [ "{", "}" ],
+        [ "[", "]" ],
+        [ "<!--", "--" ]
+      ]
+    },
+    {
+      "name": "HTML",
+      "parent": "XML",
+      "fileExtensions": [
+        "htm", "html"
+      ],
+      "syntax": [
+        [ "\\", "quote-escape-char" ]
+      ]
+    },
+    {
+      "name": "bat/cmd",
+      "fileExtensions": [
+        "bat", "cmd"
+      ],
+      "syntax": [
+        [ "(", ")", "multi-line-brackets" ],
+        [ "[", "]", "single-line-brackets" ],
+        [ "\"", "\"", "single-line-quotes" ],
+        [ "'", "'", "single-line-quotes" ],
+        [ "%", "%", "single-line-brackets", 1 ],
+        [ "REM", "", "single-line-comment" ],
+        [ "::", "", "single-line-comment" ]
+      ],
+      "autocomplete": [
+        [ "(", ")" ],
+        [ "[", "]" ],
+        [ "\"", "\"" ],
+        [ "'", "'" ],
+        [ "%", "%", 1 ]
+      ]
+    },
+    {
+      "name": "PowerShell",
+      "fileExtensions": [
+        "ps1"
+      ],
+      "syntax": [
+        [ "{", "}", "multi-line-brackets" ],
+        [ "(", ")", "multi-line-brackets" ],
+        [ "[", "]", "multi-line-brackets" ],
+        [ "\"", "\"", "single-line-quotes" ],
+        [ "'", "'", "single-line-quotes" ],
+        [ "`", "quote-escape-char" ],
+        [ "<#", "#>", "multi-line-comment" ],
+        [ "#", "", "single-line-comment" ],
+        [ "@\"", "\"@", "multi-line-quotes", 4 ],
+        [ "@'", "'@", "multi-line-quotes", 4 ]
+      ],
+      "autocomplete": [
+        [ "{", "}" ],
+        [ "(", ")" ],
+        [ "[", "]" ],
+        [ "\"", "\"" ],
+        [ "'", "'" ],
+        [ "<#", "#>" ],
+        [ "@\"", "\"@" ],
+        [ "@'", "'@" ]
+      ]
+    },
+    {
+      "name": "sh",
+      "fileExtensions": [
+        "sh"
+      ],
+      "syntax": [
+        [ "{", "}", "multi-line-brackets" ],
+        [ "(", ")", "multi-line-brackets" ],
+        [ "[", "]", "single-line-brackets" ],
+        [ "\"", "\"", "single-line-quotes" ],
+        [ "'", "'", "single-line-quotes" ],
+        [ "\\", "quote-escape-char" ],
+        [ "# ", "", "single-line-comment" ]
+      ],
+      "autocomplete": [
+        [ "{", "}" ],
+        [ "(", ")" ],
+        [ "[", "]" ],
+        [ "\"", "\"" ],
+        [ "'", "'" ]
+      ]
+    },
+    {
+      "name": "AutoHotkey",
+      "fileExtensions": [
+        "ahk"
+      ],
+      "syntax": [
+        [ "(", ")", "multi-line-brackets" ],
+        [ "{", "}", "multi-line-brackets" ],
+        [ "[", "]", "multi-line-brackets" ],
+        [ "\"", "\"", "single-line-quotes" ],
+        [ "'", "'", "single-line-quotes" ],
+        [ "`", "quote-escape-char" ],
+        [ "%", "%", "single-line-brackets", 1 ],
+        [ ";", "", "single-line-comment" ],
+        [ "/*", "*/", "multi-line-comment", 30 ]
+      ],
+      "autocomplete": [
+        [ "(", ")" ],
+        [ "{", "}" ],
+        [ "[", "]" ],
+        [ "\"", "\"" ],
+        [ "%", "%", 1 ],
+        [ "/*", "*/" ]
+      ]
+    },
+    {
+      "name": "Python",
+      "fileExtensions": [
+        "py"
+      ],
+      "syntax": [
+        [ "(", ")", "multi-line-brackets" ],
+        [ "{", "}", "multi-line-brackets" ],
+        [ "[", "]", "multi-line-brackets" ],
+        [ "\"", "\"", "single-line-quotes" ],
+        [ "'", "'", "single-line-quotes" ],
+        [ "\\", "quote-escape-char" ],
+        [ "#", "", "single-line-comment" ],
+        [ "\"\"\"", "\"\"\"", "multi-line-quotes" ],
+        [ "'''", "'''", "multi-line-quotes" ]
+      ],
+      "autocomplete": [
+        [ "(", ")" ],
+        [ "{", "}" ],
+        [ "[", "]" ],
+        [ "\"", "\"" ],
+        [ "'", "'" ],
+        [ "\"\"\"", "\"\"\"" ],
+        [ "'''", "'''" ]
+      ]
+    },
+    {
+      "name": "Perl",
+      "fileExtensions": [
+        "pl", "pm"
+      ],
+      "syntax": [
+        [ "(", ")", "multi-line-brackets" ],
+        [ "{", "}", "multi-line-brackets" ],
+        [ "[", "]", "multi-line-brackets" ],
+        [ "\"", "\"", "multi-line-quotes" ],
+        [ "'", "'", "multi-line-quotes" ],
+        [ "#", "", "single-line-comment" ],
+        [ "=pod", "=cut", "multi-line-comment", 6 ]
+      ],
+      "autocomplete": [
+        [ "(", ")" ],
+        [ "{", "}" ],
+        [ "[", "]" ],
+        [ "\"", "\"" ],
+        [ "'", "'" ],
+        [ "=pod", "=cut"]
+      ]
+    },
+    {
+      "name": "Lua",
+      "fileExtensions": [
+        "lua"
+      ],
+      "syntax": [
+        [ "{", "}", "multi-line-brackets" ],
+        [ "(", ")", "multi-line-brackets" ],
+        [ "[", "]", "multi-line-brackets" ],
+        [ "\"", "\"", "single-line-quotes" ],
+        [ "'", "'", "single-line-quotes" ],
+        [ "\\", "quote-escape-char" ],
+        [ "--", "", "single-line-comment" ],
+        [ "[[", "]]", "multi-line-brackets" ],
+        [ "[=[", "]=]", "multi-line-brackets" ],
+        [ "[==[", "]==]", "multi-line-brackets" ],
+        [ "[===[", "]===]", "multi-line-brackets" ],
+        [ "--[[", "]]", "multi-line-comment" ],
+        [ "--[=[", "]=]", "multi-line-comment" ],
+        [ "--[==[", "]==]", "multi-line-comment" ],
+        [ "--[===[", "]===]", "multi-line-comment" ]
+      ],
+      "autocomplete": [
+        [ "{", "}" ],
+        [ "(", ")" ],
+        [ "[", "]" ],
+        [ "\"", "\"" ],
+        [ "'", "'" ]
+      ]
+    },
+    {
+      "name": "Markdown",
+      "fileExtensions": [ "md" ],
+      "syntax": [
+        [ "{", "}", "multi-line-brackets" ],
+        [ "(", ")", "multi-line-brackets" ],
+        [ "[", "]", "multi-line-brackets" ],
+        [ "\"", "\"", "single-line-quotes" ],
+        [ "`", "`", "single-line-quotes" ],
+        [ "``", "``", "multi-line-quotes" ]
+      ],
+      "autocomplete": [
+        [ "{", "}" ],
+        [ "(", ")" ],
+        [ "[", "]" ],
+        [ "\"", "\"" ],
+        [ "`", "`" ]
+      ]
+    }
+  ]
+}
