@@ -144,6 +144,12 @@ static void completeChildQuotedBrackets(std::vector<tBrPairItem>& bracketsTree, 
                     break;
                 }
             }
+
+            if ( leftItem.nRightBrPos == -1 ) // no right matching bracket found
+            {
+                decIsQuoted(leftItem.pBrPair->kind, isQuoted, isSgLnQuoted);
+                leftItem.nLeftBrPos = -1; // invalidate
+            }
         }
     }
 }
@@ -790,6 +796,7 @@ const tBrPairItem* CBracketsTree::findPairByPos(const Sci_Position nPos, bool is
     if ( m_bracketsTree.empty() )
         return nullptr;
 
+    const unsigned int nNearestItemsToCheck = 8;
     const auto itrRightBegin = m_bracketsByRightBr.begin();
     const auto itrRightEnd = m_bracketsByRightBr.end();
     auto itrRightLocalEnd = itrRightEnd;
@@ -803,7 +810,18 @@ const tBrPairItem* CBracketsTree::findPairByPos(const Sci_Position nPos, bool is
     }
     else
     {
-        itrRightLocalEnd = itrRight + 1; // stop right after the itrRight
+        itrRightLocalEnd = itrRight;
+        if ( !isExact )
+        {
+            for ( unsigned int i = 0; i < nNearestItemsToCheck && itrRightLocalEnd != itrRightEnd; ++i )
+            {
+                ++itrRightLocalEnd;
+            }
+        }
+        else
+        {
+            ++itrRightLocalEnd; // stop right after the itrRight
+        }
         if ( itrRight != itrRightBegin )
             --itrRight; // in case of ))| or )|)
     }
@@ -847,8 +865,13 @@ const tBrPairItem* CBracketsTree::findPairByPos(const Sci_Position nPos, bool is
         return nullptr;
 
     auto itrLeft = itrLeftFound;
-    if ( !isExact && itrLeft != itrLeftBegin )
-        --itrLeft;
+    if ( !isExact )
+    {
+        for ( unsigned int i = 0; i < nNearestItemsToCheck && itrLeft != itrLeftBegin; ++i )
+        {
+            --itrLeft;
+        }
+    }
 
     for ( ; itrLeft != itrLeftEnd; ++itrLeft )
     {
@@ -1788,7 +1811,7 @@ bool CXBracketsLogic::autoBracketsOverSelectionFunc(int nBracketType)
          uSelAutoBr == CXBracketsOptions::sabEncloseRemoveOuter )
     {
         vSelText[0] = nSelPos != 0 ? sciMsgr.getCharAt(nSelPos - 1) : 0; // previous character (before the selection)
-        for (unsigned int i = 0; i < nBrPairLen - 1; i++)
+        for ( unsigned int i = 0; i < nBrPairLen - 1; ++i )
         {
             vSelText[nSelLen + 1 + i] = sciMsgr.getCharAt(nSelPos + nSelLen + i); // next characters (after the selection)
         }
