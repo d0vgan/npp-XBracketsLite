@@ -2,6 +2,7 @@
 README.md
 XBrackets_latest.bat
 XBrackets_src.txt
+XBrackets_build_*.bat
 XBrackets\XBrackets*.vcproj
 XBrackets\XBrackets*.vcxproj
 XBrackets\XBrackets*.vcxproj.filters

@@ -1,0 +1,143 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav</Extensions>
+    </Filter>
+    <Filter Include="Header Files\json11">
+      <UniqueIdentifier>{d53ac409-977f-4468-b529-c3ca424d48c0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\json11">
+      <UniqueIdentifier>{002f14a6-3cb3-4103-b997-efac32c2b4b0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\core">
+      <UniqueIdentifier>{a6819b5a-4f0e-4800-8842-abcb3b818d68}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\core">
+      <UniqueIdentifier>{11b4e237-096a-4a0d-9ec6-c74221e74d14}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\PluginCommunication">
+      <UniqueIdentifier>{f8ebace0-2dd5-4815-a6d5-d519e1053f5b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\core\npp_files">
+      <UniqueIdentifier>{e9d3cc3e-89b5-4820-983c-c82976967a01}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\Main.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\SettingsDlg.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\XBracketsMenu.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\XBracketsOptions.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\XBracketsPlugin.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\XBracketsLogic.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\json11\json11.cpp">
+      <Filter>Source Files\json11</Filter>
+    </ClCompile>
+    <ClCompile Include="src\XBracketsCommon.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\CFileModificationWatcher.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\core\NppMessager.cpp">
+      <Filter>Source Files\core</Filter>
+    </ClCompile>
+    <ClCompile Include="src\core\NppPlugin.cpp">
+      <Filter>Source Files\core</Filter>
+    </ClCompile>
+    <ClCompile Include="src\core\NppPluginMenu.cpp">
+      <Filter>Source Files\core</Filter>
+    </ClCompile>
+    <ClCompile Include="src\core\SciMessager.cpp">
+      <Filter>Source Files\core</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="src\resource.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\SettingsDlg.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\XBracketsMenu.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\XBracketsOptions.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\XBracketsPlugin.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\XBracketsLogic.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\json11\json11.hpp">
+      <Filter>Header Files\json11</Filter>
+    </ClInclude>
+    <ClInclude Include="src\XBracketsCommon.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\CFileModificationWatcher.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\core\NppMessager.h">
+      <Filter>Header Files\core</Filter>
+    </ClInclude>
+    <ClInclude Include="src\core\NppPlugin.h">
+      <Filter>Header Files\core</Filter>
+    </ClInclude>
+    <ClInclude Include="src\core\NppPluginMenu.h">
+      <Filter>Header Files\core</Filter>
+    </ClInclude>
+    <ClInclude Include="src\core\base.h">
+      <Filter>Header Files\core</Filter>
+    </ClInclude>
+    <ClInclude Include="src\core\SciMessager.h">
+      <Filter>Header Files\core</Filter>
+    </ClInclude>
+    <ClInclude Include="src\PluginCommunication\xbrackets_msgs.h">
+      <Filter>Header Files\PluginCommunication</Filter>
+    </ClInclude>
+    <ClInclude Include="src\core\npp_files\menuCmdID.h">
+      <Filter>Header Files\core\npp_files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\core\npp_files\Notepad_plus_msgs.h">
+      <Filter>Header Files\core\npp_files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\core\npp_files\PluginInterface.h">
+      <Filter>Header Files\core\npp_files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\core\npp_files\resource.h">
+      <Filter>Header Files\core\npp_files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\core\npp_files\Scintilla.h">
+      <Filter>Header Files\core\npp_files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="src\XBrackets.rc">
+      <Filter>Resource Files</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+</Project>
