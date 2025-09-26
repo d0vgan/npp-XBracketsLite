@@ -121,10 +121,10 @@ LRESULT CALLBACK CXBracketsPlugin::nppNewWndProc(HWND hWnd, UINT uMsg, WPARAM wP
         GetPlugin().OnNppMacro(MACRO_STOP);
         return lResult;
     }
-    else if ( uMsg == NPPM_MSGTOPLUGIN )
-    {
-        return GetPlugin().OnNppMsgToPlugin(reinterpret_cast<CommunicationInfo *>(lParam));
-    }
+
+    // Note:
+    // Do _not_ process NPPM_MSGTOPLUGIN here.
+    // This WndProc handles _everything_, not just XBrackets-specific messages.
 
     return nppCallWndProc(hWnd, uMsg, wParam, lParam);
 }
@@ -171,6 +171,17 @@ FuncItem* CXBracketsPlugin::nppGetFuncsArray(int* pnbFuncItems)
 const TCHAR* CXBracketsPlugin::nppGetName()
 {
     return PLUGIN_NAME;
+}
+
+LRESULT CXBracketsPlugin::nppMessageProc(UINT uMessage, WPARAM wParam, LPARAM lParam)
+{
+    if ( uMessage == NPPM_MSGTOPLUGIN )
+    {
+        // XBrackets-specific NPPM_MSGTOPLUGIN is processed here
+        return GetPlugin().OnNppMsgToPlugin(reinterpret_cast<CommunicationInfo *>(lParam));
+    }
+
+    return TRUE;
 }
 
 void CXBracketsPlugin::nppBeNotified(SCNotification* pscn)
