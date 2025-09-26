@@ -375,6 +375,12 @@ The plugin's settings under the "settings" node:
 *  History  *
 *************
 
+v2.0.1 - Sep 2025
+-----------------
+* Glory to Ukraine! Glory to the heroes!
+- hot-fix for NPPM_MSGTOPLUGIN
+
+
 v2.0 - Sep 2025
 ---------------
 * Glory to Ukraine! Glory to the heroes!

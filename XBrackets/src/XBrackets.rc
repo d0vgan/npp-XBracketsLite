@@ -37,8 +37,8 @@ END
 // Version Information resources
 //
 VS_VERSION_INFO VERSIONINFO
-    FILEVERSION     2, 0, 0, 0
-    PRODUCTVERSION  2, 0, 0, 0
+    FILEVERSION     2, 0, 1, 0
+    PRODUCTVERSION  2, 0, 1, 0
     FILEOS          VOS__WINDOWS32
     FILETYPE        VFT_DLL
 BEGIN
@@ -49,12 +49,12 @@ BEGIN
             VALUE "Comments", "The wall is thin - and our foreheads are hard :-)\0"
             VALUE "CompanyName", "Full of Madness Co.\0"
             VALUE "FileDescription", "XBrackets plugin for Notepad++\0"
-            VALUE "FileVersion", "2, 0, 0, 0\0"
+            VALUE "FileVersion", "2, 0, 1, 0\0"
             VALUE "InternalName", "XBrackets\0"
             VALUE "LegalCopyright", "(C) Jan 2009 - Sep 2025, Vitaliy Dovgan aka DV\0"
             VALUE "OriginalFilename", "XBrackets.dll\0"
             VALUE "ProductName", " XBrackets plugin for Notepad++\0"
-            VALUE "ProductVersion", "2, 0, 0, 0\0"
+            VALUE "ProductVersion", "2, 0, 1, 0\0"
         END
     END
     BLOCK "VarFileInfo"

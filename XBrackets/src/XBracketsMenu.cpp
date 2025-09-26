@@ -67,7 +67,7 @@ void CXBracketsMenu::funcHelp()
 void CXBracketsMenu::funcAbout()
 {
     GetPlugin().PluginMessageBox(
-        _T("XBrackets Lite ver. 2.0\r\n") \
+        _T("XBrackets Lite ver. 2.0.1\r\n") \
         _T("(C) Vitaliy Dovgan aka DV, Jan 2009 - Sep 2025\r\n") \
         _T("(C) Vitaliy Dovgan aka DV, Oct 2006 (original idea)"),
         MB_OK
