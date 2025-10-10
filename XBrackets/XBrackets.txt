@@ -1,6 +1,6 @@
 ****************************************************************
 * XBrackets Lite for Notepad++ 8.x.x (and above)
-* by DV, Jan 2009 - Sep 2025
+* by DV, Jan 2009 - Oct 2025
 * https://github.com/d0vgan/npp-XBracketsLite
 *
 * Powered by json11: https://github.com/dropbox/json11
@@ -374,6 +374,12 @@ The plugin's settings under the "settings" node:
 *************
 *  History  *
 *************
+
+v2.0.2 - Oct 2025
+-----------------
+* Glory to Ukraine! Glory to the heroes!
+- fixed: XBrackets could append a trailing NUL to "XBrackets_UserConfig.json"
+
 
 v2.0.1 - Sep 2025
 -----------------
