@@ -178,8 +178,8 @@ namespace XBrackets
     // helpers
     bool isExistingFile(const TCHAR* filePath) noexcept;
     bool isExistingFile(const tstr& filePath) noexcept;
-    std::vector<char> readFile(const TCHAR* filePath);
-    bool writeFile(const TCHAR* filePath, const std::vector<char>& data);
+    std::vector<char> readFile(const TCHAR* filePath, bool isBinary = false);
+    bool writeFile(const TCHAR* filePath, const std::vector<char>& data, bool isBinary = false);
     tstr string_to_tstr(const std::string& str);
     tstr string_to_tstr_changecase(const std::string& str, eStringCase strCase);
 

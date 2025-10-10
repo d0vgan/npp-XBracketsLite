@@ -13,7 +13,7 @@ namespace XBrackets
         return isExistingFile(filePath.c_str());
     }
 
-    std::vector<char> readFile(const TCHAR* filePath)
+    std::vector<char> readFile(const TCHAR* filePath, bool isBinary /* = false */)
     {
         HANDLE hFile = ::CreateFile(filePath, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
         if ( hFile == INVALID_HANDLE_VALUE )
@@ -24,7 +24,7 @@ namespace XBrackets
 
         DWORD nBytesRead = 0;
         const DWORD nFileSize = ::GetFileSize(hFile, NULL);
-        std::vector<char> buf(nFileSize + 1);
+        std::vector<char> buf(nFileSize + (isBinary ? 0 : 1));
         const BOOL isRead = ::ReadFile(hFile, buf.data(), nFileSize, &nBytesRead, NULL);
 
         ::CloseHandle(hFile);
@@ -35,12 +35,15 @@ namespace XBrackets
             return {};
         }
 
-        buf[nFileSize] = 0; // the trailing '\0'
+        if ( !isBinary )
+        {
+            buf[nFileSize] = 0; // the trailing '\0'
+        }
 
         return buf;
     }
 
-    bool writeFile(const TCHAR* filePath, const std::vector<char>& data)
+    bool writeFile(const TCHAR* filePath, const std::vector<char>& data, bool isBinary /* = false */)
     {
         HANDLE hFile = ::CreateFile(filePath, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, 0, NULL);
         if ( hFile == INVALID_HANDLE_VALUE )
@@ -49,8 +52,14 @@ namespace XBrackets
             return false;
         }
 
+        DWORD dwToWrite = static_cast<DWORD>(data.size());
+        if ( !isBinary )
+        {
+            if ( dwToWrite > 0 && data.back() == 0 )
+                --dwToWrite; // exclude the trailing '\0'
+        }
+
         DWORD dwWritten = 0;
-        const DWORD dwToWrite = static_cast<DWORD>(data.size());
         const BOOL isWritten = ::WriteFile(hFile, data.data(), dwToWrite, &dwWritten, NULL);
 
         return (isWritten != FALSE && dwWritten == dwToWrite);
