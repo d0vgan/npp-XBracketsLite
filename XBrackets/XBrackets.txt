@@ -375,6 +375,13 @@ The plugin's settings under the "settings" node:
 *  History  *
 *************
 
+v2.0.3 - Oct 2025
+-----------------
+* Glory to Ukraine! Glory to the heroes!
+- fixed: CXBracketsLogic::OnCharPress was truncating a multi-byte character to
+  a single-byte one, thus incorrectly treating e.g. 0x1D5B as 0x5B which is '['.
+
+
 v2.0.2 - Oct 2025
 -----------------
 * Glory to Ukraine! Glory to the heroes!

@@ -1,7 +1,7 @@
 // Used by XBrackets.rc and XBracketsMenu.cpp
 
-#define PLUGIN_VERSION     2, 0, 2, 0
-#define PLUGIN_VERSION_STR "2.0.2"
+#define PLUGIN_VERSION     2, 0, 3, 0
+#define PLUGIN_VERSION_STR "2.0.3"
 #define PLUGIN_DATES       "Jan 2009 - Oct 2025"
 
 #define STR_ARG(x) #x
