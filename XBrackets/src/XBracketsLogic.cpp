@@ -4,6 +4,7 @@
 #include <vector>
 #include <algorithm>
 #include <utility>
+#include <climits>
 
 #ifdef _DEBUG
 #include <assert.h>
@@ -1119,6 +1120,9 @@ CXBracketsLogic::eCharProcessingResult CXBracketsLogic::OnCharPress(const int ch
             }
         }
     }
+
+    if ( ch > UCHAR_MAX || ch < SCHAR_MIN )
+        return cprNone;
 
     int nLeftBracketType = getAutocompleteLeftBracketType(sciMsgr, static_cast<char>(ch));
     if ( nLeftBracketType == -1 )
