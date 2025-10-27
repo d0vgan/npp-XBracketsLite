@@ -1,6 +1,6 @@
 .gitignore
 README.md
-XBrackets_latest.bat
+XBrackets_latest_zip.bat
 XBrackets_src.txt
 XBrackets_build_*.bat
 XBrackets\XBrackets*.vcproj
