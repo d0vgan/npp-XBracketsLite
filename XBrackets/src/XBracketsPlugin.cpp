@@ -134,7 +134,7 @@ LRESULT CALLBACK CXBracketsPlugin::sciNewWndProc(HWND hWnd, UINT uMsg, WPARAM wP
     if ( uMsg == WM_CHAR )
     {
         // this happens _before_ the character is processed by Scintilla
-        if ( GetPlugin().OnSciChar(static_cast<int>(wParam)) != CXBracketsLogic::cprNone )
+        if ( GetPlugin().OnSciChar(static_cast<unsigned int>(wParam)) != CXBracketsLogic::cprNone )
         {
             return 0; // processed by XBrackets, don't forward to Scintilla
         }
@@ -419,7 +419,7 @@ LRESULT CXBracketsPlugin::OnNppMsgToPlugin(CommunicationInfo* pInfo)
     return FALSE;
 }
 
-CXBracketsLogic::eCharProcessingResult CXBracketsPlugin::OnSciChar(const int ch)
+CXBracketsLogic::eCharProcessingResult CXBracketsPlugin::OnSciChar(const unsigned int ch)
 {
     if ( !isNppReady )
         return CXBracketsLogic::cprNone;

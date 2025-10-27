@@ -4,7 +4,6 @@
 #include <vector>
 #include <algorithm>
 #include <utility>
-#include <climits>
 
 #ifdef _DEBUG
 #include <assert.h>
@@ -1058,7 +1057,7 @@ void CXBracketsLogic::InvalidateCachedBrackets(unsigned int uInvalidateFlags, SC
     }
 }
 
-CXBracketsLogic::eCharProcessingResult CXBracketsLogic::OnCharPress(const int ch)
+CXBracketsLogic::eCharProcessingResult CXBracketsLogic::OnCharPress(const unsigned int ch)
 {
     if ( m_nAutoRightBracketType >= 0 && (m_nAutoRightBracketType & abtfTextJustAutoCompleted) != 0 )
     {
@@ -1121,12 +1120,12 @@ CXBracketsLogic::eCharProcessingResult CXBracketsLogic::OnCharPress(const int ch
         }
     }
 
-    if ( ch > UCHAR_MAX || ch < SCHAR_MIN )
-        return cprNone;
+    if ( ch > 0xFF )
+        return cprNone; // ch is a multi-byte character
 
     int nLeftBracketType = getAutocompleteLeftBracketType(sciMsgr, static_cast<char>(ch));
     if ( nLeftBracketType == -1 )
-        return cprNone;
+        return cprNone; // ch is not (a part of) a left bracket
 
     // a typed character is a bracket
     return autoBracketsFunc(nLeftBracketType, aboCharPress);

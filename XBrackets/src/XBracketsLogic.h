@@ -93,7 +93,7 @@ public:
     void SetNppData(const NppData& nppd);
     bool UpdateFileType(unsigned int uInvalidateAndUpdateFlags);
     void InvalidateCachedBrackets(unsigned int uInvalidateFlags, SCNotification* pscn = nullptr);
-    eCharProcessingResult OnCharPress(const int ch);
+    eCharProcessingResult OnCharPress(const unsigned int ch);
     eCharProcessingResult OnTextAutoCompleted(const char* text, Sci_Position pos);
     void PerformBracketsAction(eGetBracketsAction nBrAction);
     const tBrPairItem* FindBracketsByPos(Sci_Position pos, bool isExactPos);
