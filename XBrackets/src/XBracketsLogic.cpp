@@ -1072,6 +1072,7 @@ CXBracketsLogic::eCharProcessingResult CXBracketsLogic::OnCharPress(const unsign
     const Sci_Position nAutoRightBrPos = m_nAutoRightBracketPos;
     const int nAutoRightBrType = m_nAutoRightBracketType;
     const int nAutoRightBrOffset = m_nAutoRightBracketOffset; // will be used below
+    bool bPreserveRightBrPos = false;
 
     InvalidateCachedBrackets(icbfAutoRightBr);
 
@@ -1116,19 +1117,55 @@ CXBracketsLogic::eCharProcessingResult CXBracketsLogic::OnCharPress(const unsign
                     sciMsgr.setSel(pos, pos);
                     return cprBrAutoCompl;
                 }
+                else if ( nAutoRightBrOffset == 0 )
+                {
+                    // {{...|}}
+                    bPreserveRightBrPos = true;
+                }
             }
         }
     }
 
     if ( ch > 0xFF )
-        return cprNone; // ch is a multi-byte character
+    {
+        // ch is a multi-byte character
+        if ( bPreserveRightBrPos )
+        {
+            m_nAutoRightBracketPos = nAutoRightBrPos;
+            m_nAutoRightBracketType = nAutoRightBrType;
+            m_nAutoRightBracketOffset = 0;
+            return cprAdjustRightBrPos;
+        }
+        return cprNone;
+    }
 
     int nLeftBracketType = getAutocompleteLeftBracketType(sciMsgr, static_cast<char>(ch));
     if ( nLeftBracketType == -1 )
-        return cprNone; // ch is not (a part of) a left bracket
+    {
+        // ch is not (a part of) a left bracket
+        if ( bPreserveRightBrPos )
+        {
+            m_nAutoRightBracketPos = nAutoRightBrPos;
+            m_nAutoRightBracketType = nAutoRightBrType;
+            m_nAutoRightBracketOffset = 0;
+            return cprAdjustRightBrPos;
+        }
+        return cprNone;
+    }
 
     // a typed character is a bracket
     return autoBracketsFunc(nLeftBracketType, aboCharPress);
+}
+
+void CXBracketsLogic::OnCharPressed(const unsigned int ch, const unsigned int flags)
+{
+    (ch); // unused
+
+    if ( flags & cpfAdjustRightBrPos )
+    {
+        CSciMessager sciMsgr(m_nppMsgr.getCurrentScintillaWnd());
+        m_nAutoRightBracketPos = sciMsgr.getCurrentPos();
+    }
 }
 
 CXBracketsLogic::eCharProcessingResult CXBracketsLogic::OnTextAutoCompleted(const char* text, Sci_Position pos)

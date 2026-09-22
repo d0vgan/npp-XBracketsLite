@@ -48,6 +48,7 @@ class CXBracketsPlugin : public CNppPlugin
 
         // custom scintilla notifications
         CXBracketsLogic::eCharProcessingResult OnSciChar(const unsigned int ch);
+        void OnSciCharPressed(const unsigned int ch, const unsigned int flags = CXBracketsLogic::cpfNone);
         void OnSciModified(SCNotification* pscn);
         void OnSciAutoCompleted(SCNotification* pscn);
         void OnSciUpdateUI(SCNotification* pscn);
@@ -78,6 +79,10 @@ class CXBracketsPlugin : public CNppPlugin
             MACRO_START  = 1   // true
         };
 
+        enum eSciEventFlags {
+            sefCharPress = 0x01
+        };
+
         struct tHighlightBrPair {
             Sci_Position nLeftBrPos{-1};
             Sci_Position nRightBrPos{-1};
@@ -97,6 +102,7 @@ class CXBracketsPlugin : public CNppPlugin
         int m_nHlSciIdx;
         UINT_PTR m_nHlTimerId;
         Sci_Position m_nTextLength;
+        unsigned int m_uSciEvent;
         int m_nHlSciStyleInd;
         int m_nHlSciStyleIndByNpp;
         bool m_isCfgUpdInProgress;

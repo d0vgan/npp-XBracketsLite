@@ -32,6 +32,7 @@ CXBracketsPlugin::CXBracketsPlugin() :
   m_nHlSciIdx(-1),
   m_nHlTimerId(0),
   m_nTextLength(0),
+  m_uSciEvent(0),
   m_nHlSciStyleInd(-1),
   m_nHlSciStyleIndByNpp(-1),
   m_isCfgUpdInProgress(false)
@@ -134,9 +135,24 @@ LRESULT CALLBACK CXBracketsPlugin::sciNewWndProc(HWND hWnd, UINT uMsg, WPARAM wP
     if ( uMsg == WM_CHAR )
     {
         // this happens _before_ the character is processed by Scintilla
-        if ( GetPlugin().OnSciChar(static_cast<unsigned int>(wParam)) != CXBracketsLogic::cprNone )
+        const unsigned int uch = static_cast<unsigned int>(wParam);
+        CXBracketsPlugin& thePlugin = GetPlugin();
+        const auto charResult = thePlugin.OnSciChar(uch);
+
+        if ( charResult != CXBracketsLogic::cprNone )
         {
-            return 0; // processed by XBrackets, don't forward to Scintilla
+            LRESULT lResult = 0;
+
+            if ( charResult == CXBracketsLogic::cprAdjustRightBrPos )
+            {
+                thePlugin.m_uSciEvent |= sefCharPress;
+                lResult = sciCallWndProc(hWnd, uMsg, wParam, lParam);
+                thePlugin.m_uSciEvent ^= sefCharPress;
+                // the character has been processed by Scintilla
+                thePlugin.OnSciCharPressed(uch, CXBracketsLogic::cpfAdjustRightBrPos);
+            }
+
+            return lResult; // processed by XBrackets, don't forward to Scintilla
         }
     }
 
@@ -427,6 +443,14 @@ CXBracketsLogic::eCharProcessingResult CXBracketsPlugin::OnSciChar(const unsigne
     return m_BracketsLogic.OnCharPress(ch);
 }
 
+void CXBracketsPlugin::OnSciCharPressed(const unsigned int ch, const unsigned int flags)
+{
+    if ( !isNppReady )
+        return;
+
+    m_BracketsLogic.OnCharPressed(ch, flags);
+}
+
 void CXBracketsPlugin::OnSciModified(SCNotification* pscn)
 {
     if ( !isNppReady )
@@ -587,8 +611,13 @@ void CXBracketsPlugin::OnSciTextChange(SCNotification* pscn)
 
     if ( pscn->modificationType & (SC_MOD_BEFOREINSERT | SC_MOD_BEFOREDELETE) )
     {
+        unsigned int uInvalidateFlags = CXBracketsLogic::icbfAll;
+        if ( m_uSciEvent & sefCharPress )
+        {
+            uInvalidateFlags ^= CXBracketsLogic::icbfAutoRightBr;
+        }
         clearActiveBrackets();
-        m_BracketsLogic.InvalidateCachedBrackets(CXBracketsLogic::icbfAll, pscn);
+        m_BracketsLogic.InvalidateCachedBrackets(uInvalidateFlags, pscn);
     }
     else if ( pscn->modificationType & (SC_MOD_INSERTTEXT | SC_MOD_DELETETEXT) )
     {

@@ -64,7 +64,13 @@ public:
     enum eCharProcessingResult {
         cprNone = 0,
         cprBrAutoCompl,
-        cprSelAutoCompl
+        cprSelAutoCompl,
+        cprAdjustRightBrPos
+    };
+
+    enum eCharPressedFlags {
+        cpfNone             = 0x00,
+        cpfAdjustRightBrPos = 0x01
     };
 
     enum eGetBracketsAction {
@@ -94,6 +100,7 @@ public:
     bool UpdateFileType(unsigned int uInvalidateAndUpdateFlags);
     void InvalidateCachedBrackets(unsigned int uInvalidateFlags, SCNotification* pscn = nullptr);
     eCharProcessingResult OnCharPress(const unsigned int ch);
+    void OnCharPressed(const unsigned int ch, const unsigned int flags = cpfNone);
     eCharProcessingResult OnTextAutoCompleted(const char* text, Sci_Position pos);
     void PerformBracketsAction(eGetBracketsAction nBrAction);
     const tBrPairItem* FindBracketsByPos(Sci_Position pos, bool isExactPos);
