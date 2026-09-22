@@ -29,8 +29,8 @@ class CNppPluginMsgSender
                                      info };
             return (BOOL) ::SendMessage( m_hNppWnd,
                                          NPPM_MSGTOPLUGIN,
-                                         (WPARAM) destModuleName,
-                                         (LPARAM) &ci
+                                         reinterpret_cast<WPARAM>(destModuleName),
+                                         reinterpret_cast<LPARAM>(&ci)
                                        );
         }
 

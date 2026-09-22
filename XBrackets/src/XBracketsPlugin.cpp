@@ -749,7 +749,7 @@ void CXBracketsPlugin::OnConfigFileChanged(const tstr& configFilePath)
     if ( !m_isCfgUpdInProgress )
     {
         ::PostMessage( m_nppMsgr.getNppWnd(), NPPM_MSGTOPLUGIN,
-            (WPARAM) getDllFileName().c_str(), (LPARAM) &m_ciCfgUpd );
+            reinterpret_cast<WPARAM>(getDllFileName().c_str()), reinterpret_cast<LPARAM>(&m_ciCfgUpd) );
         m_isCfgUpdInProgress = true;
     }
     m_csCfgUpd.Unlock();

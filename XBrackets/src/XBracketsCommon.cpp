@@ -62,6 +62,8 @@ namespace XBrackets
         DWORD dwWritten = 0;
         const BOOL isWritten = ::WriteFile(hFile, data.data(), dwToWrite, &dwWritten, NULL);
 
+        ::CloseHandle(hFile);
+
         return (isWritten != FALSE && dwWritten == dwToWrite);
     }
 
