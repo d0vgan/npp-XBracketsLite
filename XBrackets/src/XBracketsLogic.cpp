@@ -414,11 +414,11 @@ void CBracketsTree::buildTree(CSciMessager& sciMsgr)
                             if ( isSgLnBrQtKind(pBrPair->kind) && leftItem.nLine != nCurrentLine )
                                 break;
 
-                            for ( const tBrPair* pRightBrPair : rightBrPairs )
+                            for ( const tBrPair* pRightBrPr : rightBrPairs )
                             {
-                                if ( leftItem.pBrPair->leftBr == pRightBrPair->leftBr )
+                                if ( leftItem.pBrPair->leftBr == pRightBrPr->leftBr )
                                 {
-                                    pBrPair = pRightBrPair;
+                                    pBrPair = pRightBrPr;
                                     nFoundItemIdx = nLeftIdx;
                                     break;
                                 }
@@ -536,11 +536,11 @@ void CBracketsTree::buildTree(CSciMessager& sciMsgr)
                     const unsigned int leftKind = leftItem.pBrPair->kind;
                     if ( isSgLnQuoted == 0 || isQtKind(rightKind) || isMlLnCommKind(rightKind) )
                     {
-                        for ( const tBrPair* pRightBrPair : rightBrPairs )
+                        for ( const tBrPair* pRightBrPr : rightBrPairs )
                         {
-                            if ( leftItem.pBrPair->leftBr == pRightBrPair->leftBr )
+                            if ( leftItem.pBrPair->leftBr == pRightBrPr->leftBr )
                             {
-                                pBrPair = pRightBrPair;
+                                pBrPair = pRightBrPr;
                                 nFoundItemIdx = nLeftIdx;
                                 break;
                             }
@@ -1799,8 +1799,10 @@ CXBracketsLogic::eCharProcessingResult CXBracketsLogic::autoBracketsFunc(int nBr
     return cprBrAutoCompl;
 }
 
-bool CXBracketsLogic::isEnclosedInBrackets(const char* pszTextLeft, const char* pszTextRight, int* pnBracketType, bool bInSelection)
+bool CXBracketsLogic::isEnclosedInBrackets(const char* pszTextLeft, const char* pszTextRight, int* pnBracketType, bool bInSelection) const
 {
+    (bInSelection); // unused
+
     if ( pszTextLeft == pszTextRight )
         return false;
 

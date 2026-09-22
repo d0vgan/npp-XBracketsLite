@@ -143,7 +143,7 @@ private:
     const tBrPair* getAutoCompleteBrPair(int nBracketType) const;
     eCharProcessingResult autoBracketsFunc(int nBracketType, eAutoBracketOrigin origin);
     bool autoBracketsOverSelectionFunc(int nBracketType);
-    bool isEnclosedInBrackets(const char* pszTextLeft, const char* pszTextRight, int* pnBracketType, bool bInSelection);
+    bool isEnclosedInBrackets(const char* pszTextLeft, const char* pszTextRight, int* pnBracketType, bool bInSelection) const;
     unsigned int detectFileType(tstr* pFileExt = nullptr);
     bool isSkipEscapedSupported() const;
     bool isEscapedPos(const CSciMessager& sciMsgr, const Sci_Position nCharPos) const;
