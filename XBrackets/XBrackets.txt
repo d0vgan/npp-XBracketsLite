@@ -1,6 +1,6 @@
 ****************************************************************
 * XBrackets Lite for Notepad++ 8.x.x (and above)
-* by DV, Jan 2009 - Oct 2025
+* by DV, Jan 2009 - Sep 2026
 * https://github.com/d0vgan/npp-XBracketsLite
 *
 * Powered by json11: https://github.com/dropbox/json11
@@ -374,6 +374,18 @@ The plugin's settings under the "settings" node:
 *************
 *  History  *
 *************
+
+v2.0.4 - Sep 2026
+-----------------
+* Glory to Ukraine! Glory to the heroes!
++ improved: a manually typed closing bracket steps over an auto-completed one,
+  even when text is typed between them. For example, typing `(` automatically
+  inserts `)`, producing `(|)`, where `|` indicates the caret position. Typing
+  `abc` places the characters inside the pair, resulting in `(abc|)`. Typing
+  the final `)` then steps over the existing `)`, resulting in `(abc)|` instead
+  of adding a duplicate closing bracket `(abc))`.
+* a few internal corrections
+
 
 v2.0.3 - Oct 2025
 -----------------
