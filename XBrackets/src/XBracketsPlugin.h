@@ -80,7 +80,7 @@ class CXBracketsPlugin : public CNppPlugin
         };
 
         enum eSciEventFlags {
-            sefCharPress = 0x01
+            sefCharPress_AdjRBrPos = 0x01
         };
 
         struct tHighlightBrPair {

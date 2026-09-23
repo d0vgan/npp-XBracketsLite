@@ -145,9 +145,9 @@ LRESULT CALLBACK CXBracketsPlugin::sciNewWndProc(HWND hWnd, UINT uMsg, WPARAM wP
 
             if ( charResult == CXBracketsLogic::cprAdjustRightBrPos )
             {
-                thePlugin.m_uSciEvent |= sefCharPress;
+                thePlugin.m_uSciEvent |= sefCharPress_AdjRBrPos;
                 lResult = sciCallWndProc(hWnd, uMsg, wParam, lParam);
-                thePlugin.m_uSciEvent ^= sefCharPress;
+                thePlugin.m_uSciEvent ^= sefCharPress_AdjRBrPos;
                 // the character has been processed by Scintilla
                 thePlugin.OnSciCharPressed(uch, CXBracketsLogic::cpfAdjustRightBrPos);
             }
@@ -612,7 +612,7 @@ void CXBracketsPlugin::OnSciTextChange(SCNotification* pscn)
     if ( pscn->modificationType & (SC_MOD_BEFOREINSERT | SC_MOD_BEFOREDELETE) )
     {
         unsigned int uInvalidateFlags = CXBracketsLogic::icbfAll;
-        if ( m_uSciEvent & sefCharPress )
+        if ( m_uSciEvent & sefCharPress_AdjRBrPos )
         {
             uInvalidateFlags ^= CXBracketsLogic::icbfAutoRightBr;
         }
