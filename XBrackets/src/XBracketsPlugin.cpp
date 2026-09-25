@@ -828,29 +828,27 @@ void CXBracketsPlugin::onUpdateHighlight()
 
 void CXBracketsPlugin::OnHelp()
 {
-    static const TCHAR* const cszHelpFileNames[2] = {
-        _T("XBrackets\\XBrackets.txt"), // doc\XBrackets\XBrackets.txt
-        _T("XBrackets.txt")             // doc\XBrackets.txt
-    };
-
-    tstr helpFilePath;
     tstr helpDir = getDllDir();
-    bool hasBeenOpened = false;
     size_t n = helpDir.find_last_of(_T("\\/"));
     if ( n != tstr::npos )
     {
         helpDir.resize(n);
     }
-    helpDir += _T("\\doc\\");
+    helpDir += _T("\\doc"); // "plugins\doc" folder
 
-    for ( const TCHAR* const cszFileName : cszHelpFileNames )
+    std::vector<tstr> helpFilePaths;
+    helpFilePaths.reserve(4);
+    helpFilePaths.push_back(getDllDir() + _T("\\doc\\XBrackets.txt"));
+    helpFilePaths.push_back(getDllDir() + _T("\\XBrackets.txt"));
+    helpFilePaths.push_back(helpDir + _T("\\XBrackets\\XBrackets.txt"));
+    helpFilePaths.push_back(helpDir + _T("\\XBrackets.txt"));
+
+    bool hasBeenOpened = false;
+    for ( const tstr& helpFile : helpFilePaths )
     {
-        helpFilePath = helpDir;
-        helpFilePath += cszFileName;
-
-        if ( XBrackets::isExistingFile(helpFilePath) )
+        if ( XBrackets::isExistingFile(helpFile) )
         {
-            if ( m_nppMsgr.doOpen(helpFilePath.c_str()) )
+            if ( m_nppMsgr.doOpen(helpFile.c_str()) )
             {
                 hasBeenOpened = true;
                 break;
@@ -860,6 +858,7 @@ void CXBracketsPlugin::OnHelp()
 
     if ( !hasBeenOpened )
     {
+        tstr helpFilePath = helpFilePaths.back();
         helpFilePath.insert(0, _T("Could not open a file:\r\n  "));
         PluginMessageBox(helpFilePath.c_str(), MB_OK | MB_ICONWARNING);
     }

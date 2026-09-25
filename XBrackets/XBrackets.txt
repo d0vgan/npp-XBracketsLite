@@ -384,7 +384,9 @@ v2.0.4 - Sep 2026
   `abc` places the characters inside the pair, resulting in `(abc|)`. Typing
   the final `)` then steps over the existing `)`, resulting in `(abc)|` instead
   of adding a duplicate closing bracket `(abc))`.
-* a few internal corrections
+* changed: while searching for "XBrackets.txt", the plugin first checks the
+  "plugins\XBrackets" folder, and only then checks the "plugins\doc" folder.
+* a few internal corrections.
 
 
 v2.0.3 - Oct 2025
