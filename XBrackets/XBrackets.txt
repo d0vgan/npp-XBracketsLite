@@ -162,7 +162,7 @@ The plugin's settings under the "settings" node:
     specifies whether to add the corresponding closing (right) bracket when such
     a bracket already exists after the caret.
 
-  "Sel_AutoBr": 4
+  "Sel_AutoBr": 3
     specifies what to do with the selected text when a left (opening) bracket has
     been typed.
     The following values are supported:
